@@ -5,12 +5,25 @@
  *
  */
 
-import org.estf.gradle.ShellCommand
-import org.ajoberstar.grgit.Grgit
-import org.estf.gradle.EckCredentials
+import org.estf.gradle.ShellCommand;
+import org.ajoberstar.grgit.Grgit;
+import org.estf.gradle.EckCredentials;
+
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URL;
+import java.net.URLConnection;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.cert.X509Certificate;
 
 plugins {
-  id 'org.ajoberstar.grgit' version '1.7.2' apply false
+  id 'org.ajoberstar.grgit' version '4.0.2' apply false
 }
 
 group 'org.estf.cloud'
@@ -48,7 +61,7 @@ task getenv_var {
     assert(System.env.ESTF_KIBANA_VERSION &&
            System.env.ESTF_CLOUD_VERSION &&
            System.env.ESTF_BUILD_HASH)
-    ext.kibana_ver = System.env.ESTF_KIBANA_VERSION
+    ext.kibana_ver = (System.env.ESTF_KIBANA_VERSION).minus('origin/')
     ext.cloud_ver =  System.env.ESTF_CLOUD_VERSION
     ext.build_hash = System.env.ESTF_BUILD_HASH
     ext.region = System.env.ESTF_CLOUD_REGION ?: "us-central1-a"
@@ -155,7 +168,7 @@ task delete_container() {
 task install_eck() {
   doFirst {
     def out = runShell("./kubectl apply -f" +
-                       "https://download.elastic.co/downloads/eck/1.0.0/all-in-one.yaml",
+                       "https://download.elastic.co/downloads/eck/1.0.1/all-in-one.yaml",
                        "$projectDir")
   }
 }
@@ -202,6 +215,11 @@ def waitForElasticsearch() {
 // *********************************************************************************
 task deploy_elasticsearch_cluster() {
   doFirst {
+    def fileLoc = "https://raw.githubusercontent.com/elastic/elastic-stack-testing/" +
+                  "${getenv_var['kibana_ver']}" + "/ci/cloud/eck/es-spec.yml"
+    def fileCon = new URL(fileLoc).getText('UTF-8')
+    File fp = new File("$projectDir/es-spec.yml")
+    fp.write(fileCon)
     updateSpec("$projectDir/es-spec.yml", "${getenv_var['gcr_es']}")
     def out = runShell("./kubectl apply -f" + "$projectDir/es-spec.yml",
                        "$projectDir")
@@ -262,18 +280,52 @@ task get_credentials() {
 
     rootProject.ext.props = properties
     rootProject.ext.tls_reject = "true"
-  }
-}
 
-// *********************************************************************************
-task request_elasticsearch() {
-  doFirst {
-    def username = get_credentials.username
-    def password = get_credentials.password
-    def es_url = get_credentials.elasticsearch_url
-    def out = runShell('curl -u ' + username + ':' + password +
-                       ' -k ' + es_url, "$projectDir")
-    println out
+    // Print information about elasticsearch and kibana
+    // Create a trust manager that does not validate certificate chains
+    TrustManager[] trustAllCerts = [ new X509TrustManager() {
+      public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+          return null;
+      }
+      public void checkClientTrusted(X509Certificate[] certs, String authType) {
+      }
+      public void checkServerTrusted(X509Certificate[] certs, String authType) {
+      }
+    }];
+
+    // Install the all-trusting trust manager
+    SSLContext sc = SSLContext.getInstance("SSL");
+    sc.init(null, trustAllCerts, new java.security.SecureRandom());
+    HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+
+    // Create all-trusting host name verifier
+    HostnameVerifier allHostsValid = new HostnameVerifier() {
+        public boolean verify(String hostname, SSLSession session) {
+            return true;
+        }
+    };
+
+    // Install the all-trusting host verifier
+    HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+
+    def kbn_url = new URL(properties.kibana_url + "/api/status").openConnection();
+    def es_url =  new URL(properties.elasticsearch_url).openConnection();
+    String userpass = properties.es_username + ":" + properties.es_password;
+    String basicAuth = "Basic " + new String(Base64.getEncoder().encode(userpass.getBytes()));
+    println("---------- KIBANA INFO ----------")
+    kbn_url.setRequestProperty ("Authorization", basicAuth);
+    def kbnGetRC = kbn_url.getResponseCode();
+    println(kbnGetRC);
+    if(kbnGetRC.equals(200)) {
+        println(kbn_url.getInputStream().getText());
+    }
+    println("---------- ELASTICSEARCH INFO --------")
+    es_url.setRequestProperty ("Authorization", basicAuth);
+    def esGetRC = es_url.getResponseCode();
+    println(esGetRC);
+    if(esGetRC.equals(200)) {
+        println(es_url.getInputStream().getText());
+    }
   }
 }
 
@@ -304,6 +356,11 @@ def waitForKibana() {
 // *********************************************************************************
 task deploy_kibana_cluster() {
   doFirst {
+    def fileLoc = "https://raw.githubusercontent.com/elastic/elastic-stack-testing/" +
+                  "${getenv_var['kibana_ver']}" + "/ci/cloud/eck/kbn-spec.yml"
+    def fileCon = new URL(fileLoc).getText('UTF-8')
+    File fp = new File("$projectDir/kbn-spec.yml")
+    fp.write(fileCon)
     updateSpec("$projectDir/kbn-spec.yml", "${getenv_var['gcr_kbn']}")
     def out = runShell("./kubectl apply -f" + "$projectDir/kbn-spec.yml",
                        "$projectDir")
@@ -333,19 +390,6 @@ task start_forward_kbn_port() {
                                "service/estfk8-kb-http", "5601")
                       .start()
     Thread.sleep(2000)
-  }
-}
-
-// *********************************************************************************
-task request_kibana() {
-  doFirst {
-    def username = get_credentials.username
-    def password = get_credentials.password
-    def kbn_url = get_credentials.kibana_url
-    def out = runShell('curl -u ' + username + ':' + password +
-                       ' -k ' + kbn_url + '/api/status',
-                       "$projectDir")
-    println out
   }
 }
 
@@ -490,8 +534,6 @@ task eck_run_kibana_tests(dependsOn: getenv_var) {
     deploy_kibana_cluster.execute()
     activate_trial_license.execute()
     get_credentials.execute()
-    request_elasticsearch.execute()
-    request_kibana.execute()
     tasks.getByPath(':common:run_kibana_tests').execute()
   }
 }

@@ -105,8 +105,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.box = VAGRANT_BOX
 
-  config.vm.network :forwarded_port, guest:ELASTICSEARCH_GUEST_PORT, host:ELASTICSEARCH_PORT
-  config.vm.network :forwarded_port, guest:KIBANA_GUEST_PORT, host:KIBANA_PORT
+  config.vm.network :forwarded_port, guest:ELASTICSEARCH_GUEST_PORT, host:ELASTICSEARCH_PORT, auto_correct: true
+  config.vm.network :forwarded_port, guest:KIBANA_GUEST_PORT, host:KIBANA_PORT, auto_correct: true
 
   config.ssh.insert_key = false
 
