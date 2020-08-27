@@ -6,6 +6,8 @@ ossGrp1="console
          management
          status_page
          timelion
+         bundles
+         saved_objects_management
         "
 
 ossGrp2="visualize
@@ -16,13 +18,13 @@ ossGrp3="dashboard
 
 xpackGrp1="advanced_settings
            apm
-           canvas
-           code
            cross_cluster_replication
            grok_debugger
            index_lifecycle_management
            index_management
-           machine_learning
+           reporting_management
+           transform
+           maps
            license_management
           "
 
@@ -36,14 +38,16 @@ xpackGrp2="status_page
            logstash
            graph
            discover
-           dashboard
+           lens
            dashboard_mode
            canvas
            dev_tools
            infra
           "
 
-xpackGrp3="maps
+xpackGrp3="dashboard
+           machine_learning
+           ml
           "
 
 xpackGrp4="monitoring
@@ -53,9 +57,11 @@ xpackGrp4="monitoring
            security
            snapshot_restore
            spaces
+           api_keys
           "
 
 xpackExtGrp1="reporting
+              reporting_api_integration
               api_integration
               alerting_api_integration
               plugin_api_integration

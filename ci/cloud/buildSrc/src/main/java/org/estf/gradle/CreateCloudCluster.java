@@ -48,6 +48,7 @@ import co.elastic.cloud.api.model.generated.KibanaClusterTopologyElement;
 import co.elastic.cloud.api.model.generated.KibanaConfiguration;
 import co.elastic.cloud.api.model.generated.TopologySize;
 import co.elastic.cloud.api.util.Waiter;
+import java.time.Duration;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import org.gradle.api.DefaultTask;
@@ -82,6 +83,15 @@ public class CreateCloudCluster extends DefaultTask {
     @Input
     String kibanaUserSettingsOverride;
 
+    @Input
+    boolean mlTesting = false;
+
+    @Input
+    boolean ingestNodeTesting = false;
+
+    @Input
+    boolean kbnReportsTesting = false;
+
     String clusterId;
     String kibanaClusterId;
     String propertiesFile;
@@ -103,20 +113,26 @@ public class CreateCloudCluster extends DefaultTask {
         String es_cfg = "aws.highio.classic";
         String kbn_cfg = "aws.kibana.classic";
         String ml_cfg = "aws.ml.m5";
+        String ingest_cfg = "aws.coordinating.m5";
         String data_region = System.getenv("ESTF_CLOUD_REGION");
         if (data_region != null) {
             if (data_region.contains("gcp")) {
                 es_cfg = "gcp.highio.classic";
                 kbn_cfg = "gcp.kibana.classic";
                 ml_cfg = "gcp.ml.1";
+                ingest_cfg = "gcp.coodrinating.1";
             } else if (data_region.contains("azure")) {
-                es_cfg = "master";
-                kbn_cfg = "kibana";
-                ml_cfg = "ml";
+                es_cfg = "azure.master.e32sv3";
+                kbn_cfg = "azure.kibana.e32sv3";
+                ml_cfg = "azure.ml.d64sv3";
+                ingest_cfg = "azure.coordinating.d64sv3";
             }
         }
 
-        ClusterCrudResponse response = clusterClient.createEsCluster(createClusterRequest(es_cfg, kbn_cfg, ml_cfg));
+        // Set timeout
+        Waiter.setWait(Duration.ofMinutes(20));
+
+        ClusterCrudResponse response = clusterClient.createEsCluster(createClusterRequest(es_cfg, kbn_cfg, ml_cfg, ingest_cfg));
         ClustersKibanaApi kbnApi = new ClustersKibanaApi(cloudApi.getApiClient());
         Waiter.waitFor(() -> cloudApi.isKibanaRunning(
             kbnApi.getKibanaCluster(response.getKibanaClusterId(), false, true, false, false)
@@ -139,6 +155,9 @@ public class CreateCloudCluster extends DefaultTask {
         } else if (region.contains("azure")) {
             provider = "staging.azure";
             region = region.replace("azure-","");
+        } else if (region.contains("aws-eu-central-1")) {
+            provider = "aws";
+            region = "eu-central-1";
         }
 
         // TODO: see if I can get this from cluster info
@@ -198,10 +217,16 @@ public class CreateCloudCluster extends DefaultTask {
         return jsonRequest;
     }
 
-    private CreateElasticsearchClusterRequest createClusterRequest(String esConfigId, String kbnConfigId, String mlConfigId) {
+    private CreateElasticsearchClusterRequest createClusterRequest(String esConfigId, String kbnConfigId,
+                                                                   String mlConfigId, String ingestConfigId) {
 
         TopologySize topologySize = new TopologySizeBuilder()
             .setValue(1024)
+            .setResource(TopologySize.ResourceEnum.MEMORY)
+            .build();
+
+        TopologySize kbnTopologySize = new TopologySizeBuilder()
+            .setValue(2048)
             .setResource(TopologySize.ResourceEnum.MEMORY)
             .build();
 
@@ -214,11 +239,20 @@ public class CreateCloudCluster extends DefaultTask {
 
         ElasticsearchNodeType esNodeType = new ElasticsearchNodeTypeBuilder().setData(true).setMaster(true).build();
 
+        ElasticsearchNodeType ingestNodeType = new ElasticsearchNodeTypeBuilder().setIngest(true).build();
+
         ElasticsearchNodeType mlNodeType = new ElasticsearchNodeTypeBuilder().setMl(true).build();
 
         ElasticsearchClusterTopologyElement esTopo = new ElasticsearchClusterTopologyElementBuilder()
             .setInstanceConfigurationId(esConfigId)
             .setNodeType(esNodeType)
+            .setZoneCount(1)
+            .setSize(topologySize)
+            .build();
+
+        ElasticsearchClusterTopologyElement ingestTopo = new ElasticsearchClusterTopologyElementBuilder()
+            .setInstanceConfigurationId(ingestConfigId)
+            .setNodeType(ingestNodeType)
             .setZoneCount(1)
             .setSize(topologySize)
             .build();
@@ -230,11 +264,20 @@ public class CreateCloudCluster extends DefaultTask {
             .setSize(topologySize)
             .build();
 
-        KibanaClusterTopologyElement kbnTopo = new KibanaClusterTopologyElementBuilder()
-            .setInstanceConfigurationId(kbnConfigId)
-            .setZoneCount(kibanaZone)
-            .setSize(topologySize)
-            .build();
+        KibanaClusterTopologyElement kbnTopo;
+        if (kbnReportsTesting) {
+            kbnTopo = new KibanaClusterTopologyElementBuilder()
+                .setInstanceConfigurationId(kbnConfigId)
+                .setZoneCount(kibanaZone)
+                .setSize(kbnTopologySize)
+                .build();
+        } else {
+            kbnTopo = new KibanaClusterTopologyElementBuilder()
+                .setInstanceConfigurationId(kbnConfigId)
+                .setZoneCount(kibanaZone)
+                .setSize(topologySize)
+                .build();
+        }
 
         ElasticsearchScriptTypeSettings typeSetting = new ElasticsearchScriptTypeSettingsBuilder()
             .setEnabled(true)
@@ -271,10 +314,23 @@ public class CreateCloudCluster extends DefaultTask {
         }
         KibanaConfiguration kbnCfg = kbnCfgBld.build();
 
-        ElasticsearchClusterPlan plan = new ElasticsearchClusterPlanBuilder()
-            .setElasticsearch(esCfg)
-            .setClusterTopology(Arrays.asList(esTopo, mlTopo))
-            .build();
+        ElasticsearchClusterPlan plan;
+        if (mlTesting && ingestNodeTesting) {
+            plan = new ElasticsearchClusterPlanBuilder()
+                .setElasticsearch(esCfg)
+                .setClusterTopology(Arrays.asList(esTopo, mlTopo, ingestTopo))
+                .build();
+        } else if (mlTesting) {
+            plan = new ElasticsearchClusterPlanBuilder()
+                .setElasticsearch(esCfg)
+                .setClusterTopology(Arrays.asList(esTopo, mlTopo))
+                .build();
+        } else {
+            plan = new ElasticsearchClusterPlanBuilder()
+                .setElasticsearch(esCfg)
+                .setClusterTopology(Arrays.asList(esTopo))
+                .build();
+        }
 
         KibanaClusterPlan kbnPlan = new KibanaClusterPlanBuilder()
             .setKibana(kbnCfg)

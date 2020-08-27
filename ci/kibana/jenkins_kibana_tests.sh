@@ -118,7 +118,8 @@ function echo_debug() {
 # ----------------------------------------------------------------------------
 function exit_script() {
   rc=${1:-0}
-  msg=$2
+  shift
+  msg=$@
 
   if [ $rc -ne 0 ]; then
     echo_error_exit $msg
@@ -192,8 +193,14 @@ function get_build_server() {
     return
   fi
   Glb_Build_Server="${TEST_BUILD_SERVER:-"snapshots"}"
-  if ! [[ "$Glb_Build_Server" =~ ^(snapshots)$ ]]; then
+  if ! [[ "$Glb_Build_Server" =~ ^(snapshots)$ ]] &&
+     ! [[ "$Glb_Build_Server" =~ ^(staging)$ ]]; then
     echo_error_exit "Invalid build server: $Glb_Build_Server"
+  fi
+  if [[ "$Glb_Build_Server" == "staging" ]]; then
+    if [[ -z "$ESTF_BUILD_ID" ]]; then
+      echo_error_exit "ESTF_BUILD_ID must be populated!"
+    fi
   fi
   readonly Glb_Build_Server
 }
@@ -236,6 +243,7 @@ function get_os() {
   if [[ "$_uname" = *"MINGW64_NT"* ]]; then
     Glb_OS="windows"
   elif [[ "$_uname" = "Darwin" ]]; then
+    export SELENIUM_REMOTE_URL="http://localhost:4444/wd/hub"
     Glb_OS="darwin"
     #TODO: remove later
     Glb_KbnClean="yes"
@@ -292,8 +300,17 @@ function get_kibana_pkg() {
     echo_error_exit "Unknown OS: $Glb_OS"
   fi
 
+  # The name of ES package is different in 6.8
+  _esPkgName="-${_pkgName}"
+  if [[ "$Glb_Kibana_Version" == *"6.8"* ]]; then
+    _esPkgName=".tar.gz"
+    if [[ "$Glb_OS" = "windows" ]]; then
+      _esPkgName=".zip"
+    fi
+  fi
+
   Glb_Pkg_Name="kibana${_pkgType}-${Glb_Kibana_Version}-${_pkgName}"
-  Glb_Es_Pkg_Name="elasticsearch${_pkgType}-${Glb_Kibana_Version}-${_pkgName}"
+  Glb_Es_Pkg_Name="elasticsearch${_pkgType}-${Glb_Kibana_Version}${_esPkgName}"
 
   readonly Glb_Pkg_Name Glb_Es_Pkg_Name
 }
@@ -308,6 +325,9 @@ function get_kibana_url() {
   fi
 
   local _host="https://${Glb_Build_Server}.elastic.co"
+  if [[ "$Glb_Build_Server" == "staging" ]]; then
+    _host=$_host/${ESTF_BUILD_ID}
+  fi
   local _path="downloads/kibana"
   local _es_path="downloads/elasticsearch"
 
@@ -492,7 +512,7 @@ function yarn_kbn_bootstrap() {
 
   if $Glb_ChromeDriverHack; then
     echo_warning "Temporary update package.json bump chromedriver."
-    sed -i 's/"chromedriver": "^76.0.0"/"chromedriver": "^75.1.0"/g' package.json
+    sed -i 's/"chromedriver": "79.0.0"/"chromedriver": "^81.0.0"/g' package.json
   fi
 
   # For windows testing
@@ -501,6 +521,10 @@ function yarn_kbn_bootstrap() {
     echo "network-timeout 600000" >> .yarnrc
   fi
 
+  # To deal with mismatched chrome versions on CI workers
+  export CHROMEDRIVER_FORCE_DOWNLOAD=true
+  export DETECT_CHROMEDRIVER_VERSION=true
+
   yarn kbn bootstrap --prefer-offline
 
   if [ $? -ne 0 ]; then
@@ -508,6 +532,32 @@ function yarn_kbn_bootstrap() {
   fi
 
   Glb_KbnBootStrapped="yes"
+}
+
+# ----------------------------------------------------------------------------
+# Method to build docker image
+# ----------------------------------------------------------------------------
+function yarn_build_docker() {
+  yarn build --no-oss --docker --skip-docker-ubi
+
+  if [ $? -ne 0 ]; then
+    echo_error_exit "yarn build docker failed!"
+  fi
+}
+
+# ----------------------------------------------------------------------------
+# Method to get kibana es snapshot docker image
+# ----------------------------------------------------------------------------
+function get_kbn_es_docker_snapshot() {
+  if [ ! -z $ESTF_SKIP_KBN_ES_SNAPSHOT ]; then
+    return
+  fi
+  echo_info "Get Kibana Elasticsearch Docker Snapshot"
+  _url=$(curl -sX GET https://storage.googleapis.com/kibana-ci-es-snapshots-daily/${ESTF_KBN_ES_SNAPSHOT_VERSION}/manifest-latest-verified.json | jq '.archives[] | select(.platform=="docker") | .url')
+  curl -s "${_url//\"}" | docker load -i /dev/stdin
+  if [ $? -ne 0 ]; then
+    echo_error_exit "Get and load docker image: $_url failed!"
+  fi
 }
 
 # ----------------------------------------------------------------------------
@@ -555,6 +605,15 @@ function run_ci_setup() {
   install_yarn
   yarn_kbn_bootstrap
   check_git_changes
+}
+
+# -----------------------------------------------------------------------------
+# Method to setup CI environment
+# -----------------------------------------------------------------------------
+function run_ci_setup_get_docker_images() {
+  run_ci_setup
+  yarn_build_docker
+  get_kbn_es_docker_snapshot
 }
 
 # -----------------------------------------------------------------------------
@@ -653,7 +712,23 @@ function check_kibana_version() {
 }
 
 # -----------------------------------------------------------------------------
-# Method to check clodu version for flaky test runner
+# Method to set cloud and kibana es snapshot version for pr testing
+# -----------------------------------------------------------------------------
+function set_cloud_es_version() {
+  _ver=$(curl -sX GET "https://raw.githubusercontent.com/elastic/kibana/${ESTF_KIBANA_VERSION}/package.json" | jq '.version')
+  echo $_ver
+  if [ ! -z $ESTF_USE_BC ]; then
+    export ESTF_CLOUD_VERSION="${_ver//\"}"
+  else
+    export ESTF_CLOUD_VERSION="${_ver//\"}-SNAPSHOT"
+  fi
+  export ESTF_KBN_ES_SNAPSHOT_VERSION="${_ver//\"}"
+  _sha=$(curl -sX GET https://storage.googleapis.com/kibana-ci-es-snapshots-daily/${ESTF_KBN_ES_SNAPSHOT_VERSION}/manifest-latest-verified.json | jq '.sha')
+  export ESTF_ELASTICSEARCH_COMMIT="${_sha}"
+}
+
+# -----------------------------------------------------------------------------
+# Method to check cloud version for flaky test runner
 # -----------------------------------------------------------------------------
 function check_cloud_version() {
   if [ -z $ESTF_CLOUD_VERSION ]; then
@@ -847,6 +922,14 @@ function flaky_test_runner_cloud_prechecks() {
   set_number_executions_deployments
   check_test_type
   create_matrix_job_file
+}
+
+# -----------------------------------------------------------------------------
+# Method to run pr test runner cloud prechecks
+# -----------------------------------------------------------------------------
+function pr_cloud_prechecks() {
+  check_kibana_version
+  set_cloud_es_version
 }
 
 # -----------------------------------------------------------------------------
@@ -1248,12 +1331,19 @@ function run_cloud_xpack_ext_tests() {
   cfgs="test/functional/config.js
         test/reporting/configs/chromium_api.js
         test/reporting/configs/chromium_functional.js
+        test/reporting_api_integration/config.js
         test/api_integration/config.js
+        test/api_integration/config.ts
        "
+
   failures=0
   for i in $(seq 1 1 $maxRuns); do
     for cfg in $cfgs; do
       if [ $cfg == "test/functional/config.js" ] && [ $funcTests == "false" ]; then
+        continue
+      fi
+      if [ ! -f $cfg ]; then
+        echo "Warning invalid configuration: $cfg"
         continue
       fi
       export ESTF_RUN_NUMBER=$i
@@ -1289,7 +1379,7 @@ function run_visual_tests_oss() {
   export TEST_BROWSER_HEADLESS=1
 
   echo_info "Running oss visual tests"
-  yarn run percy exec -t 500 \
+  yarn run percy exec -t 500 -- -- \
   node scripts/functional_tests \
     --kibana-install-dir=${Glb_Kibana_Dir} \
     --esFrom snapshot \
@@ -1311,11 +1401,11 @@ function run_visual_tests_default() {
   export TEST_BROWSER_HEADLESS=1
 
   echo_info "Running default visual tests"
-  yarn run percy exec -t 500 \
+  yarn run percy exec -t 500 -- -- \
   node scripts/functional_tests \
     --kibana-install-dir=${Glb_Kibana_Dir} \
     --esFrom=snapshot \
-    --config x-pack/test/visual_regression/config.js \
+    --config x-pack/test/visual_regression/config.ts \
     --debug
 }
 
@@ -1547,6 +1637,12 @@ case "$TEST_GROUP" in
     ;;
   flaky_test_runner)
     flaky_test_runner
+    ;;
+  build_docker)
+    run_ci_setup_get_docker_images
+    ;;
+  pr_cloud_prechecks)
+    pr_cloud_prechecks
     ;;
   *)
     echo_error_exit "TEST_GROUP '$TEST_GROUP' is invalid group"
