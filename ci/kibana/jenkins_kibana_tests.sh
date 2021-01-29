@@ -1844,6 +1844,12 @@ function run_standalone_basic_tests() {
 
   TEST_KIBANA_BUILD=basic
 
+  if [[ "$Glb_SkipTests" == "yes" ]]; then
+    install_standalone_servers
+    echo_warning "Tests are not supported on this platform!!"
+    return
+  fi
+
   run_ci_setup
   includeTags=$(update_config "test/functional/config.js" $testGrp)
   update_test_files
@@ -1852,11 +1858,6 @@ function run_standalone_basic_tests() {
   export TEST_BROWSER_HEADLESS=1
 
   install_standalone_servers
-
-  if [[ "$Glb_SkipTests" == "yes" ]]; then
-    echo_warning "Tests are not supported on this platform!!"
-    return
-  fi
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
@@ -1886,6 +1887,11 @@ function run_standalone_xpack_func_tests() {
   local maxRuns="${ESTF_NUMBER_EXECUTIONS:-1}"
 
   TEST_KIBANA_BUILD=default
+  if [[ "$Glb_SkipTests" == "yes" ]]; then
+    install_standalone_servers
+    echo_warning "Tests are not supported on this platform!!"
+    return
+  fi
 
   run_ci_setup
 
@@ -1895,10 +1901,6 @@ function run_standalone_xpack_func_tests() {
   export TEST_BROWSER_HEADLESS=1
 
   install_standalone_servers
-  if [[ "$Glb_SkipTests" == "yes" ]]; then
-    echo_warning "Tests are not supported on this platform!!"
-    return
-  fi
 
   local _xpack_dir="$(cd x-pack; pwd)"
   echo_info "-> XPACK_DIR ${_xpack_dir}"
@@ -1939,6 +1941,11 @@ function run_standalone_xpack_ext_tests() {
   local funcTests="${1:- false}"
 
   TEST_KIBANA_BUILD=default
+  if [[ "$Glb_SkipTests" == "yes" ]]; then
+    install_standalone_servers
+    echo_warning "Tests are not supported on this platform!!"
+    return
+  fi
 
   run_ci_setup
 
@@ -1947,10 +1954,6 @@ function run_standalone_xpack_ext_tests() {
   export TEST_BROWSER_HEADLESS=1
 
   install_standalone_servers
-  if [[ "$Glb_SkipTests" == "yes" ]]; then
-    echo_warning "Tests are not supported on this platform!!"
-    return
-  fi
 
   local _xpack_dir="$(cd x-pack; pwd)"
   echo_info "-> XPACK_DIR ${_xpack_dir}"
@@ -2267,20 +2270,15 @@ function set_linux_package() {
   local _version=${_splitStr[0]}.${_splitStr[1]}
   local _isPkgSupported=$(vge $_version "7.11")
 
-  if [[ $_isPkgSupported == 0 ]] || [[ "$Glb_Arch" == "aarch64" ]]; then
+  if [[ $_isPkgSupported == 0 ]]; then
     export ESTF_TEST_PACKAGE="tar.gz"
     return
   fi
 
-  if [ $_grp == "basicGrp1" ] ||  [ $_grp == "xpackGrp1" ]; then
+  if [[ "$Glb_SkipTest" == "no" ]] && ([ $_grp == "basicGrp1" ] || [ $_grp == "xpackGrp1" ]); then
     export ESTF_TEST_PACKAGE="tar.gz"
     return
   fi
-
-  # TODO: need sudo enable on Jenkins
-  #export ESTF_TEST_PACKAGE="tar.gz"
-  #return
-  # -- remove once done
 
   rpmSupported=$(which rpm &>/dev/null; echo $?)
   dpkgSupported=$(which dpkg &>/dev/null; echo $?)
