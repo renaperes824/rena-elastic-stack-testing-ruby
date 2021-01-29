@@ -278,7 +278,7 @@ function get_os() {
   fi
 
   if [[ "$Glb_Arch" == "aarch64" ]]; then
-    local _distr $(cat /etc/os-release | grep "^NAME=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
+    local _distr=$(cat /etc/os-release | grep "^NAME=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
     if [[ "$_distr" == "CentOS" ]]; then
       Glb_SkipTests="yes"
     fi
