@@ -50,6 +50,7 @@ readonly Glb_Cache_Dir
 # For static Jenkins nodes
 Glb_KbnBootStrapped="no"
 Glb_KbnClean="no"
+Glb_SkipTests="no"
 
 Glb_KbnSkipUbi="no"
 readonly Glb_KbnSkipUbi
@@ -264,27 +265,31 @@ function get_os() {
   fi
   Glb_Arch=$(uname -m)
   echo_debug "Uname: $_uname"
-  if [[ "$_uname" = *"MINGW64_NT"* ]]; then
+  if [[ "$_uname" == *"MINGW64_NT"* ]]; then
     Glb_OS="windows"
-  elif [[ "$_uname" = "Darwin" ]]; then
+  elif [[ "$_uname" == "Darwin" ]]; then
     Glb_OS="darwin"
-  elif [[ "$_uname" = "Linux" ]]; then
+  elif [[ "$_uname" == "Linux" ]]; then
     Glb_OS="linux"
-  elif [[ "$_uname" = "Docker" ]]; then
+  elif [[ "$_uname" == "Docker" ]]; then
     Glb_OS="docker"
   else
     echo_error_exit "Unknown OS: $_uname"
   fi
 
   if [[ "$Glb_Arch" == "aarch64" ]]; then
+    local _distr $(cat /etc/os-release | grep "^NAME=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
+    if [[ "$_distr" == "CentOS" ]]; then
+      Glb_SkipTests="yes"
+    fi
     Glb_Chromium=$(which chromium-browser)
     Glb_ChromeDriver=$(which chromedriver)
-    if [[ -z $Glb_Chromium ]] || [[ -z $Glb_ChromeDriver ]]; then
+    if  [[ "$Glb_SkipTests" == "no" ]] && ([[ -z $Glb_Chromium ]] || [[ -z $Glb_ChromeDriver ]]); then
       echo_error_exit "Chromium and Chromedriver must be installed! Chromium: $Glb_Chromium, ChromeDriver: $Glb_ChromeDriver"
     fi
   fi
 
-  if [[ "$Glb_OS" = "darwin" ]] || [[ "$Glb_Arch" = "aarch64" ]]; then
+  if [[ "$Glb_OS" == "darwin" ]] || [[ "$Glb_Arch" == "aarch64" ]]; then
     Glb_KbnClean="yes"
   fi
 
@@ -1848,7 +1853,7 @@ function run_standalone_basic_tests() {
 
   install_standalone_servers
 
-  if [[ ! -z "$ESTF_TEST_PACKAGE" ]] && [[ "$ESTF_TEST_PACKAGE" == "rpm" ]] && [[ "$Glb_Arch" != "aarch64" ]]; then
+  if [[ "$Glb_SkipTests" == "yes" ]]; then
     echo_warning "Tests are not supported on this platform!!"
     return
   fi
@@ -1890,7 +1895,7 @@ function run_standalone_xpack_func_tests() {
   export TEST_BROWSER_HEADLESS=1
 
   install_standalone_servers
-  if [[ ! -z "$ESTF_TEST_PACKAGE" ]] && [[ "$ESTF_TEST_PACKAGE" == "rpm" ]] && [[ "$Glb_Arch" != "aarch64" ]]; then
+  if [[ "$Glb_SkipTests" == "yes" ]]; then
     echo_warning "Tests are not supported on this platform!!"
     return
   fi
@@ -1942,7 +1947,7 @@ function run_standalone_xpack_ext_tests() {
   export TEST_BROWSER_HEADLESS=1
 
   install_standalone_servers
-  if [[ ! -z "$ESTF_TEST_PACKAGE" ]] && [[ "$ESTF_TEST_PACKAGE" == "rpm" ]] && [[ "$Glb_Arch" != "aarch64" ]]; then
+  if [[ "$Glb_SkipTests" == "yes" ]]; then
     echo_warning "Tests are not supported on this platform!!"
     return
   fi
