@@ -282,7 +282,6 @@ function get_os() {
     if [[ -z $Glb_Chromium ]] || [[ -z $Glb_ChromeDriver ]]; then
       echo_error_exit "Chromium and Chromedriver must be installed! Chromium: $Glb_Chromium, ChromeDriver: $Glb_ChromeDriver"
     fi
-  f
 
   if [[ "$Glb_OS" = "darwin" ]] || [[ "$Glb_Arch" = "aarch64" ]]; then
     Glb_KbnClean="yes"
