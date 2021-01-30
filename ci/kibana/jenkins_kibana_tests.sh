@@ -2648,6 +2648,7 @@ function install_standalone_servers() {
     fi
     docker_load
   elif [ "$ESTF_TEST_PACKAGE" = "deb" ] || [ "$ESTF_TEST_PACKAGE" = "rpm" ]; then
+    uninstall_packages
     install_packages
   else
     echo_error_exit "Invalid ESTF_TEST_PACKAGE: $ESTF_TEST_PACKAGE"
