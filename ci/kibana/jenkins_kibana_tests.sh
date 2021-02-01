@@ -1856,6 +1856,10 @@ function run_standalone_basic_tests() {
   disable_security_user
 
   export TEST_BROWSER_HEADLESS=1
+  if [[ "$Glb_Arch" == "aarch64" ]]; then
+    export TEST_BROWSER_BINARY_PATH=$Glb_Chromium
+    export TEST_BROWSER_CHROMEDRIVER_PATH=$Glb_ChromeDriver
+  fi
 
   install_standalone_servers
 
@@ -1899,6 +1903,10 @@ function run_standalone_xpack_func_tests() {
   update_test_files
 
   export TEST_BROWSER_HEADLESS=1
+  if [[ "$Glb_Arch" == "aarch64" ]]; then
+    export TEST_BROWSER_BINARY_PATH=$Glb_Chromium
+    export TEST_BROWSER_CHROMEDRIVER_PATH=$Glb_ChromeDriver
+  fi
 
   install_standalone_servers
 
@@ -1952,6 +1960,10 @@ function run_standalone_xpack_ext_tests() {
   update_test_files
 
   export TEST_BROWSER_HEADLESS=1
+  if [[ "$Glb_Arch" == "aarch64" ]]; then
+    export TEST_BROWSER_BINARY_PATH=$Glb_Chromium
+    export TEST_BROWSER_CHROMEDRIVER_PATH=$Glb_ChromeDriver
+  fi
 
   install_standalone_servers
 
@@ -2275,7 +2287,7 @@ function set_linux_package() {
     return
   fi
 
-  if [[ "$Glb_SkipTest" == "no" ]] && ([ $_grp == "basicGrp1" ] || [ $_grp == "xpackGrp1" ]); then
+  if [[ "$Glb_SkipTests" == "no" ]] && ([ $_grp == "basicGrp1" ] || [ $_grp == "xpackGrp1" ]); then
     export ESTF_TEST_PACKAGE="tar.gz"
     return
   fi
@@ -2623,7 +2635,7 @@ function uninstall_packages() {
     sudo dpkg --purge kibana
     sudo dpkg --remove elasticsearch
     sudo dpkg --purge elasticsearch
-  else
+  elif [ "$ESTF_TEST_PACKAGE" = "rpm" ]; then
     sudo rpm -e kibana
     sudo rpm -e elasticsearch
   fi
