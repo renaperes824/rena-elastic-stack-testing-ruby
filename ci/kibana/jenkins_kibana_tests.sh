@@ -2644,8 +2644,9 @@ function uninstall_packages() {
   sudo rm -rf /var/lib/kibana
   sudo rm -rf /etc/kibana
   sudo rm -rf /var/lib/elasticsearch
-  sudo rm -rf /etc/elasticsearch
-
+  sudo rm -rf /etc/elasticsearch 
+  sudo rm -rf /usr/share/elasticsearch 
+  sudo rm -rf /usr/share/kibana
 }
 
 # ----------------------------------------------------------------------------
