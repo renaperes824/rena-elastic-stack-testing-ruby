@@ -1847,6 +1847,7 @@ function run_standalone_basic_tests() {
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
     echo_warning "Tests are not supported on this platform!!"
+    run_ci_cleanup
     return
   fi
 
@@ -1894,6 +1895,7 @@ function run_standalone_xpack_func_tests() {
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
     echo_warning "Tests are not supported on this platform!!"
+    run_ci_cleanup
     return
   fi
 
@@ -1952,6 +1954,7 @@ function run_standalone_xpack_ext_tests() {
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
     echo_warning "Tests are not supported on this platform!!"
+    run_ci_cleanup
     return
   fi
 
@@ -2641,12 +2644,15 @@ function uninstall_packages() {
   fi
 
   echo "Remove directories"
-  sudo rm -rf /var/lib/kibana
-  sudo rm -rf /etc/kibana
   sudo rm -rf /var/lib/elasticsearch
-  sudo rm -rf /etc/elasticsearch 
-  sudo rm -rf /usr/share/elasticsearch 
+  sudo rm -rf /var/lib/kibana
+  sudo rm -rf /etc/elasticsearch
+  sudo rm -rf /etc/kibana
+  sudo rm -rf /usr/share/elasticsearch
   sudo rm -rf /usr/share/kibana
+  sudo rm -rf /var/log/elasticsearch
+  sudo rm -rf /var/log/kibana
+
 }
 
 # ----------------------------------------------------------------------------
