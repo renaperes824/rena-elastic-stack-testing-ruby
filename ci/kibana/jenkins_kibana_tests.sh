@@ -2284,6 +2284,8 @@ function set_linux_package() {
   local _splitStr=(${Glb_Kibana_Version//./ })
   local _version=${_splitStr[0]}.${_splitStr[1]}
   local _isPkgSupported=$(vge $_version "7.11")
+  local _distr=$(cat /etc/os-release | grep "^NAME=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
+  local _distr_ver=$(cat /etc/os-release | grep "^VERSION=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
 
   if [[ $_isPkgSupported == 0 ]]; then
     export ESTF_TEST_PACKAGE="tar.gz"
@@ -2291,6 +2293,11 @@ function set_linux_package() {
   fi
 
   if [[ "$Glb_SkipTests" == "no" ]] && ([ $_grp == "basicGrp1" ] || [ $_grp == "xpackGrp1" ]); then
+    export ESTF_TEST_PACKAGE="tar.gz"
+    return
+  fi
+
+  if [[ "$_distr" == "Debian" ]] && [[ "$_distr_ver" == "10" ]]; then
     export ESTF_TEST_PACKAGE="tar.gz"
     return
   fi
