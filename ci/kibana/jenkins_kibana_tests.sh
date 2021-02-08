@@ -2302,6 +2302,11 @@ function set_linux_package() {
     return
   fi
 
+  if [[ "$Glb_Arch" != "aarch64" ]]; then
+    export ESTF_TEST_PACKAGE="tar.gz"
+    return
+  fi
+
   rpmSupported=$(which rpm &>/dev/null; echo $?)
   dpkgSupported=$(which dpkg &>/dev/null; echo $?)
 
