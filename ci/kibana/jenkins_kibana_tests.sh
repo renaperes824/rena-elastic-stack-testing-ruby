@@ -50,6 +50,7 @@ readonly Glb_Cache_Dir
 # For static Jenkins nodes
 Glb_KbnBootStrapped="no"
 Glb_KbnClean="no"
+Glb_SkipTests="no"
 
 Glb_KbnSkipUbi="no"
 readonly Glb_KbnSkipUbi
@@ -264,24 +265,32 @@ function get_os() {
   fi
   Glb_Arch=$(uname -m)
   echo_debug "Uname: $_uname"
-  if [[ "$_uname" = *"MINGW64_NT"* ]]; then
+  if [[ "$_uname" == *"MINGW64_NT"* ]]; then
     Glb_OS="windows"
-  elif [[ "$_uname" = "Darwin" ]]; then
+  elif [[ "$_uname" == "Darwin" ]]; then
     Glb_OS="darwin"
-  elif [[ "$_uname" = "Linux" ]]; then
+  elif [[ "$_uname" == "Linux" ]]; then
     Glb_OS="linux"
-  elif [[ "$_uname" = "Docker" ]]; then
+  elif [[ "$_uname" == "Docker" ]]; then
     Glb_OS="docker"
   else
     echo_error_exit "Unknown OS: $_uname"
   fi
 
   if [[ "$Glb_Arch" == "aarch64" ]]; then
+    local _distr=$(cat /etc/os-release | grep "^NAME=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
+    if [[ "$_distr" == "CentOS" ]]; then
+      Glb_SkipTests="yes"
+    fi
     Glb_Chromium=$(which chromium-browser)
     Glb_ChromeDriver=$(which chromedriver)
-    if [[ -z $Glb_Chromium ]] || [[ -z $Glb_ChromeDriver ]]; then
+    if  [[ "$Glb_SkipTests" == "no" ]] && ([[ -z $Glb_Chromium ]] || [[ -z $Glb_ChromeDriver ]]); then
       echo_error_exit "Chromium and Chromedriver must be installed! Chromium: $Glb_Chromium, ChromeDriver: $Glb_ChromeDriver"
     fi
+  fi
+
+  if [[ "$Glb_OS" == "darwin" ]] || [[ "$Glb_Arch" == "aarch64" ]]; then
+    Glb_KbnClean="yes"
   fi
 
   echo_info "Running on OS: $Glb_OS"
@@ -757,6 +766,7 @@ function run_ci_cleanup() {
     remove_node_modules_dir
     remove_install_dir
     remove_es_install_dir
+    uninstall_packages
   fi
 }
 
@@ -1834,12 +1844,23 @@ function run_standalone_basic_tests() {
 
   TEST_KIBANA_BUILD=basic
 
+  if [[ "$Glb_SkipTests" == "yes" ]]; then
+    install_standalone_servers
+    echo_warning "Tests are not supported on this platform!!"
+    run_ci_cleanup
+    return
+  fi
+
   run_ci_setup
   includeTags=$(update_config "test/functional/config.js" $testGrp)
   update_test_files
   disable_security_user
 
   export TEST_BROWSER_HEADLESS=1
+  if [[ "$Glb_Arch" == "aarch64" ]]; then
+    export TEST_BROWSER_BINARY_PATH=$Glb_Chromium
+    export TEST_BROWSER_CHROMEDRIVER_PATH=$Glb_ChromeDriver
+  fi
 
   install_standalone_servers
 
@@ -1871,6 +1892,12 @@ function run_standalone_xpack_func_tests() {
   local maxRuns="${ESTF_NUMBER_EXECUTIONS:-1}"
 
   TEST_KIBANA_BUILD=default
+  if [[ "$Glb_SkipTests" == "yes" ]]; then
+    install_standalone_servers
+    echo_warning "Tests are not supported on this platform!!"
+    run_ci_cleanup
+    return
+  fi
 
   run_ci_setup
 
@@ -1878,6 +1905,10 @@ function run_standalone_xpack_func_tests() {
   update_test_files
 
   export TEST_BROWSER_HEADLESS=1
+  if [[ "$Glb_Arch" == "aarch64" ]]; then
+    export TEST_BROWSER_BINARY_PATH=$Glb_Chromium
+    export TEST_BROWSER_CHROMEDRIVER_PATH=$Glb_ChromeDriver
+  fi
 
   install_standalone_servers
 
@@ -1920,12 +1951,22 @@ function run_standalone_xpack_ext_tests() {
   local funcTests="${1:- false}"
 
   TEST_KIBANA_BUILD=default
+  if [[ "$Glb_SkipTests" == "yes" ]]; then
+    install_standalone_servers
+    echo_warning "Tests are not supported on this platform!!"
+    run_ci_cleanup
+    return
+  fi
 
   run_ci_setup
 
   update_test_files
 
   export TEST_BROWSER_HEADLESS=1
+  if [[ "$Glb_Arch" == "aarch64" ]]; then
+    export TEST_BROWSER_BINARY_PATH=$Glb_Chromium
+    export TEST_BROWSER_CHROMEDRIVER_PATH=$Glb_ChromeDriver
+  fi
 
   install_standalone_servers
 
@@ -2243,29 +2284,36 @@ function set_linux_package() {
   local _splitStr=(${Glb_Kibana_Version//./ })
   local _version=${_splitStr[0]}.${_splitStr[1]}
   local _isPkgSupported=$(vge $_version "7.11")
+  local _distr=$(cat /etc/os-release | grep "^NAME=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
+  local _distr_ver=$(cat /etc/os-release | grep "^VERSION=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
 
-  if [[ $_isPkgSupported == 0 ]] || [[ "$Glb_Arch" == "aarch64" ]]; then
+  if [[ $_isPkgSupported == 0 ]]; then
     export ESTF_TEST_PACKAGE="tar.gz"
     return
   fi
 
-  if [ $_grp == "basicGrp1" ] ||  [ $_grp == "xpackGrp1" ]; then
+  if [[ "$Glb_SkipTests" == "no" ]] && ([ $_grp == "basicGrp1" ] || [ $_grp == "xpackGrp1" ]); then
     export ESTF_TEST_PACKAGE="tar.gz"
     return
   fi
 
-  # TODO: need sudo enable on Jenkins
-  export ESTF_TEST_PACKAGE="tar.gz"
-  return
-  # -- remove once done
+  if [[ "$_distr" == "Debian" ]] && [[ "$_distr_ver" == "10" ]]; then
+    export ESTF_TEST_PACKAGE="tar.gz"
+    return
+  fi
+
+  if [[ "$Glb_Arch" != "aarch64" ]]; then
+    export ESTF_TEST_PACKAGE="tar.gz"
+    return
+  fi
 
   rpmSupported=$(which rpm &>/dev/null; echo $?)
   dpkgSupported=$(which dpkg &>/dev/null; echo $?)
 
-  if [ $rpmSupported -eq 0 ]; then
-    export ESTF_TEST_PACKAGE="rpm"
-  elif [ $dpkgSupported -eq 0 ]; then
+  if [ $dpkgSupported -eq 0 ]; then
     export ESTF_TEST_PACKAGE="deb"
+  elif [ $rpmSupported -eq 0 ]; then
+    export ESTF_TEST_PACKAGE="rpm"
   else
     export ESTF_TEST_PACKAGE="tar.gz"
   fi
@@ -2378,7 +2426,7 @@ function update_kibana_settings() {
 function elasticsearch_generate_certs() {
   local _esHome="/etc/elasticsearch"
   local _kbnHome="/etc/kibana"
-  local _ip=$(hostname -I | sed 's/ *$//g')
+  local _ip=$(hostname -I | sed 's/ *$//g' | awk '{print $1}')
   local _isNewCertUtils=$(vge $_version "8.0")
 
   echo_info "Generate Elasticsearch certificates"
@@ -2446,7 +2494,7 @@ EOM
 # -----------------------------------------------------------------------------
 function elasticsearch_setup_passwords() {
   local _kbnHome="/etc/kibana"
-  local _ip=$(hostname -I | sed 's/ *$//g')
+  local _ip=$(hostname -I | sed 's/ *$//g' | awk '{print $1}')
 
   echo_info "Setup passwords"
   echo "y" | sudo -s /usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto  | tee passwords.txt
@@ -2578,6 +2626,47 @@ function install_packages() {
 
 }
 
+# -----------------------------------------------------------------------------
+# Uninstall debian packages for elasticsearch and kibana
+# -----------------------------------------------------------------------------
+function uninstall_packages() {
+
+  if [ -z  "$ESTF_TEST_PACKAGE" ]; then
+    return
+  fi
+
+  if [ "$ESTF_TEST_PACKAGE" != "rpm" ] && [ "$ESTF_TEST_PACKAGE" != "deb" ]; then
+    return
+  fi
+
+  if [[ "$Glb_Arch" != "aarch64" ]]; then
+    return
+  fi
+
+  echo_info "Remove packages"
+
+  if [ "$ESTF_TEST_PACKAGE" = "deb" ]; then
+    sudo dpkg --remove kibana
+    sudo dpkg --purge kibana
+    sudo dpkg --remove elasticsearch
+    sudo dpkg --purge elasticsearch
+  elif [ "$ESTF_TEST_PACKAGE" = "rpm" ]; then
+    sudo rpm -e kibana
+    sudo rpm -e elasticsearch
+  fi
+
+  echo "Remove directories"
+  sudo rm -rf /var/lib/elasticsearch
+  sudo rm -rf /var/lib/kibana
+  sudo rm -rf /etc/elasticsearch
+  sudo rm -rf /etc/kibana
+  sudo rm -rf /usr/share/elasticsearch
+  sudo rm -rf /usr/share/kibana
+  sudo rm -rf /var/log/elasticsearch
+  sudo rm -rf /var/log/kibana
+
+}
+
 # ----------------------------------------------------------------------------
 # Install standalone servers
 # ----------------------------------------------------------------------------
@@ -2586,10 +2675,11 @@ function install_standalone_servers() {
 
   if [ "$ESTF_TEST_PACKAGE" = "docker" ]; then
     if [ "$type" != "basic" ]; then
-      TEST_KIBANA_BUILD=$(random_docker_image)	
+      TEST_KIBANA_BUILD=$(random_docker_image)
     fi
     docker_load
   elif [ "$ESTF_TEST_PACKAGE" = "deb" ] || [ "$ESTF_TEST_PACKAGE" = "rpm" ]; then
+    uninstall_packages
     install_packages
   else
     echo_error_exit "Invalid ESTF_TEST_PACKAGE: $ESTF_TEST_PACKAGE"
@@ -2611,7 +2701,6 @@ Glb_xpackExtGrp1Cfg="test/api_integration/config.js
                     "
 Glb_xpackExtGrp2Cfg="test/detection_engine_api_integration/security_and_spaces/config.ts
                      test/ingest_manager_api_integration/config.ts
-                     test/security_api_integration/session_idle.config.ts
                      test/security_solution_endpoint/config.ts
                      test/security_solution_endpoint_api_int/config.ts
                     "
