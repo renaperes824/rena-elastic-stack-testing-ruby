@@ -3,11 +3,12 @@ TASK:
 JOB:
   - upgradeTest1
   - upgradeTest2
-  - upgradeTest3 
+  - upgradeTest3
   - upgradeTest4
   - upgradeTest5
   - upgradeTest6
   - upgradeTest7
-  - upgradeTest8 
+  - upgradeTest8
   - upgradeTest9
+  - upgradeTest10
 exclude: ~
