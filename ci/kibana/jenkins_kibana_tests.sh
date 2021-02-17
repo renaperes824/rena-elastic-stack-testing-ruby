@@ -1254,6 +1254,7 @@ function run_basic_tests() {
   includeTags=$(update_config "test/functional/config.js" $testGrp)
   update_test_files
   remove_oss
+  disable_security_user
 
   TEST_KIBANA_BUILD=basic
   install_kibana
@@ -1621,6 +1622,8 @@ function run_visual_tests_basic() {
   set_puppeteer_exe
 
   remove_oss
+  disable_security_user
+
   TEST_KIBANA_BUILD=basic
   install_kibana
 
