@@ -101,14 +101,6 @@ def downloadShellFile(link, name, dirname) {
  */
 
 // *********************************************************************************
-task create_ece_dir() {
-  doFirst {
-    mkdir "$buildDir/ece"
-    mkdir "${getenv_var['datadir']}"
-  }
-}
-
-// *********************************************************************************
 def updatePlan(type, filename) {
   File file = new File(filename)
   def slurped = new JsonSlurper().parseText(file.getText('UTF-8'))
@@ -439,6 +431,13 @@ def downloadTarFile(link, name, dirname) {
   exec {
     workingDir dirname
     commandLine 'rm', name
+  }
+}
+
+// *********************************************************************************
+task create_ecctl_dir() {
+  doFirst {
+    mkdir "$buildDir/ecctl"
   }
 }
 
