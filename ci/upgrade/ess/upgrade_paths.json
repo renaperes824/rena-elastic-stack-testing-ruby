@@ -8,5 +8,5 @@
   "upgradeTest7": "6.8.14-SNAPSHOT,7.12.0-SNAPSHOT",
   "upgradeTest8": "7.11.1-SNAPSHOT,7.12.0-SNAPSHOT",
   "upgradeTest9": "6.8.14-SNAPSHOT,7.12.0-SNAPSHOT,8.0.0-SNAPSHOT",
-  "upgradeTest10": "7.12-0-SNAPSHOT,8.0.0-SNAPSHOT"
+  "upgradeTest10": "7.12.0-SNAPSHOT,8.0.0-SNAPSHOT"
 }
