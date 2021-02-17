@@ -443,13 +443,6 @@ def downloadTarFile(link, name, dirname) {
 }
 
 // *********************************************************************************
-task create_ecctl_dir() {
-  doFirst {
-    mkdir "$buildDir/ecctl"
-  }
-}
-
-// *********************************************************************************
 task get_ecctl(dependsOn: create_ecctl_dir) {
   doFirst {
     println "In ${name}"
@@ -663,13 +656,4 @@ task ece_run_kibana_pr(type: GradleBuild) {
              ':common:kibana_build_docker_image',
              'build_cloudimage_elasticsearch', 'build_cloudimage_kibana',
              'ecctl_stack_upload', 'ecctl_create_deployment']
-}
-
-// *********************************************************************************
-task ece_run_kibana_pr(type: GradleBuild) {
-    println "In ${name}"
-    tasks = ['getenv_var', 'install_ece', 'build_stackpack', 'get_ecctl',
-             ':common:kibana_build_docker_image',
-             'build_cloudimage_elasticsearch', 'build_cloudimage_kibana',
-             'ecctl_platform_upload', 'ecctl_create_deployment']
 }
