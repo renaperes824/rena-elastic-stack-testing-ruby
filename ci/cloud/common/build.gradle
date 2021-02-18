@@ -44,6 +44,9 @@ task get_kibana_repo {
                             refToCheckout: checkout_ver)
     if (commit) {
         grgit.checkout(branch: commit)
+    } else if (rootProject.hasProperty('kibana_hash') && ! System.env.ESTF_FLAKY_TEST_SUITE && ! System.env.ESTF_KIBANA_CHECKOUT_LATEST) {
+        println("Checking out: " + rootProject.kibana_hash)
+        grgit.checkout(branch: rootProject.kibana_hash)
     }
     println grgit.describe()
   }

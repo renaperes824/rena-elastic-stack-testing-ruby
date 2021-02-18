@@ -100,7 +100,11 @@ task saas_setup {
         def kbnGetRC = kbn_url.getResponseCode();
         println(kbnGetRC);
         if(kbnGetRC.equals(200)) {
-            println(kbn_url.getInputStream().getText());
+            def kibana_info = kbn_url.getInputStream().getText();
+            println(kibana_info)
+            def jsonSlurper = new JsonSlurper()
+            def data = jsonSlurper.parseText(kibana_info)
+            rootProject.ext.kibana_hash = data["version"]["build_hash"]
         }
         println("---------- ELASTICSEARCH INFO --------")
         es_url.setRequestProperty ("Authorization", basicAuth);
