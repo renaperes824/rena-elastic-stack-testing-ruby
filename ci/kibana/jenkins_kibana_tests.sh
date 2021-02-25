@@ -372,8 +372,10 @@ function get_kibana_pkg() {
     elif [ "$_pkgExt" = "rpm" ]; then
       _pkgName="${Glb_Arch}.${_pkgExt}"
     fi
-  elif [[ "$Glb_OS" = "docker" ]]; then
+  elif [ "$Glb_OS" = "docker" ] && [ "$Glb_Arch" = "x86_64" ]; then
     _pkgName="docker-image.tar.gz"
+  elif [ "$Glb_OS" = "docker" ] && [ "$Glb_Arch" = "aarch64" ]; then
+    _pkgName="docker-image-aarch64.tar.gz"
   else
     echo_error_exit "Unknown OS: $Glb_OS"
   fi
@@ -2677,7 +2679,7 @@ function install_standalone_servers() {
   local type=${TEST_KIBANA_BUILD:-basic}
 
   if [ "$ESTF_TEST_PACKAGE" = "docker" ]; then
-    if [ "$type" != "basic" ]; then
+    if [ "$type" != "basic" ] && [ "$Glb_Arch" != "aarch64" ]; then
       TEST_KIBANA_BUILD=$(random_docker_image)
     fi
     docker_load
