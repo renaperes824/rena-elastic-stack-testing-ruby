@@ -659,6 +659,8 @@ function yarn_kbn_bootstrap() {
     export DETECT_CHROMEDRIVER_VERSION=true
   fi
 
+  export BUILD_TS_REFS_CACHE_ENABLE=true
+
   yarn kbn bootstrap --prefer-offline
 
   if [ $? -ne 0 ]; then
