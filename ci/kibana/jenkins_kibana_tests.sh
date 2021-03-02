@@ -2693,6 +2693,36 @@ function install_standalone_servers() {
   fi
 }
 
+# -----------------------------------------------------------------------------
+# Check docker package
+# -----------------------------------------------------------------------------
+function check_docker_package() {
+  local _platform=$1
+
+  get_os
+
+  if [[ "$_platform" != "docker" ]]; then
+    return
+  fi
+
+  if [[ "$Glb_Arch" != "aarch64" ]]; then
+    return
+  fi
+
+  get_version
+
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
+  local _isPkgSupported=$(vge $_version "7.13")
+
+  if [[ $_isPkgSupported == 1 ]]; then
+    return
+  fi
+
+  echo_error_exit "Docker aarch64 packages are only supported 7.13+"
+
+}
+
 # ****************************************************************************
 # SECTION: Cloud/Docker Configurations
 # ****************************************************************************
@@ -2751,6 +2781,9 @@ export GCS_UPLOAD_PREFIX="internal-ci-artifacts/jobs/${JOB_NAME}/${BUILD_NUMBER}
 
 # Set linux package
 set_linux_package $PLATFORM $TEST_GROUP
+
+# Check docker package
+check_docker_package $PLATFORM
 
 case "$TEST_GROUP" in
   intake)
