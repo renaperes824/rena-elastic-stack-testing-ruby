@@ -767,6 +767,7 @@ function run_ci_setup_get_docker_images() {
 # -----------------------------------------------------------------------------
 function run_ci_cleanup() {
   if [ $Glb_KbnClean == "yes" ]; then
+    cleanup_docker
     remove_node_modules_dir
     remove_install_dir
     remove_es_install_dir
@@ -2694,6 +2695,31 @@ function install_standalone_servers() {
 }
 
 # -----------------------------------------------------------------------------
+# Remove docker images
+# -----------------------------------------------------------------------------
+function cleanup_docker() {
+
+  if [ -z  "$ESTF_TEST_PACKAGE" ]; then
+    return
+  fi
+
+  if [ "$ESTF_TEST_PACKAGE" != "docker" ]; then
+    return
+  fi
+
+  if [[ "$Glb_Arch" != "aarch64" ]]; then
+    return
+  fi
+
+  echo_info "cleanup docker"
+
+  docker container stop $(docker container list -qa)
+  docker container rm $(docker container list -qa)
+  docker system prune -a --volumes
+
+}
+
+# -----------------------------------------------------------------------------
 # Check docker package
 # -----------------------------------------------------------------------------
 function check_docker_package() {
@@ -2708,6 +2734,8 @@ function check_docker_package() {
   if [[ "$Glb_Arch" != "aarch64" ]]; then
     return
   fi
+
+  cleanup_docker
 
   get_version
 
