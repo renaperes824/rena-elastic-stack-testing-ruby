@@ -52,6 +52,9 @@ public class CreateCloudCluster extends DefaultTask {
     @Input
     boolean kbnReportsTesting = false;
 
+    @Input
+    boolean esMoreMem = false;
+
     String clusterId;
     String kibanaClusterId;
     String propertiesFile;
@@ -180,12 +183,12 @@ public class CreateCloudCluster extends DefaultTask {
     private CreateElasticsearchClusterRequest createClusterRequest(String esConfigId, String kbnConfigId,
                                                                    String mlConfigId, String ingestConfigId) {
 
-        TopologySize topologySize = new TopologySizeBuilder()
+        TopologySize topologySize1G = new TopologySizeBuilder()
             .setValue(1024)
             .setResource(TopologySize.ResourceEnum.MEMORY)
             .build();
 
-        TopologySize kbnTopologySize = new TopologySizeBuilder()
+        TopologySize topologySize2G = new TopologySizeBuilder()
             .setValue(2048)
             .setResource(TopologySize.ResourceEnum.MEMORY)
             .build();
@@ -203,25 +206,35 @@ public class CreateCloudCluster extends DefaultTask {
 
         ElasticsearchNodeType mlNodeType = new ElasticsearchNodeTypeBuilder().setMl(true).build();
 
-        ElasticsearchClusterTopologyElement esTopo = new ElasticsearchClusterTopologyElementBuilder()
-            .setInstanceConfigurationId(esConfigId)
-            .setNodeType(esNodeType)
-            .setZoneCount(1)
-            .setSize(topologySize)
-            .build();
+        ElasticsearchClusterTopologyElement esTopo;
+        if (esMoreMem) {
+            esTopo = new ElasticsearchClusterTopologyElementBuilder()
+                .setInstanceConfigurationId(esConfigId)
+                .setNodeType(esNodeType)
+                .setZoneCount(1)
+                .setSize(topologySize2G)
+                .build();
+        } else {
+            esTopo = new ElasticsearchClusterTopologyElementBuilder()
+                .setInstanceConfigurationId(esConfigId)
+                .setNodeType(esNodeType)
+                .setZoneCount(1)
+                .setSize(topologySize1G)
+                .build();
+        }
 
         ElasticsearchClusterTopologyElement ingestTopo = new ElasticsearchClusterTopologyElementBuilder()
             .setInstanceConfigurationId(ingestConfigId)
             .setNodeType(ingestNodeType)
             .setZoneCount(1)
-            .setSize(topologySize)
+            .setSize(topologySize1G)
             .build();
 
         ElasticsearchClusterTopologyElement mlTopo = new ElasticsearchClusterTopologyElementBuilder()
             .setInstanceConfigurationId(mlConfigId)
             .setNodeType(mlNodeType)
             .setZoneCount(1)
-            .setSize(topologySize)
+            .setSize(topologySize1G)
             .build();
 
         KibanaClusterTopologyElement kbnTopo;
@@ -229,13 +242,13 @@ public class CreateCloudCluster extends DefaultTask {
             kbnTopo = new KibanaClusterTopologyElementBuilder()
                 .setInstanceConfigurationId(kbnConfigId)
                 .setZoneCount(kibanaZone)
-                .setSize(kbnTopologySize)
+                .setSize(topologySize2G)
                 .build();
         } else {
             kbnTopo = new KibanaClusterTopologyElementBuilder()
                 .setInstanceConfigurationId(kbnConfigId)
                 .setZoneCount(kibanaZone)
-                .setSize(topologySize)
+                .setSize(topologySize1G)
                 .build();
         }
 
