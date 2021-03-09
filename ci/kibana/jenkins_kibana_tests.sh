@@ -267,6 +267,7 @@ function get_os() {
   echo_debug "Uname: $_uname"
   if [[ "$_uname" == *"MINGW64_NT"* ]]; then
     Glb_OS="windows"
+    Glb_SkipTests="yes"
   elif [[ "$_uname" == "Darwin" ]]; then
     Glb_OS="darwin"
   elif [[ "$_uname" == "Linux" ]]; then
@@ -489,6 +490,75 @@ function download_and_extract_package() {
   echo_info  "Using Kibana install: $Glb_Kibana_Dir"
 
   readonly Glb_Kibana_Dir
+}
+
+# ----------------------------------------------------------------------------
+# Method to download and extract Kibana package
+# ----------------------------------------------------------------------------
+function download_compressed_packages() {
+  if [ ! -z $Glb_Kibana_Dir ]; then
+    return
+  fi
+
+  if [ ! -z $Glb_Es_Dir ]; then
+    return
+  fi
+
+  echo_info "Root build install dir: $Glb_Install_Dir"
+
+  array=( $Glb_Es_Url $Glb_Kibana_Url )
+  for i in "${!array[@]}"
+  do
+    url=${array[$i]}
+    echo_info "URL: $i $url"
+
+    local _pkgName="$Glb_Install_Dir/${url##*/}"
+    local _dirName=""
+
+    if [[ -z $TEST_SKIP_INSTALL ]]; then
+      curl --silent -o $_pkgName $url
+    fi
+
+    if [[ "$Glb_OS" == "windows" ]]; then
+      _dirName=$(zipinfo -1 "$_pkgName" | head -n 1)
+    else
+      _dirName=$(tar tf "$_pkgName" | head -n 1)
+    fi
+    _dirName=${_dirName%%/*}
+
+    _dir="$Glb_Install_Dir/$_dirName"
+    if [ -d "$_dir" ]; then
+        if [[ -z $TEST_SKIP_INSTALL ]]; then
+          echo_info "Clearing previous install"
+          rm -rf "$_dir"
+        fi
+    fi
+
+    if [[ -z $TEST_SKIP_INSTALL ]]; then
+      if [[ "$Glb_OS" == "windows" ]]; then
+        unzip -qo "$_pkgName" -d "$Glb_Install_Dir"
+      else
+        tar xfz "$_pkgName" -C "$Glb_Install_Dir"
+      fi
+    fi
+
+    if [[ ! -z $TEST_SKIP_INSTALL ]]; then
+      if [ ! -d "$_dir" ]; then
+        echo_error_exit "Directory does not exist"
+      fi
+    fi
+
+    if [[ $i -eq 0 ]]; then
+      Glb_Es_Dir=$_dir
+      echo_info  "Using Elasticsearch install: $Glb_Es_Dir"
+      readonly Glb_Es_Dir
+    elif [[ $i -eq 1 ]]; then
+      Glb_Kibana_Dir=$_dir
+      echo_info  "Using Kibana install: $Glb_Kibana_Dir"
+      readonly Glb_Kibana_Dir
+    fi
+  done
+
 }
 
 # -----------------------------------------------------------------------------
@@ -746,6 +816,9 @@ function run_ci_setup() {
     return
   fi
   get_os
+  if [[ "$Glb_SkipTests" == "yes" ]]; then
+    return
+  fi
   in_kibana_repo
   install_node
   install_yarn
@@ -2130,7 +2203,7 @@ function disable_security_user() {
   file_modified=$(grep -c "disableTestUser" $configFile)
   echo "$configFile already modified: $file_modified"
   if [[ $file_modified == 0 ]]; then
-    sed -ri "/\s+security:.*/a \      disableTestUser: true," $configFile
+    gawk -i inplace '/\s+security:.*/{print;print "      disableTestUser: true,";next}1' $configFile
     echo $?
   fi
 
@@ -2226,12 +2299,20 @@ function random_docker_image() {
 # Method wait for elasticsearch server to be ready
 # -----------------------------------------------------------------------------
 function _wait_for_es_ready_logs() {
+  local _esLog="/var/log/elasticsearch"
+
+  local _sudo="sudo"
+  if [ "$ESTF_TEST_PACKAGE" == "tar.gz" ] || [ "$ESTF_TEST_PACKAGE" == "zip" ]; then
+    _esLog=$Glb_Es_Dir/logs
+    _sudo=""
+  fi
+
   while true; do
-    sudo tail /var/log/elasticsearch/elasticsearch.log | grep -E -i -w '(to \[GREEN\].*elasticsearch)|(Node.*started)'
+    ${_sudo} tail $_esLog/elasticsearch.log | grep -E -i -w '(to \[GREEN\].*elasticsearch)|(Node.*started)'
     if [ $? -eq 0 ]; then
       break
     fi
-    sleep 5;
+    sleep 1;
   done
 }
 
@@ -2239,7 +2320,7 @@ function _wait_for_es_ready_logs() {
 # Method wait for elasticsearch server to be ready
 # -----------------------------------------------------------------------------
 function wait_for_es_ready_logs() {
-  local timeout=${1:-40}
+  local timeout=${1:-60}
   run_with_timeout _wait_for_es_ready_logs $timeout
   if [ $? -ne 0 ]; then
     echo_error_exit "Elasticsearch server not ready"
@@ -2250,9 +2331,17 @@ function wait_for_es_ready_logs() {
 # Method wait for kibana server to be ready
 # -----------------------------------------------------------------------------
 function _wait_for_kbn_ready_logs() {
+  local _kbnLog="/var/log/kibana"
+
+  local _sudo="sudo"
+  if [ "$ESTF_TEST_PACKAGE" == "tar.gz" ] || [ "$ESTF_TEST_PACKAGE" == "zip" ]; then
+    _kbnLog=$Glb_Kibana_Dir/logs
+    _sudo=""
+  fi
+
   sleep 15;
   while true; do
-    sudo tail -n 30 /var/log/kibana/kibana.log | grep -E -i -w 'kibana.*Server running at'
+    ${_sudo} tail -n 30 $_kbnLog/kibana.log | grep -E -i -w 'kibana.*Server running at'
     if [ $? -eq 0 ]; then
       break
     fi
@@ -2274,14 +2363,23 @@ function wait_for_kbn_ready_logs() {
 # -----------------------------------------------------------------------------
 # Random package testing
 # -----------------------------------------------------------------------------
-function set_linux_package() {
+function set_package() {
   local _platform=$1
   local _grp=$2
 
+  export ESTF_TEST_STANDALONE=false
+
   if [[ "$_platform" == "docker" ]]; then
     export ESTF_TEST_PACKAGE="docker"
+    export ESTF_TEST_STANDALONE=true
     return
   elif [[ "$_platform" != "linux" ]]; then
+    if [[ "$_platform" == "windows" ]]; then
+      export ESTF_TEST_PACKAGE="zip"
+      export ESTF_TEST_STANDALONE=true
+    elif [[ "$_platform" == "darwin" ]]; then
+      export ESTF_TEST_PACKAGE="tar.gz"
+    fi
     return
   fi
 
@@ -2305,10 +2403,10 @@ function set_linux_package() {
     return
   fi
 
-  if [[ "$_distr" == "Debian" ]] && [[ "$_distr_ver" == "10" ]]; then
-    export ESTF_TEST_PACKAGE="tar.gz"
-    return
-  fi
+  #if [[ "$_distr" == "Debian" ]] && [[ "$_distr_ver" == "10" ]]; then
+  #  export ESTF_TEST_PACKAGE="tar.gz"
+  #  return
+  #fi
 
   if [[ "$Glb_Arch" == "aarch64" ]]; then
     export ESTF_TEST_PACKAGE="tar.gz"
@@ -2320,8 +2418,10 @@ function set_linux_package() {
 
   if [ $dpkgSupported -eq 0 ]; then
     export ESTF_TEST_PACKAGE="deb"
+    export ESTF_TEST_STANDALONE=true
   elif [ $rpmSupported -eq 0 ]; then
     export ESTF_TEST_PACKAGE="rpm"
+    export ESTF_TEST_STANDALONE=true
   else
     export ESTF_TEST_PACKAGE="tar.gz"
   fi
@@ -2412,7 +2512,14 @@ function install_kibana_pkg() {
 # update_kibana_settings
 # -----------------------------------------------------------------------------
 function update_kibana_settings() {
+  local _kbnHome="/etc/kibana"
   local type=${TEST_KIBANA_BUILD:-basic}
+
+  local _sudo="sudo -s"
+  if [ "$ESTF_TEST_PACKAGE" == "tar.gz" ] || [ "$ESTF_TEST_PACKAGE" == "zip" ]; then
+    _kbnHome=$Glb_Kibana_Dir/config
+    _sudo=""
+  fi
 
   echo_info "Update Kibana settings"
   if [ "$type" == "basic" ]; then
@@ -2424,7 +2531,16 @@ function update_kibana_settings() {
     echo_error_exit "Download Kibana settings failed"
   fi
 
-  cat kibana.yml | sudo -s tee -a /etc/kibana/kibana.yml
+  cat kibana.yml | $_sudo tee -a $_kbnHome/kibana.yml
+
+  if [ "$ESTF_TEST_PACKAGE" == "tar.gz" ] || [ "$ESTF_TEST_PACKAGE" == "zip" ]; then
+    _dir=$Glb_Kibana_Dir
+    mkdir -p $Glb_Kibana_Dir/logs
+    if [[ "$Glb_OS" == "windows" ]]; then
+      _dir=${_dir#/c}
+    fi
+    echo "logging.dest: $_dir/logs/kibana.log" >> $_kbnHome/kibana.yml
+  fi
 
 }
 
@@ -2433,9 +2549,24 @@ function update_kibana_settings() {
 # -----------------------------------------------------------------------------
 function elasticsearch_generate_certs() {
   local _esHome="/etc/elasticsearch"
+  local _esBin="/usr/share/elasticsearch"
   local _kbnHome="/etc/kibana"
   local _ip=$(hostname -I | sed 's/ *$//g' | awk '{print $1}')
   local _isNewCertUtils=$(vge $_version "8.0")
+
+  local _sudo="sudo -s"
+  if [ "$ESTF_TEST_PACKAGE" == "tar.gz" ] || [ "$ESTF_TEST_PACKAGE" == "zip" ]; then
+    _esHome=$Glb_Es_Dir/config
+    _esBin=$Glb_Es_Dir
+    _kbnHome=$Glb_Kibana_Dir/config
+    _sudo=""
+  fi
+
+  local _ext=""
+  if [[ "$Glb_OS" == "windows" ]]; then
+    _ext=".bat"
+    _ip=$(ipconfig | grep IPv4 | cut -d: -f2 | awk '{print $1}')
+  fi
 
   echo_info "Generate Elasticsearch certificates"
 
@@ -2444,55 +2575,59 @@ function elasticsearch_generate_certs() {
   echo "    ip:" >> instances.yml
   echo "      - $_ip" >> instances.yml
 
-   if [[ $_isNewCertUtils == 1 ]]; then
+  if [[ $_isNewCertUtils == 1 ]]; then
 
-    sudo -s /usr/share/elasticsearch/bin/elasticsearch-certutil ca --silent --pem --pass password --out "$_esHome/cabundle.zip"
+    ${_sudo} $_esBin/bin/elasticsearch-certutil${_ext} ca --silent --pem --pass password --out "$_esHome/cabundle.zip"
     if [ $? -ne 0 ]; then
       echo_error_exit "elasticearch-certgen ca failed!"
     fi
 
-    sudo unzip $_esHome/cabundle.zip -d $_esHome
+    ${_sudo} unzip $_esHome/cabundle.zip -d $_esHome
     if [ $? -ne 0 ]; then
       echo_error_exit "Extract ca bundle failed!"
     fi
 
-    sudo -s /usr/share/elasticsearch/bin/elasticsearch-certutil cert --silent --pem --ca-key "$_esHome/ca/ca.key" --ca-cert  "$_esHome/ca/ca.crt" --ca-pass password --in "$(pwd)/instances.yml" --out "$_esHome/certsbundle.zip"
+    ${_sudo} $_esBin/bin/elasticsearch-certutil${_ext} cert --silent --pem --ca-key "$_esHome/ca/ca.key" --ca-cert  "$_esHome/ca/ca.crt" --ca-pass password --in "$(pwd)/instances.yml" --out "$_esHome/certsbundle.zip"
     if [ $? -ne 0 ]; then
       echo_error_exit "elasticearch-certgen failed!"
     fi
 
-    sudo unzip $_esHome/certsbundle.zip -d $_esHome
+    ${_sudo} unzip $_esHome/certsbundle.zip -d $_esHome
     if [ $? -ne 0 ]; then
       echo_error_exit "Extract certs bundle failed!"
     fi
 
   else
 
-    sudo -s /usr/share/elasticsearch/bin/elasticsearch-certutil cert --silent --pem  --in "$(pwd)/instances.yml" --out "$_esHome/certsbundle.zip"
+    ${_sudo} $_esBin/bin/elasticsearch-certutil${_ext} cert --silent --pem  --in "$(pwd)/instances.yml" --out "$_esHome/certsbundle.zip"
     if [ $? -ne 0 ]; then
       echo_error_exit "elasticearch-certgen failed!"
     fi
 
-    sudo unzip $_esHome/certsbundle.zip -d $_esHome
+    ${_sudo} unzip $_esHome/certsbundle.zip -d $_esHome
     if [ $? -ne 0 ]; then
       echo_error_exit "Extract certs bundle failed!"
     fi
 
   fi
 
-  sudo cp -r $_esHome/escluster $_esHome/ca $_kbnHome
+  ${_sudo} cp -r $_esHome/escluster $_esHome/ca $_kbnHome
 
+  _dir=$_esHome
+  if [[ "$Glb_OS" == "windows" ]]; then
+      _dir=${_dir#/c}
+  fi
 
-sudo -s tee -a /etc/elasticsearch/elasticsearch.yml <<- EOM
+${_sudo} tee -a $_esHome/elasticsearch.yml <<- EOM
 network.host: $_ip
 discovery.type: single-node
 xpack.security.enabled: true
 xpack.license.self_generated.type: trial
 xpack.security.http.ssl.enabled: true
 xpack.security.authc.token.enabled: false
-xpack.security.http.ssl.key: $_esHome/escluster/escluster.key
-xpack.security.http.ssl.certificate: $_esHome/escluster/escluster.crt
-xpack.security.http.ssl.certificate_authorities: [ '$_esHome/ca/ca.crt' ]
+xpack.security.http.ssl.key: $_dir/escluster/escluster.key
+xpack.security.http.ssl.certificate: $_dir/escluster/escluster.crt
+xpack.security.http.ssl.certificate_authorities: [ '$_dir/ca/ca.crt' ]
 EOM
 
 }
@@ -2501,11 +2636,25 @@ EOM
 # elasticsearch_setup_passwords
 # -----------------------------------------------------------------------------
 function elasticsearch_setup_passwords() {
+  local _esBin="/usr/share/elasticsearch"
   local _kbnHome="/etc/kibana"
   local _ip=$(hostname -I | sed 's/ *$//g' | awk '{print $1}')
 
+  local _sudo="sudo -s"
+  if [ "$ESTF_TEST_PACKAGE" == "tar.gz" ] || [ "$ESTF_TEST_PACKAGE" == "zip" ]; then
+    _esBin=$Glb_Es_Dir
+    _kbnHome=$Glb_Kibana_Dir/config
+    _sudo=""
+  fi
+
+  local _ext=""
+  if [[ "$Glb_OS" == "windows" ]]; then
+    _ext=".bat"
+    _ip=$(ipconfig | grep IPv4 | cut -d: -f2 | awk '{print $1}')
+  fi
+
   echo_info "Setup passwords"
-  echo "y" | sudo -s /usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto  | tee passwords.txt
+  echo "y" | $_sudo $_esBin/bin/elasticsearch-setup-passwords${_ext} auto  | tee passwords.txt
   if [ $? -ne 0 ]; then
     echo_error_exit "Elastisearch setup passwords failed!"
   fi
@@ -2513,15 +2662,20 @@ function elasticsearch_setup_passwords() {
   espw=$(cat passwords.txt | grep "PASSWORD elastic = " | awk '{print $4}')
   kbnpw=$(cat passwords.txt | grep "PASSWORD kibana = " | awk '{print $4}')
 
-sudo -s tee -a /etc/kibana/kibana.yml <<- EOM
+  _dir=$_kbnHome
+  if [[ "$Glb_OS" == "windows" ]]; then
+      _dir=${_dir#/c}
+  fi
+
+${_sudo} tee -a $_kbnHome/kibana.yml <<- EOM
 server.host: $_ip
 elasticsearch.hosts: "https://${_ip##*( )}:9200"
 elasticsearch.username: kibana
 elasticsearch.password: $kbnpw
 server.ssl.enabled: true
-server.ssl.certificate: $_kbnHome/escluster/escluster.crt
-server.ssl.key: $_kbnHome/escluster/escluster.key
-elasticsearch.ssl.certificateAuthorities: [ '$_kbnHome/ca/ca.crt' ]
+server.ssl.certificate: $_dir/escluster/escluster.crt
+server.ssl.key: $_dir/escluster/escluster.key
+elasticsearch.ssl.certificateAuthorities: [ '$_dir/ca/ca.crt' ]
 elasticsearch.ssl.verificationMode: none
 EOM
 
@@ -2579,6 +2733,48 @@ function start_kibana_service() {
   fi
   if [ $? -ne 0 ]; then
     echo_error_exit "Starting kibana service failed"
+  fi
+  echo_info "Wait for kibana to be ready"
+  wait_for_kbn_ready_logs
+}
+
+# -----------------------------------------------------------------------------
+# start_elasticsearch
+# -----------------------------------------------------------------------------
+function start_elasticsearch() {
+
+  local _ext=""
+  if [[ "$Glb_OS" == "windows" ]]; then
+    _ext=".bat"
+  fi
+
+  echo_info "Start Elasticsearch"
+
+  $Glb_Es_Dir/bin/elasticsearch${_ext} &
+
+  if [ $? -ne 0 ]; then
+    echo_error_exit "Starting elasticsearch failed"
+  fi
+  echo_info "Wait for elasticsearch to be ready"
+  wait_for_es_ready_logs
+}
+
+# -----------------------------------------------------------------------------
+# start_kibana
+# -----------------------------------------------------------------------------
+function start_kibana() {
+
+  local _ext=""
+  if [[ "$Glb_OS" == "windows" ]]; then
+    _ext=".bat"
+  fi
+
+  echo_info "Start Kibana"
+
+  $Glb_Kibana_Dir/bin/kibana${_ext} &
+
+  if [ $? -ne 0 ]; then
+    echo_error_exit "Starting kibana failed"
   fi
   echo_info "Wait for kibana to be ready"
   wait_for_kbn_ready_logs
@@ -2675,6 +2871,46 @@ function uninstall_packages() {
 
 }
 
+# -----------------------------------------------------------------------------
+# Install tar packages for elasticsearch and kibana
+# -----------------------------------------------------------------------------
+function install_compressed_packages() {
+  local type=${TEST_KIBANA_BUILD:-basic}
+
+  create_install_dir
+  get_build_server
+  get_version
+  get_os
+  get_branch
+  get_kibana_pkg
+  get_kibana_url
+  set_java_home
+
+  download_compressed_packages
+
+  if [ "$type" != "basic" ]; then
+    elasticsearch_generate_certs
+  fi
+
+  start_elasticsearch
+
+  if [ "$type" != "basic" ]; then
+    elasticsearch_setup_passwords
+  fi
+
+  update_kibana_settings
+
+  start_kibana
+
+  if [ "$type" == "basic" ]; then
+    export TEST_KIBANA_PROTOCOL=http
+    export TEST_KIBANA_PORT=5601
+    export TEST_ES_PROTOCOL=http
+    export TEST_ES_PORT=9200
+  fi
+
+}
+
 # ----------------------------------------------------------------------------
 # Install standalone servers
 # ----------------------------------------------------------------------------
@@ -2689,6 +2925,8 @@ function install_standalone_servers() {
   elif [ "$ESTF_TEST_PACKAGE" = "deb" ] || [ "$ESTF_TEST_PACKAGE" = "rpm" ]; then
     uninstall_packages
     install_packages
+  elif [ "$ESTF_TEST_PACKAGE" = "tar.gz" ] || [ "$ESTF_TEST_PACKAGE" = "zip" ]; then
+    install_compressed_packages
   else
     echo_error_exit "Invalid ESTF_TEST_PACKAGE: $ESTF_TEST_PACKAGE"
   fi
@@ -2715,7 +2953,7 @@ function cleanup_docker() {
 
   docker container stop $(docker container list -qa)
   docker container rm $(docker container list -qa)
-  docker system prune -a --volumes
+  docker system prune -f -a --volumes
 
 }
 
@@ -2808,7 +3046,7 @@ source ./group_defs.sh
 export GCS_UPLOAD_PREFIX="internal-ci-artifacts/jobs/${JOB_NAME}/${BUILD_NUMBER}"
 
 # Set linux package
-set_linux_package $PLATFORM $TEST_GROUP
+set_package $PLATFORM $TEST_GROUP
 
 # Check docker package
 check_docker_package $PLATFORM
@@ -2823,7 +3061,7 @@ case "$TEST_GROUP" in
   basicGrp*)
     if [ $PLATFORM == "cloud" ]; then
       run_cloud_basic_tests $TEST_GROUP
-    elif [ ! -z  $ESTF_TEST_PACKAGE ] && [ $ESTF_TEST_PACKAGE != "tar.gz" ]; then
+    elif [ ! -z  $ESTF_TEST_PACKAGE ] && [ $ESTF_TEST_STANDALONE == "true" ]; then
       run_standalone_basic_tests $TEST_GROUP
     else
       run_basic_tests $TEST_GROUP
@@ -2838,7 +3076,7 @@ case "$TEST_GROUP" in
   xpackGrp*)
     if [ $PLATFORM == "cloud" ]; then
       run_cloud_xpack_func_tests $TEST_GROUP
-    elif [ ! -z  $ESTF_TEST_PACKAGE ] && [ $ESTF_TEST_PACKAGE != "tar.gz" ]; then
+    elif [ ! -z  $ESTF_TEST_PACKAGE ] && [ $ESTF_TEST_STANDALONE == "true" ]; then
       run_standalone_xpack_func_tests $TEST_GROUP
     else
       run_xpack_func_tests $TEST_GROUP
@@ -2847,7 +3085,7 @@ case "$TEST_GROUP" in
   xpackExt*)
     if [ $PLATFORM == "cloud" ]; then
       run_cloud_xpack_ext_tests $TEST_GROUP
-    elif [ ! -z  $ESTF_TEST_PACKAGE ] && [ $ESTF_TEST_PACKAGE != "tar.gz" ]; then
+    elif [ ! -z  $ESTF_TEST_PACKAGE ] && [ $ESTF_TEST_STANDALONE == "true" ]; then
       run_standalone_xpack_ext_tests $TEST_GROUP
     else
       run_xpack_ext_tests false $TEST_GROUP
