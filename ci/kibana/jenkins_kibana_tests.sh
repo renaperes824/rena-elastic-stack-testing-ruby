@@ -591,6 +591,7 @@ function set_java_home() {
   if [[ ! -d $JAVA_HOME ]]; then
       echo_error_exit "JAVA_HOME does not exist: $JAVA_HOME"
   fi
+  export ES_JAVA_HOME=$JAVA_HOME
 }
 
 # -----------------------------------------------------------------------------
@@ -840,10 +841,11 @@ function run_ci_setup_get_docker_images() {
 function run_ci_cleanup() {
   if [ $Glb_KbnClean == "yes" ]; then
     cleanup_docker
+    uninstall_standalone_servers
+    uninstall_packages
     remove_node_modules_dir
     remove_install_dir
     remove_es_install_dir
-    uninstall_packages
   fi
 }
 
@@ -2360,6 +2362,38 @@ function wait_for_kbn_ready_logs() {
 }
 
 # -----------------------------------------------------------------------------
+# Method wait for http server to be ready
+# -----------------------------------------------------------------------------
+function _wait_for_http_ready() {
+  local url=$1
+
+  cmd="curl --output /dev/null --write-out %{http_code} --silent --max-time 10 --insecure --head --fail $url"
+  status_code=$(${cmd})
+  until [ $status_code -eq 200 ] || [ $status_code -eq 401 ]; do
+      status_code=$(${cmd})
+      if [ $? -eq 0 ]; then
+        break
+      fi
+      printf '.'
+      sleep 3
+  done
+
+}
+
+# -----------------------------------------------------------------------------
+# Method wait for elasticsearch server to be ready
+# -----------------------------------------------------------------------------
+function wait_for_http_ready() {
+  local url=$1
+  local timeout=${2:-90}
+
+  run_with_timeout "_wait_for_http_ready $url" $timeout
+  if [ $? -ne 0 ]; then
+    echo_error_exit "Http server not ready"
+  fi
+}
+
+# -----------------------------------------------------------------------------
 # Random package testing
 # -----------------------------------------------------------------------------
 function set_package() {
@@ -2402,15 +2436,20 @@ function set_package() {
     return
   fi
 
-  #if [[ "$_distr" == "Debian" ]] && [[ "$_distr_ver" == "10" ]]; then
-  #  export ESTF_TEST_PACKAGE="tar.gz"
-  #  return
-  #fi
-
-  if [[ "$Glb_Arch" == "aarch64" ]]; then
+  if [[ "$_distr" == "Debian" ]] && [[ "$_distr_ver" == "10" ]]; then
     export ESTF_TEST_PACKAGE="tar.gz"
     return
   fi
+
+  #if ([ $_grp == "basicGrp1" ] || [ $_grp == "xpackGrp1" ]); then
+    if [[ "$Glb_Arch" == "aarch64" ]]; then
+      export ESTF_TEST_PACKAGE="tar.gz"
+      if [[ "$Glb_SkipTests" == "yes" ]]; then
+        export ESTF_TEST_STANDALONE=true
+      fi
+      return
+    fi
+  #fi
 
   rpmSupported=$(which rpm &>/dev/null; echo $?)
   dpkgSupported=$(which dpkg &>/dev/null; echo $?)
@@ -2741,6 +2780,7 @@ function start_kibana_service() {
 # start_elasticsearch
 # -----------------------------------------------------------------------------
 function start_elasticsearch() {
+  local url=$1
 
   local _ext=""
   if [[ "$Glb_OS" == "windows" ]]; then
@@ -2755,13 +2795,14 @@ function start_elasticsearch() {
     echo_error_exit "Starting elasticsearch failed"
   fi
   echo_info "Wait for elasticsearch to be ready"
-  wait_for_es_ready_logs
+  wait_for_http_ready $url
 }
 
 # -----------------------------------------------------------------------------
 # start_kibana
 # -----------------------------------------------------------------------------
 function start_kibana() {
+  local url=$1
 
   local _ext=""
   if [[ "$Glb_OS" == "windows" ]]; then
@@ -2776,7 +2817,7 @@ function start_kibana() {
     echo_error_exit "Starting kibana failed"
   fi
   echo_info "Wait for kibana to be ready"
-  wait_for_kbn_ready_logs
+  wait_for_http_ready $url
 }
 
 # -----------------------------------------------------------------------------
@@ -2887,11 +2928,21 @@ function install_compressed_packages() {
 
   download_compressed_packages
 
+  protocol="http"
+  host="localhost"
   if [ "$type" != "basic" ]; then
     elasticsearch_generate_certs
+    protocol="https"
+    host=$(hostname -I | sed 's/ *$//g' | awk '{print $1}')
+    if [[ "$Glb_OS" == "windows" ]]; then
+      host=$(ipconfig | grep IPv4 | cut -d: -f2 | awk '{print $1}')
+    fi
   fi
 
-  start_elasticsearch
+  es_url="${protocol}://${host}:9200"
+  kbn_url="${protocol}://${host}:5601"
+
+  start_elasticsearch $es_url
 
   if [ "$type" != "basic" ]; then
     elasticsearch_setup_passwords
@@ -2899,7 +2950,7 @@ function install_compressed_packages() {
 
   update_kibana_settings
 
-  start_kibana
+  start_kibana $kbn_url
 
   if [ "$type" == "basic" ]; then
     export TEST_KIBANA_PROTOCOL=http
@@ -2928,6 +2979,16 @@ function install_standalone_servers() {
     install_compressed_packages
   else
     echo_error_exit "Invalid ESTF_TEST_PACKAGE: $ESTF_TEST_PACKAGE"
+  fi
+}
+
+# ----------------------------------------------------------------------------
+# Uninstall standalone servers
+# ----------------------------------------------------------------------------
+function uninstall_standalone_servers() {
+  if [ "$ESTF_TEST_PACKAGE" = "tar.gz" ] || [ "$ESTF_TEST_PACKAGE" = "zip" ]; then
+    ps -ef | grep 'elasticsearch' | grep -v grep | awk '{print $2}' | xargs -r kill -9
+    ps -ef | grep 'kibana' | grep -v grep | awk '{print $2}' | xargs -r kill -9
   fi
 }
 
