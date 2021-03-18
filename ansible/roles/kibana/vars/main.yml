@@ -46,5 +46,5 @@ kibana_task_files:
 
 # kibana log search strings
 kibana_log_find:
-  started: '.*(Kibana index ready|Server running at)'
+  started: '.*(Kibana index ready|Server running at|http server running at)'
   stopped: 'TBD'

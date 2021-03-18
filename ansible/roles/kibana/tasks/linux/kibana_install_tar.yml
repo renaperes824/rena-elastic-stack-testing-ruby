@@ -22,4 +22,12 @@
     src: '{{ kibana_package }}'
     dest: '{{ kibana_install_dir }}'
     remote_src: True
-  tags: install_kibana
+    list_files: yes
+  register: kibana_archive_contents
+
+- name: Rename directory if it does not match base package name
+  command:
+    mv '{{ kibana_archive_contents.files[0].split('/')[0] }}' '{{ kibana_rootdir | basename }}'
+  args:
+    chdir: '{{ kibana_install_dir}}'
+  when: "'{{ kibana_rootdir | basename }}' not in '{{ kibana_archive_contents.files[0].split('/')[0] }}'"
