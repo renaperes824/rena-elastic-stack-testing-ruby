@@ -13,7 +13,7 @@
         executable: /bin/bash
       become: true
     - name: Start auditbeat process
-      shell: '{{ auditbeat_exe }} -c {{ auditbeat_config_file }}'
+      shell: '{{ auditbeat_exe }} -c {{ auditbeat_config_file }} &'
       args:
         executable: /bin/bash
       become: true
