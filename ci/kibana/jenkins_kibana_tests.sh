@@ -600,7 +600,8 @@ function set_java_home() {
     if [[ "$Glb_OS" == "windows" ]]; then
       export JAVA_HOME="c:\Users\jenkins\.java\java11"
     elif [[ "$Glb_Arch" == "aarch64" ]]; then
-      export JAVA_HOME="/var/lib/jenkins/.java/adoptopenjdk11"
+      #export JAVA_HOME="/var/lib/jenkins/.java/adoptopenjdk11"
+      export JAVA_HOME="/var/lib/jenkins/.java/jdk15"
     elif [[ "$Glb_Arch" == "x86_64" ]]; then
       export JAVA_HOME="/var/lib/jenkins/.java/java11"
     fi
@@ -609,10 +610,10 @@ function set_java_home() {
       export JAVA_HOME="c:\PROGRA~1\Java\jdk11"
     elif [[ "$Glb_OS" == "darwin" ]]; then
       export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-11.0.1.jdk/Contents/Home"
-    elif [ $ESTF_TEST_PACKAGE = "rpm" ]; then
-      export JAVA_HOME="/usr/lib/jvm/java-11"
     elif [[ "$Glb_Arch" == "aarch64" ]]; then
       export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-arm64"
+    elif [ $ESTF_TEST_PACKAGE = "rpm" ]; then
+      export JAVA_HOME="/usr/lib/jvm/java-11"
     elif [[ "$Glb_Arch" == "x86_64" ]]; then
       export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
     fi
