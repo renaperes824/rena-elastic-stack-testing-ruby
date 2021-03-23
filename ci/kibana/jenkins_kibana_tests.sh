@@ -283,6 +283,9 @@ function get_os() {
     if [[ "$_distr" == "CentOS" ]]; then
       Glb_SkipTests="yes"
     fi
+    if  [[ "$Glb_SkipTests" == "no" ]]; then
+      install_pkg "chromium-chromedriver"
+    fi
     Glb_Chromium=$(which chromium-browser)
     Glb_ChromeDriver=$(which chromedriver)
     if  [[ "$Glb_SkipTests" == "no" ]] && ([[ -z $Glb_Chromium ]] || [[ -z $Glb_ChromeDriver ]]); then
@@ -294,10 +297,37 @@ function get_os() {
     Glb_KbnClean="yes"
   fi
 
+  # Install packages
+  install_pkg "gawk"
+
   echo_info "Running on OS: $Glb_OS"
   echo_info "Running on Arch: $Glb_Arch"
 
   readonly Glb_OS Glb_Arch Glb_Chromium Glb_ChromeDriver
+}
+
+# ----------------------------------------------------------------------------
+# Install program
+# ----------------------------------------------------------------------------
+function install_pkg() {
+  local pkg=$1
+  pkgInstalled=$(which $pkg)
+  if [[ ! -z $pkgInstalled ]]; then
+    return
+  fi
+  if command -v apt-get >/dev/null; then
+    sudo apt-get update
+    sudo apt-get install -y $pkg
+  elif command -v yum >/dev/null; then
+    sudo yum install -y $pkg
+  fi
+  if [ $? -ne 0 ]; then
+    echo_error_exit "Installing package ${pkg} failed!"
+  fi
+  pkgInstalled=$(which $pkg)
+  if [[ -z $pkgInstalled ]]; then
+     echo_error_exit "Package ${pkg} is not installed!"
+  fi
 }
 
 # ----------------------------------------------------------------------------
