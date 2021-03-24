@@ -299,6 +299,10 @@ function get_os() {
 
   # Install packages
   install_pkg "gawk"
+  isGawkInstalled=$(which gawk)
+  if [[ -z $isGawkInstalled ]]; then
+    echo_error_exit "gawk is not installed"
+  fi
 
   echo_info "Running on OS: $Glb_OS"
   echo_info "Running on Arch: $Glb_Arch"
@@ -323,10 +327,6 @@ function install_pkg() {
   fi
   if [ $? -ne 0 ]; then
     echo_error_exit "Installing package ${pkg} failed!"
-  fi
-  pkgInstalled=$(which $pkg)
-  if [[ -z $pkgInstalled ]]; then
-     echo_error_exit "Package ${pkg} is not installed!"
   fi
 }
 
