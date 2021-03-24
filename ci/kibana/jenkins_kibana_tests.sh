@@ -2440,7 +2440,7 @@ function set_package() {
   elif [[ "$_platform" != "linux" ]]; then
     if [[ "$_platform" == "windows" ]]; then
       export ESTF_TEST_PACKAGE="zip"
-      export ESTF_TEST_STANDALONE=true
+      #export ESTF_TEST_STANDALONE=true
     elif [[ "$_platform" == "darwin" ]]; then
       export ESTF_TEST_PACKAGE="tar.gz"
     fi
