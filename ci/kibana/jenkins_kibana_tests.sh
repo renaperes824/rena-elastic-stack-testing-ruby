@@ -1959,9 +1959,10 @@ function run_standalone_basic_tests() {
 
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
+    failures=$?
     echo_warning "Tests are not supported on this platform!!"
     run_ci_cleanup
-    return
+    exit_script $failures "Standalone basic Servers failed!"
   fi
 
   run_ci_setup
@@ -2007,9 +2008,10 @@ function run_standalone_xpack_func_tests() {
   TEST_KIBANA_BUILD=default
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
+    failures=$?
     echo_warning "Tests are not supported on this platform!!"
     run_ci_cleanup
-    return
+    exit_script $failures "Standalone X-Pack Servers failed!"
   fi
 
   run_ci_setup
@@ -2066,9 +2068,10 @@ function run_standalone_xpack_ext_tests() {
   TEST_KIBANA_BUILD=default
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
+    failures=$?
     echo_warning "Tests are not supported on this platform!!"
     run_ci_cleanup
-    return
+    exit_script $failures "Standalone X-Pack Ext Servers failed!"
   fi
 
   run_ci_setup
@@ -2467,12 +2470,12 @@ function set_package() {
     return
   fi
 
-  if [[ "$_distr" == "Debian" ]] && [[ "$_distr_ver" == "10" ]]; then
-    export ESTF_TEST_PACKAGE="tar.gz"
-    return
-  fi
+  #if [[ "$_distr" == "Debian" ]] && [[ "$_distr_ver" == "10" ]]; then
+  #  export ESTF_TEST_PACKAGE="tar.gz"
+  #  return
+  #fi
 
-  #if ([ $_grp == "basicGrp1" ] || [ $_grp == "xpackGrp1" ]); then
+  if ([ $_grp == "basicGrp1" ] || [ $_grp == "xpackGrp1" ]); then
     if [[ "$Glb_Arch" == "aarch64" ]]; then
       export ESTF_TEST_PACKAGE="tar.gz"
       if [[ "$Glb_SkipTests" == "yes" ]]; then
@@ -2480,7 +2483,7 @@ function set_package() {
       fi
       return
     fi
-  #fi
+  fi
 
   rpmSupported=$(which rpm &>/dev/null; echo $?)
   dpkgSupported=$(which dpkg &>/dev/null; echo $?)
