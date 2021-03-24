@@ -267,7 +267,7 @@ function get_os() {
   echo_debug "Uname: $_uname"
   if [[ "$_uname" == *"MINGW64_NT"* ]]; then
     Glb_OS="windows"
-    Glb_SkipTests="yes"
+    #Glb_SkipTests="yes"
   elif [[ "$_uname" == "Darwin" ]]; then
     Glb_OS="darwin"
   elif [[ "$_uname" == "Linux" ]]; then
