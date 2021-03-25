@@ -871,7 +871,7 @@ function run_ci_setup_get_docker_images() {
 # -----------------------------------------------------------------------------
 function run_ci_cleanup() {
   if [ $Glb_KbnClean == "yes" ]; then
-    cleanup_docker
+    #cleanup_docker
     uninstall_standalone_servers
     uninstall_packages
     remove_node_modules_dir
@@ -3057,6 +3057,8 @@ function cleanup_docker() {
 function check_docker_package() {
   local _platform=$1
 
+  get_build_server
+  get_version
   get_os
 
   if [[ "$_platform" != "docker" ]]; then
@@ -3067,9 +3069,7 @@ function check_docker_package() {
     return
   fi
 
-  cleanup_docker
-
-  get_version
+  #cleanup_docker
 
   local _splitStr=(${Glb_Kibana_Version//./ })
   local _version=${_splitStr[0]}.${_splitStr[1]}
