@@ -2448,6 +2448,8 @@ function set_package() {
       export ESTF_TEST_PACKAGE="tar.gz"
     fi
     return
+  elif [[ "$_platform" == "cloud" ]]; then
+    return
   fi
 
   get_build_server
@@ -3057,10 +3059,6 @@ function cleanup_docker() {
 function check_docker_package() {
   local _platform=$1
 
-  get_build_server
-  get_version
-  get_os
-
   if [[ "$_platform" != "docker" ]]; then
     return
   fi
@@ -3068,6 +3066,10 @@ function check_docker_package() {
   if [[ "$Glb_Arch" != "aarch64" ]]; then
     return
   fi
+
+  get_build_server
+  get_version
+  get_os
 
   #cleanup_docker
 
