@@ -125,4 +125,4 @@ task run_kibana_tests {
 
 run_kibana_tests.dependsOn clone_kibana_repo, get_jenkins_exe, get_kibana_commit
 get_kibana_commit.mustRunAfter clone_kibana_repo
-get_jenkins_exe.mustRunAfter get_kibana_commit
+get_jenkins_exe.mustRunAfter clone_kibana_repo
