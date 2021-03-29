@@ -1,5 +1,5 @@
 TASK:
-  - ess_upgrade
+  - kibana_upgrade_tests
 JOB:
   - upgradeTest1
   - upgradeTest2
