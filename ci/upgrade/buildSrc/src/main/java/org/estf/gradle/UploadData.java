@@ -53,8 +53,10 @@ public class UploadData extends DefaultTask {
     @Input
     public String upgradeVersion;
 
+    final private int MAX_RETRIES = 5;
+
     @TaskAction
-    public void run() throws IOException {
+    public void run() throws IOException, InterruptedException {
         RestApi api = new RestApi(username, password, version, upgradeVersion);
         int majorVersion = api.setMajorVersion();
         uploadBankAccountData();
@@ -64,20 +66,29 @@ public class UploadData extends DefaultTask {
         }
     }
 
-    public void uploadBankAccountData() throws IOException {
+    public void uploadBankAccountData() throws IOException, InterruptedException {
         String link = "https://download.elastic.co/demos/kibana/gettingstarted/accounts.zip";
         downloadFile(link, true);
         String credentials = username + ":" + password;
         String basicAuthPayload = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes());
-        HttpPost postRequest = new HttpPost(esBaseUrl + "/bank/account/_bulk?pretty");
-        postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
-        postRequest.setEntity(new FileEntity(new File("tmp/accounts.json"),
-                                             ContentType.create("application/x-ndjson")));
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpResponse response = client.execute(postRequest);
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode != 200) {
-            throw new IOException("Failed to post bank account data!");
+        for (int retries = 0;; retries++) {
+            HttpPost postRequest = new HttpPost(esBaseUrl + "/bank/account/_bulk?pretty");
+            postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+            postRequest.setEntity(new FileEntity(new File("tmp/accounts.json"),
+                                                ContentType.create("application/x-ndjson")));
+            HttpClient client = HttpClientBuilder.create().build();
+            HttpResponse response = client.execute(postRequest);
+            int statusCode = response.getStatusLine().getStatusCode();
+            System.out.println(statusCode);
+            if (statusCode == 200) {
+                break;
+            }
+            if (retries < MAX_RETRIES) {
+                System.out.println("** Retrying upload bank account data **");
+                Thread.sleep(5000);
+            } else {
+                throw new IOException("Failed to upload bank account data!");
+            }
         }
     }
 
@@ -140,64 +151,87 @@ public class UploadData extends DefaultTask {
         bos.close();
     }
 
-    public void createBankIndexPatternAsDefault() throws IOException {
+    public void createBankIndexPatternAsDefault() throws IOException, InterruptedException {
         String credentials = username + ":" + password;
         String basicAuthPayload = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes());
-        HttpPost postRequest = new HttpPost(kbnBaseUrl + "/api/saved_objects/index-pattern");
-        postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
-        postRequest.setHeader("kbn-xsrf", "automation");
-        postRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-        String jsonStr = "{\"attributes\": {\"title\": \"bank*\"}}";
-        StringEntity entity = new StringEntity(jsonStr);
-        entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        postRequest.setEntity(entity);
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpResponse response = client.execute(postRequest);
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode != 200) {
-            throw new IOException("Failed to post bank account data!");
-        }
-        String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-        JSONObject json = new JSONObject(responseString);
-        String id = json.getString("id");
-        postRequest = new HttpPost(kbnBaseUrl + "/api/kibana/settings");
-        postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
-        postRequest.setHeader("kbn-xsrf", "automation");
-        postRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-        jsonStr = "{\"changes\": {\"defaultIndex\": \"" + id +  "\"}}";
-        entity = new StringEntity(jsonStr);
-        entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        postRequest.setEntity(entity);
-        client = HttpClientBuilder.create().build();
-        response = client.execute(postRequest);
-        statusCode = response.getStatusLine().getStatusCode();
-        System.out.println(statusCode);
-        if (statusCode != 200) {
-            throw new IOException("Failed to post bank account data!");
+        for (int retries = 0;; retries++) {
+            HttpPost postRequest = new HttpPost(kbnBaseUrl + "/api/saved_objects/index-pattern");
+            postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+            postRequest.setHeader("kbn-xsrf", "automation");
+            postRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+            String jsonStr = "{\"attributes\": {\"title\": \"bank*\"}}";
+            StringEntity entity = new StringEntity(jsonStr);
+            entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            postRequest.setEntity(entity);
+            HttpClient client = HttpClientBuilder.create().build();
+            HttpResponse response = client.execute(postRequest);
+            int statusCode = response.getStatusLine().getStatusCode();
+            System.out.println(statusCode);
+            if (statusCode != 200) {
+                if (retries < MAX_RETRIES) {
+                    System.out.println("** Retrying create bank index pattern  **");
+                    Thread.sleep(5000);
+                    continue;
+                } else {
+                    throw new IOException("Failed to create bank index pattern!");
+                }
+            }
+            String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+            JSONObject json = new JSONObject(responseString);
+            String id = json.getString("id");
+            postRequest = new HttpPost(kbnBaseUrl + "/api/kibana/settings");
+            postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+            postRequest.setHeader("kbn-xsrf", "automation");
+            postRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+            jsonStr = "{\"changes\": {\"defaultIndex\": \"" + id +  "\"}}";
+            entity = new StringEntity(jsonStr);
+            entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            postRequest.setEntity(entity);
+            client = HttpClientBuilder.create().build();
+            response = client.execute(postRequest);
+            statusCode = response.getStatusLine().getStatusCode();
+            System.out.println(statusCode);
+            if (statusCode == 200) {
+                break;
+            }
+            if (retries < MAX_RETRIES) {
+                System.out.println("** Retrying create bank index pattern as default **");
+                Thread.sleep(5000);
+            } else {
+                throw new IOException("Failed to create bank index pattern as default!");
+            }
         }
     }
 
-    public void createNonDefaultSpace(String name, String id) throws IOException {
+    public void createNonDefaultSpace(String name, String id) throws IOException, InterruptedException {
         String credentials = username + ":" + password;
         String basicAuthPayload = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes());
-        HttpPost postRequest = new HttpPost(kbnBaseUrl + "/api/spaces/space");
-        postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
-        postRequest.setHeader("kbn-xsrf", "automation");
-        postRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-        String jsonStr = "{\"name\": \"" + name + "\", \"id\": \"" + id + "\"}";
-        StringEntity entity = new StringEntity(jsonStr);
-        entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        postRequest.setEntity(entity);
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpResponse response = client.execute(postRequest);
-        int statusCode = response.getStatusLine().getStatusCode();
-        System.out.println(statusCode);
-        if (statusCode != 200) {
-            throw new IOException("Failed to create space: " + id);
+        for (int retries = 0;; retries++) {
+            HttpPost postRequest = new HttpPost(kbnBaseUrl + "/api/spaces/space");
+            postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+            postRequest.setHeader("kbn-xsrf", "automation");
+            postRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+            String jsonStr = "{\"name\": \"" + name + "\", \"id\": \"" + id + "\"}";
+            StringEntity entity = new StringEntity(jsonStr);
+            entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            postRequest.setEntity(entity);
+            HttpClient client = HttpClientBuilder.create().build();
+            HttpResponse response = client.execute(postRequest);
+            int statusCode = response.getStatusLine().getStatusCode();
+            System.out.println(statusCode);
+            if (statusCode == 200) {
+                break;
+            }
+            if (retries < MAX_RETRIES) {
+                System.out.println("** Retrying create non-default space **");
+                Thread.sleep(5000);
+            } else {
+                throw new IOException("Failed to create non-default space: " + id);
+            }
         }
     }
 
-    public void loadSampleData() throws IOException {
+    public void loadSampleData() throws IOException, InterruptedException {
         createNonDefaultSpace("Automation", "automation");
         List<String> dataList = new ArrayList<>(6);
         dataList.add("api/sample_data/ecommerce");
@@ -209,16 +243,24 @@ public class UploadData extends DefaultTask {
         String credentials = username + ":" + password;
         String basicAuthPayload = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes());
         for (String s : dataList) {
-            HttpPost postRequest = new HttpPost(kbnBaseUrl + "/" + s);
-            postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
-            postRequest.setHeader("kbn-xsrf", "automation");
-            postRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-            HttpClient client = HttpClientBuilder.create().build();
-            HttpResponse response = client.execute(postRequest);
-            int statusCode = response.getStatusLine().getStatusCode();
-            System.out.println(statusCode);
-            if (statusCode != 200) {
-                throw new IOException("Failed to load data: " + s);
+            for (int retries = 0;; retries++) {
+                HttpPost postRequest = new HttpPost(kbnBaseUrl + "/" + s);
+                postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+                postRequest.setHeader("kbn-xsrf", "automation");
+                postRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+                HttpClient client = HttpClientBuilder.create().build();
+                HttpResponse response = client.execute(postRequest);
+                int statusCode = response.getStatusLine().getStatusCode();
+                System.out.println(statusCode);
+                if (statusCode == 200) {
+                    break;
+                }
+                if (retries < MAX_RETRIES) {
+                    System.out.println("** Retrying load sample data **");
+                    Thread.sleep(5000);
+                } else {
+                    throw new Error("Failed to load sample data: " + s);
+                }
             }
         }
     }

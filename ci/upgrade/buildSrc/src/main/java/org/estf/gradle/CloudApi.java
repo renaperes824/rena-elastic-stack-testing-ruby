@@ -1,10 +1,7 @@
 package org.estf.gradle;
 
 import co.elastic.cloud.api.client.generated.DeploymentsApi;
-import co.elastic.cloud.api.model.generated.ApmInfo;
-import co.elastic.cloud.api.model.generated.ElasticsearchClusterInfo;
-import co.elastic.cloud.api.model.generated.EnterpriseSearchInfo;
-import co.elastic.cloud.api.model.generated.KibanaClusterInfo;
+import co.elastic.cloud.api.model.generated.*;
 import co.elastic.cloud.api.util.Waiter;
 import com.bettercloud.vault.VaultException;
 import io.swagger.client.ApiClient;
@@ -28,6 +25,7 @@ public class CloudApi {
     final private String kbRefId = "main-kibana";
     final private String apmRefId = "main-apm";
     final private String ensRefId = "main-enterprise_search";
+    final private int MAX_RETRIES = 3;
 
     CloudApi() throws VaultException, IOException {
         VaultCredentials credentials = new VaultCredentials();
@@ -83,10 +81,10 @@ public class CloudApi {
         return EnterpriseSearchInfo.StatusEnum.STARTED.equals(enterpriseSearchInfo.getStatus());
     }
 
-    public void waitForElasticsearch(DeploymentsApi deploymentsApi, String deploymentId) {
-        Waiter.waitFor(() -> this.isElasticsearchClusterRunning(
-                deploymentsApi.getDeploymentEsResourceInfo(
-                        deploymentId,
+    public ElasticsearchClusterInfo getEsClusterInfo(DeploymentsApi deploymentsApi, String deploymentId) {
+        for (int retries = 0;; retries++) {
+            try {
+                ElasticsearchResourceInfo esResourceInfo = deploymentsApi.getDeploymentEsResourceInfo(deploymentId,
                         this.esRefId,
                         false,
                         false,
@@ -97,12 +95,27 @@ public class CloudApi {
                         false,
                         0,
                         false,
-                        false).getInfo()));
+                        false);
+                return esResourceInfo.getInfo();
+            } catch (Exception ex) {
+                if (retries < MAX_RETRIES) {
+                    System.out.println("** Retrying get elasticsearch cluster info **");
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    throw new Error(ex);
+                }
+            }
+        }
     }
 
-    public void waitForKibana(DeploymentsApi deploymentsApi, String deploymentId) {
-        Waiter.waitFor(() -> this.isKibanaClusterRunning(
-                deploymentsApi.getDeploymentKibResourceInfo(
+    public KibanaClusterInfo getKbnClusterInfo(DeploymentsApi deploymentsApi, String deploymentId) {
+        for (int retries = 0;; retries++) {
+            try {
+                KibanaResourceInfo kbnResourceInfo =  deploymentsApi.getDeploymentKibResourceInfo(
                         deploymentId,
                         this.kbRefId,
                         false,
@@ -111,13 +124,27 @@ public class CloudApi {
                         false,
                         false,
                         false,
-                        false).getInfo()
-        ));
+                        false);
+                return kbnResourceInfo.getInfo();
+            } catch (Exception ex) {
+                if (retries < MAX_RETRIES) {
+                    System.out.println("** Retrying get kibana cluster info **");
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    throw new Error(ex);
+                }
+            }
+        }
     }
 
-    public void waitForApm(DeploymentsApi deploymentsApi, String deploymentId) {
-        Waiter.waitFor(() -> this.isApmRunning(
-                deploymentsApi.getDeploymentApmResourceInfo(
+    public ApmInfo getApmInfo(DeploymentsApi deploymentsApi, String deploymentId) {
+        for (int retries = 0;; retries++) {
+            try {
+                ApmResourceInfo apmResourceInfo =  deploymentsApi.getDeploymentApmResourceInfo(
                         deploymentId,
                         this.apmRefId,
                         false,
@@ -125,22 +152,65 @@ public class CloudApi {
                         false,
                         false,
                         false,
-                        false).getInfo()
-        ));
+                        false);
+                return apmResourceInfo.getInfo();
+            } catch (Exception ex) {
+                if (retries < MAX_RETRIES) {
+                    System.out.println("** Retrying get apm info **");
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    throw new Error(ex);
+                }
+            }
+        }
+    }
+
+    public EnterpriseSearchInfo getEnsInfo(DeploymentsApi deploymentsApi, String deploymentId) {
+        for (int retries = 0;; retries++) {
+            try {
+                EnterpriseSearchResourceInfo ensResourceInfo =  deploymentsApi.getDeploymentEnterpriseSearchResourceInfo(
+                                deploymentId,
+                                this.ensRefId,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false);
+                return ensResourceInfo.getInfo();
+            } catch (Exception ex) {
+                if (retries < MAX_RETRIES) {
+                    System.out.println("** Retrying get enterprise search info **");
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    throw new Error(ex);
+                }
+            }
+        }
+    }
+
+    public void waitForElasticsearch(DeploymentsApi deploymentsApi, String deploymentId) {
+        Waiter.waitFor(() -> this.isElasticsearchClusterRunning(this.getEsClusterInfo(deploymentsApi, deploymentId)));
+    }
+
+    public void waitForKibana(DeploymentsApi deploymentsApi, String deploymentId) {
+        Waiter.waitFor(() -> this.isKibanaClusterRunning(this.getKbnClusterInfo(deploymentsApi, deploymentId)));
+    }
+
+    public void waitForApm(DeploymentsApi deploymentsApi, String deploymentId) {
+        Waiter.waitFor(() -> this.isApmRunning(this.getApmInfo(deploymentsApi, deploymentId)));
     }
 
     public void waitForEnterpriseSearch(DeploymentsApi deploymentsApi, String deploymentId) {
-        Waiter.waitFor(() -> this.isEnterpriseSearchRunning(
-                deploymentsApi.getDeploymentEnterpriseSearchResourceInfo(
-                        deploymentId,
-                        this.ensRefId,
-                        false,
-                        false,
-                        false,
-                        false,
-                        false,
-                        false).getInfo()
-        ));
+        Waiter.waitFor(() -> this.isEnterpriseSearchRunning(this.getEnsInfo(deploymentsApi, deploymentId)));
     }
 
     public String getEnvRegion() {

@@ -185,8 +185,6 @@ public class CreateEssDeployment extends DefaultTask {
     private ElasticsearchPayload getElasticsearchPayload(CloudApi api) {
         final String deploymentTemplate = "aws-io-optimized";
 
-        TopologySize topologySize = getTopologySize();
-
         ElasticsearchNodeType esNodeType = new ElasticsearchNodeType().data(true).master(true);
         ElasticsearchNodeType ingestNodeType = new ElasticsearchNodeType().ingest(true);
         ElasticsearchNodeType mlNodeType = new ElasticsearchNodeType().ml(true);
@@ -194,20 +192,20 @@ public class CreateEssDeployment extends DefaultTask {
         ElasticsearchClusterTopologyElement esTopology = new ElasticsearchClusterTopologyElement()
                 .instanceConfigurationId(esInstanceCfg)
                 .nodeType(esNodeType)
-                .zoneCount(1)
-                .size(topologySize);
+                .zoneCount(2)
+                .size(getTopologySize(8192));
 
         ElasticsearchClusterTopologyElement ingestTopology = new ElasticsearchClusterTopologyElement()
                 .instanceConfigurationId(ingestInstanceCfg)
                 .nodeType(ingestNodeType)
-                .zoneCount(1)
-                .size(topologySize);
+                .zoneCount(2)
+                .size(getTopologySize());
 
         ElasticsearchClusterTopologyElement mlTopology = new ElasticsearchClusterTopologyElement()
                 .instanceConfigurationId(mlInstanceCfg)
                 .nodeType(mlNodeType)
                 .zoneCount(1)
-                .size(topologySize);
+                .size(getTopologySize());
 
         ElasticsearchConfiguration esCfg = new ElasticsearchConfiguration()
                 .version(stackVersion);
@@ -240,19 +238,11 @@ public class CreateEssDeployment extends DefaultTask {
     }
 
     private KibanaPayload getKibanaPayload(CloudApi api) {
-        TopologySize topologySize = getTopologySize();
-
-        int kibanaZone;
-        try {
-            kibanaZone = Integer.parseInt(System.getenv("ESTF_CLOUD_KIBANA_ZONE"));
-        } catch (NumberFormatException e) {
-            kibanaZone = 1;
-        }
 
         KibanaClusterTopologyElement kbnTopology = new KibanaClusterTopologyElement()
                 .instanceConfigurationId(kbnInstanceCfg)
-                .zoneCount(kibanaZone)
-                .size(topologySize);
+                .zoneCount(2)
+                .size(getTopologySize(2048));
 
         KibanaConfiguration kbnCfg = new KibanaConfiguration()
                 .version(stackVersion);
@@ -273,12 +263,11 @@ public class CreateEssDeployment extends DefaultTask {
     }
 
     private ApmPayload getApmPayload(CloudApi api) {
-        TopologySize topologySize = getTopologySize(512);
 
         ApmTopologyElement apmTopology = new ApmTopologyElement()
                 .instanceConfigurationId(apmInstanceCfg)
                 .zoneCount(1)
-                .size(topologySize);
+                .size(getTopologySize(512));
 
         ApmConfiguration apmCfg = new ApmConfiguration()
                 .version(stackVersion);
@@ -295,7 +284,6 @@ public class CreateEssDeployment extends DefaultTask {
     }
 
     private EnterpriseSearchPayload getEnterpriseSearchPayload(CloudApi api) {
-        TopologySize topologySize = getTopologySize(2048);
 
         EnterpriseSearchNodeTypes enterpriseSearchNodeTypes = new EnterpriseSearchNodeTypes()
                 .appserver(true)
@@ -306,7 +294,7 @@ public class CreateEssDeployment extends DefaultTask {
                 .instanceConfigurationId(enterpriseSearchInstanceCfg)
                 .nodeType(enterpriseSearchNodeTypes)
                 .zoneCount(2)
-                .size(topologySize);
+                .size(getTopologySize(2048));
 
         EnterpriseSearchConfiguration ensCfg = new EnterpriseSearchConfiguration()
                 .version(stackVersion);

@@ -67,24 +67,12 @@ task ess_create_deployment(type: CreateEssDeployment) {
         rootProject.ext.deployment_id = getDeploymentId()
         rootProject.ext.cluster_id = getElasticsearchClusterId()
         rootProject.ext.kibana_cluster_id = getKibanaClusterId()
-        def kbn_url = new URL(properties.kibana_url + "/api/status" as String).openConnection()
-        def es_url =  new URL(properties.elasticsearch_url as String).openConnection()
-        String userPassword = properties.es_username + ":" + properties.es_password
-        String basicAuth = "Basic " + new String(Base64.getEncoder().encode(userPassword.getBytes()))
-        println("*******SECTION: KIBANA INFO *******")
-        kbn_url.setRequestProperty ("Authorization", basicAuth)
-        int kbnGetRC = kbn_url.getResponseCode()
-        if(kbnGetRC != 200) {
-            throw new Error("Unable to reach Kibana server, got response code: " + kbnGetRC)
-        }
-        println(kbn_url.getInputStream().getText())
-        println("******* SECTION: ELASTICSEARCH INFO *******")
-        es_url.setRequestProperty ("Authorization", basicAuth)
-        int esGetRC = es_url.getResponseCode()
-        if(esGetRC != 200) {
-            throw new Error("Unable to reach Elasticsearch server, got response code: " + esGetRC)
-        }
-        println(es_url.getInputStream().getText())
+        get_kibana_info(properties.kibana_url as String,
+                        properties.es_username as String,
+                        properties.es_password as String)
+        get_elasticsearch_info(properties.elasticsearch_url as String,
+                               properties.es_username as String,
+                               properties.es_password as String)
     }
 }
 
@@ -105,6 +93,37 @@ task ess_upgrade {
     doFirst {
         println "ess_upgrade"
     }
+}
+
+task kibana_upgrade_tests {
+    rootProject.ext.test_task = "${name}"
+    dependsOn tasks.getByPath(':kibana:run_kibana_tests')
+}
+
+static def get_kibana_info(String url, String username, String password) {
+    def kbn_url = new URL(url + "/api/status" as String).openConnection()
+    String userPassword = username + ":" + password
+    String basicAuth = "Basic " + new String(Base64.getEncoder().encode(userPassword.getBytes()))
+    println("*******SECTION: KIBANA INFO *******")
+    kbn_url.setRequestProperty ("Authorization", basicAuth)
+    int kbnGetRC = kbn_url.getResponseCode()
+    if(kbnGetRC != 200) {
+        throw new Error("Unable to reach Kibana server, got response code: " + kbnGetRC)
+    }
+    println(kbn_url.getInputStream().getText())
+}
+
+static def get_elasticsearch_info(String url, String username, String password) {
+    def es_url =  new URL(url).openConnection()
+    String userPassword = username + ":" + password
+    String basicAuth = "Basic " + new String(Base64.getEncoder().encode(userPassword.getBytes()))
+    println("******* SECTION: ELASTICSEARCH INFO *******")
+    es_url.setRequestProperty ("Authorization", basicAuth)
+    int esGetRC = es_url.getResponseCode()
+    if(esGetRC != 200) {
+        throw new Error("Unable to reach Elasticsearch server, got response code: " + esGetRC)
+    }
+    println(es_url.getInputStream().getText())
 }
 
 static def compareVersion(String version1, String version2) {
@@ -145,81 +164,101 @@ if (_job) {
     String jobName = data["$_job"]
     if (jobName) {
         def testPaths = jobName.split(',')
-        if (testPaths.size() < 2) {
+        if (testPaths.size() < 3) {
             throw new Exception("Test path is malformed!")
         }
-        _cloud_version = testPaths[0]
-        _upgrade_cloud_version = Arrays.copyOfRange(testPaths, 1, testPaths.length)
+        rootProject.ext.kibana_version = testPaths[0]
+        _cloud_version = testPaths[1]
+        _upgrade_cloud_version = Arrays.copyOfRange(testPaths, 2, testPaths.length)
     }
 }
 
 def upgrade_versions = System.env.ESTF_UPGRADE_CLOUD_VERSION ?: _upgrade_cloud_version
 rootProject.ext.isUpgrade = false
 rootProject.ext.createVersion = System.env.ESTF_CLOUD_VERSION ?: _cloud_version
+int final_version_7_12_0_later = -1
 
-if (upgrade_versions) {
-    rootProject.ext.isUpgrade = true
-    def versions = upgrade_versions
-    if(upgrade_versions instanceof String) {
-        versions = upgrade_versions.split(',')
+if (rootProject.createVersion && upgrade_versions ) {
+
+    int originating_version_6_5_0_later = compareVersion(rootProject.createVersion, "6.5.0")
+    boolean upload_data_interm = false
+    if (originating_version_6_5_0_later < 0) {
+        upload_data_interm = true
     }
-    versions.size().times {
-        int i = it
-        String originating_version = rootProject.createVersion
-        String upgrade_version = versions[it]
-        if (i > 0) {
-            originating_version = versions[it-1]
+    def verArr = upgrade_versions.split(",")
+    rootProject.ext.finalVersion = verArr[verArr.length - 1]
+    final_version_7_12_0_later = compareVersion(rootProject.finalVersion, "7.12.0")
+
+    if (upgrade_versions) {
+        rootProject.ext.isUpgrade = true
+        def versions = upgrade_versions
+        if (upgrade_versions instanceof String) {
+            versions = upgrade_versions.split(',')
         }
-
-        println("Upgrade path: " + originating_version + " --> " + upgrade_version)
-
-        tasks.create("upload_data" + i, UploadData) {
-            doFirst {
-                println("******* SECTION: UPLOAD DATA *******")
-                esBaseUrl = rootProject.props.elasticsearch_url
-                kbnBaseUrl = rootProject.props.kibana_url
-                username = rootProject.props.es_username
-                password = rootProject.props.es_password
-                version = originating_version
-                upgradeVersion = upgrade_version
+        versions.size().times {
+            int i = it
+            String originating_version = rootProject.createVersion
+            String upgrade_version = versions[it]
+            if (i > 0) {
+                originating_version = versions[it - 1]
             }
+            int next_version_6_5_0_later = compareVersion(originating_version, "6.5.0")
+
+            println("Upgrade path: " + originating_version + " --> " + upgrade_version)
+
+            tasks.create("upload_data" + i, UploadData) {
+                doFirst {
+                    println("******* SECTION: UPLOAD DATA *******")
+                    esBaseUrl = rootProject.props.elasticsearch_url
+                    kbnBaseUrl = rootProject.props.kibana_url
+                    username = rootProject.props.es_username
+                    password = rootProject.props.es_password
+                    version = originating_version
+                    upgradeVersion = upgrade_version
+                }
+            }
+
+            tasks.create("upgrade_assistant" + i, UpgradeAssistantApi) {
+                doFirst {
+                    println("******* SECTION: UPGRADE ASSISTANT *******")
+                    esBaseUrl = rootProject.props.elasticsearch_url
+                    kbnBaseUrl = rootProject.props.kibana_url
+                    username = rootProject.props.es_username
+                    password = rootProject.props.es_password
+                    version = originating_version
+                    upgradeVersion = upgrade_version
+                }
+            }
+
+            tasks.create("ess_upgrade_deployment" + i, UpgradeEssDeployment) {
+                doFirst {
+                    println("******* SECTION: UPGRADE DEPLOYMENT *******")
+                    deploymentId = rootProject.deployment_id
+                    upgradeStackVersion = upgrade_version
+                    println(deploymentId)
+                    println(upgradeStackVersion)
+                }
+            }
+
+            if (i == 0) {
+                tasks.create("ess_upgrade" + i) {
+                    dependsOn "upload_data" + i, "upgrade_assistant" + i, "ess_upgrade_deployment" + i
+                }
+            } else if (upload_data_interm && next_version_6_5_0_later >= 0) {
+                tasks.create("ess_upgrade" + i) {
+                    dependsOn "upload_data" + i, "upgrade_assistant" + i, "ess_upgrade_deployment" + i
+                }
+                upload_data_interm = false
+            } else {
+                tasks.create("ess_upgrade" + i) {
+                    dependsOn "upgrade_assistant" + i, "ess_upgrade_deployment" + i
+                }
+            }
+
+            ess_upgrade.dependsOn "ess_upgrade" + i
+            tasks.findByName("upgrade_assistant" + i).mustRunAfter("upload_data" + i)
+            tasks.findByName("ess_upgrade_deployment" + i).mustRunAfter("upgrade_assistant" + i)
         }
-
-        tasks.create("upgrade_assistant" + i, UpgradeAssistantApi) {
-            doFirst {
-                println("******* SECTION: UPGRADE ASSISTANT *******")
-                esBaseUrl = rootProject.props.elasticsearch_url
-                kbnBaseUrl = rootProject.props.kibana_url
-                username = rootProject.props.es_username
-                password = rootProject.props.es_password
-                version = originating_version
-                upgradeVersion = upgrade_version
-            }
-        }
-
-        tasks.create("ess_upgrade_deployment" + i, UpgradeEssDeployment) {
-            doFirst {
-                println("******* SECTION: UPGRADE DEPLOYMENT *******")
-                deploymentId = rootProject.deployment_id
-                upgradeStackVersion = upgrade_version
-                println(deploymentId)
-                println(upgradeStackVersion)
-            }
-        }
-
-        if ( i == 0 ) {
-            tasks.create("ess_upgrade" + i) {
-                dependsOn "upload_data" + i, "upgrade_assistant" + i, "ess_upgrade_deployment" + i
-            }
-        } else {
-            tasks.create("ess_upgrade" + i) {
-                dependsOn "upgrade_assistant" + i, "ess_upgrade_deployment" + i
-            }
-        }
-
-        ess_upgrade.dependsOn "ess_upgrade" + i
-        tasks.findByName("upgrade_assistant" + i).mustRunAfter("upload_data" + i)
-        tasks.findByName("ess_upgrade_deployment" + i).mustRunAfter("upgrade_assistant" + i)
     }
 }
 
@@ -227,4 +266,10 @@ ess_setup.dependsOn ess_create_deployment
 ess_setup.finalizedBy ess_shutdown_deployment
 
 ess_upgrade.dependsOn ess_create_deployment
-ess_upgrade.finalizedBy ess_shutdown_deployment
+kibana_upgrade_tests.dependsOn ess_upgrade
+kibana_upgrade_tests.mustRunAfter ess_upgrade
+tasks.getByPath(':kibana:run_kibana_tests').onlyIf {
+    final_version_7_12_0_later >= 0
+}
+tasks.getByPath(':kibana:run_kibana_tests').finalizedBy ess_shutdown_deployment
+kibana_upgrade_tests.finalizedBy ess_shutdown_deployment

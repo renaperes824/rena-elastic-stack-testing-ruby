@@ -247,7 +247,7 @@ python_install_packages() {
 java_install_packages() {
   check_python_virtual_env
   echo_info "Install java sdk package"
-  if [ ! -z $ESTF_UPGRADE_CLOUD_VERSION ] || ([ ! -z $TASK ] && [ $TASK == "ess_upgrade" ]); then
+  if [ ! -z $ESTF_UPGRADE_CLOUD_VERSION ] || ([ ! -z $TASK ] && [ $TASK == "kibana_upgrade_tests" ]); then
      python ${AIT_SCRIPTS}/python/install_cloud_sdk_upgrades.py
   else
     python ${AIT_SCRIPTS}/python/install_cloud_sdk.py
@@ -406,14 +406,14 @@ run_tests() {
 # ----------------------------------------------------------------------------
 run_cloud_tests() {
   if [ ! -z $ESTF_UPGRADE_CLOUD_VERSION ]; then
-    export TASK=ess_upgrade
+    export TASK=kibana_upgrade_tests
   fi
   if [ -z $TASK ]; then
     echo_error "Gradle task name must be supplied"
     exit 1
   fi
   cd ${AIT_CI_CLOUD_DIR}
-  if [ $TASK == "ess_upgrade" ]; then
+  if [ $TASK == "kibana_upgrade_tests" ]; then
     cd ${AIT_CI_CLOUD_UPGRADE_DIR}
   fi
   ./gradlew $TASK
