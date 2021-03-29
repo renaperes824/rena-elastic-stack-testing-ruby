@@ -41,13 +41,13 @@ task clone_kibana_repo(type:Exec) {
             checkout_ver = branch
         }
         workingDir "$buildDir"
-        commandLine 'git', 'clone', '--branch', checkout_ver, 'git@github.com:' + github_owner + '/' + repo
+        commandLine '/usr/bin/git', 'clone', '--branch', checkout_ver, 'git@github.com:' + github_owner + '/' + repo
 
         if (commit) {
-            commandLine 'git', 'checkout', commit
+            commandLine '/usr/bin/git', 'checkout', commit
         } else if (rootProject.hasProperty('kibana_hash') && ! System.env.ESTF_FLAKY_TEST_SUITE && ! System.env.ESTF_KIBANA_CHECKOUT_LATEST) {
             println("Checking out: " + rootProject.kibana_hash)
-            commandLine 'git', 'checkout', rootProject.kibana_hash
+            commandLine '/usr/bin/git', 'checkout', rootProject.kibana_hash
         }
     }
 }
@@ -64,7 +64,7 @@ task get_kibana_commit(type:Exec) {
         print "In ${name}"
         println("---------- KIBANA REPO COMMIT INFO ----------")
         workingDir "$buildDir/kibana"
-        commandLine 'git', 'log', '--pretty=oneline', '--abbrev-commit', '-n', '1'
+        commandLine '/usr/bin/git', 'log', '--pretty=oneline', '--abbrev-commit', '-n', '1'
     }
 }
 
