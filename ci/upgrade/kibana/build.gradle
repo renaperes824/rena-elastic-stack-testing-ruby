@@ -20,36 +20,38 @@ repositories {
     mavenCentral()
 }
 
-task clone_kibana_repo(type:Exec) {
-    doFirst {
-        println "In ${name}"
-        def github_owner = System.env.ESTF_GITHUB_OWNER ?: "elastic"
-        def repo = System.env.ESTF_GITHUB_REPO ?: "kibana.git"
-        def version = System.env.ESTF_KIBANA_VERSION ?: rootProject.kibana_version
-        def branch = System.env.ESTF_GITHUB_BRANCH
-        def commit = System.env.ESTF_GITHUB_COMMIT
+// *********************************************************************************
+task clone_kibana_repo {
+  doFirst {
+    println "In ${name}"
+    def github_owner = System.env.ESTF_GITHUB_OWNER ?: "elastic"
+    def repo = System.env.ESTF_GITHUB_REPO ?: "kibana.git"
+    def version = System.env.ESTF_KIBANA_VERSION ?: rootProject.kibana_version
+    def branch = System.env.ESTF_GITHUB_BRANCH
+    def commit = System.env.ESTF_GITHUB_COMMIT
 
-        def checkout_ver = version
+    def checkout_ver = version
 
-        if (!checkout_ver) {
-            throw new GradleException("Kibana version can't be empty")
-        }
-        if (github_owner != "elastic" && !branch) {
-            throw new GradleException("ESTF_GITHUB_BRANCH must be specified")
-        }
-        if (branch) {
-            checkout_ver = branch
-        }
-        workingDir "$buildDir"
-        commandLine '/usr/bin/git', 'clone', '--branch', checkout_ver, 'git@github.com:' + github_owner + '/' + repo
-
-        if (commit) {
-            commandLine '/usr/bin/git', 'checkout', commit
-        } else if (rootProject.hasProperty('kibana_hash') && ! System.env.ESTF_FLAKY_TEST_SUITE && ! System.env.ESTF_KIBANA_CHECKOUT_LATEST) {
-            println("Checking out: " + rootProject.kibana_hash)
-            commandLine '/usr/bin/git', 'checkout', rootProject.kibana_hash
-        }
+    if (!checkout_ver) {
+        throw new GradleException("Kibana version can't be empty")
     }
+    if (github_owner != "elastic" && !branch) {
+        throw new GradleException("ESTF_GITHUB_BRANCH must be specified")
+    }
+    if (branch) {
+        checkout_ver = branch
+    }
+    def grgit = Grgit.clone(dir: "$buildDir/kibana",
+                            uri: 'git@github.com:' + github_owner + '/' + repo,
+                            refToCheckout: checkout_ver)
+    if (commit) {
+        grgit.checkout(branch: commit)
+    } else if (rootProject.hasProperty('kibana_hash') && ! System.env.ESTF_FLAKY_TEST_SUITE && ! System.env.ESTF_KIBANA_CHECKOUT_LATEST) {
+        println("Checking out: " + rootProject.kibana_hash)
+        grgit.checkout(branch: rootProject.kibana_hash)
+    }
+    println grgit.describe()
+  }
 }
 
 task get_jenkins_exe (type: Copy) {
