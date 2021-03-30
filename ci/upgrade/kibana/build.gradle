@@ -53,11 +53,13 @@ task clone_kibana_repo {
     }
     println grgit.describe()
 
-    println("$buildDir/kibana")
-    def files =  fileTree("$buildDir/kibana").filter { it.isFile() }.files.name
-    for(file in files) {
-        println(file)
+    def src = new File(System.env.WORKSPACE + "/ci/kibana/jenkins_kibana_tests.sh")
+    if (!src.exists()) {
+        throw new GradleException("jenkins_kibana_tests.sh does not exist")
     }
+    def dst = new File("$buildDir/kibana/jenkins_kibana_tests.sh")
+    dst << src
+    dst.setExecutable(true, false)
   }
 }
 
@@ -70,25 +72,8 @@ task get_kibana_commit(type:Exec, dependsOn: clone_kibana_repo) {
     }
 }
 
-task get_jenkins_exe (type: Copy, dependsOn: get_kibana_commit) {
-    println "In ${name}"
-    def workspace = new File(System.env.WORKSPACE + "/ci/kibana")
-    if (!workspace.exists()) {
-        throw new GradleException("Workspace does not exist")
-    }
-    from workspace
-    into "$buildDir/kibana"
-    include "*.sh"
-
-    println("$buildDir/kibana")
-    def files =  fileTree("$buildDir/kibana").filter { it.isFile() }.files.name
-    for(file in files) {
-        println(file)
-    }
-}
-
-task run_kibana_tests(dependsOn: get_jenkins_exe) {
-    doLast {
+task run_kibana_tests(dependsOn: get_kibana_commit) {
+    doFirst {
 
         println("******* SECTION: RUN KIBANA TESTS *******")
 
