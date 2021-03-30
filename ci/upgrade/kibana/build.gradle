@@ -58,7 +58,7 @@ task clone_kibana_repo {
         throw new GradleException("jenkins_kibana_tests.sh does not exist")
     }
     def dst = new File("$buildDir/kibana/jenkins_kibana_tests.sh")
-    dst << src
+    dst << src.text
     dst.setExecutable(true, false)
   }
 }
@@ -111,12 +111,6 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
         println "************"
         println envList
         println "************"
-
-        println("$buildDir/kibana")
-        def files =  fileTree("$buildDir/kibana").filter { it.isFile() }.files.name
-        for(file in files) {
-            println(file)
-        }
 
         println "Running Kibana Tests...."
         // Run Kibana tests

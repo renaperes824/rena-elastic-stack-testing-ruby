@@ -333,7 +333,7 @@ public class CreateEssDeployment extends DefaultTask {
 
         deploymentId = response.getId();
 
-        Waiter.setWait(Duration.ofMinutes(20));
+        Waiter.setWait(Duration.ofMinutes(30));
         cloudApi.waitForElasticsearch(deploymentsApi, deploymentId);
         cloudApi.waitForKibana(deploymentsApi, deploymentId);
 
