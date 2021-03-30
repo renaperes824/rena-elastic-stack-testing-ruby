@@ -55,14 +55,7 @@ task clone_kibana_repo {
   }
 }
 
-task get_jenkins_exe (type: Copy) {
-    println "In ${name}"
-    from "$buildDir/../../../kibana"
-    into "$buildDir/kibana"
-    include "*.sh"
-}
-
-task get_kibana_commit(type:Exec) {
+task get_kibana_commit(type:Exec, dependsOn: clone_kibana_repo) {
     doFirst {
         print "In ${name}"
         println("---------- KIBANA REPO COMMIT INFO ----------")
@@ -71,7 +64,14 @@ task get_kibana_commit(type:Exec) {
     }
 }
 
-task run_kibana_tests {
+task get_jenkins_exe (type: Copy, dependsOn: get_kibana_commit) {
+    println "In ${name}"
+    from "$buildDir/../../../kibana"
+    into "$buildDir/kibana"
+    include "*.sh"
+}
+
+task run_kibana_tests(dependsOn: get_jenkins_exe) {
     doFirst {
 
         println("******* SECTION: RUN KIBANA TESTS *******")
@@ -122,7 +122,3 @@ task run_kibana_tests {
         }
     }
 }
-
-run_kibana_tests.dependsOn clone_kibana_repo, get_jenkins_exe, get_kibana_commit
-get_kibana_commit.mustRunAfter clone_kibana_repo
-get_jenkins_exe.mustRunAfter clone_kibana_repo
