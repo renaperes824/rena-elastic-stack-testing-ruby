@@ -9,7 +9,7 @@ import org.estf.gradle.ShellCommand
 import org.ajoberstar.grgit.Grgit
 
 plugins {
-  id 'org.ajoberstar.grgit' version '4.0.2' apply false
+  id 'org.ajoberstar.grgit' version '4.1.0' apply false
 }
 
 group 'org.estf.cloud'
@@ -52,6 +52,12 @@ task clone_kibana_repo {
         grgit.checkout(branch: rootProject.kibana_hash)
     }
     println grgit.describe()
+
+    println("$buildDir/kibana")
+    def files =  fileTree("$buildDir/kibana").filter { it.isFile() }.files.name
+    for(file in files) {
+        println(file)
+    }
   }
 }
 
@@ -66,13 +72,23 @@ task get_kibana_commit(type:Exec, dependsOn: clone_kibana_repo) {
 
 task get_jenkins_exe (type: Copy, dependsOn: get_kibana_commit) {
     println "In ${name}"
-    from "$buildDir/../../../kibana"
+    def workspace = new File(System.env.WORKSPACE + "/ci/kibana")
+    if (!workspace.exists()) {
+        throw new GradleException("Workspace does not exist")
+    }
+    from workspace
     into "$buildDir/kibana"
     include "*.sh"
+
+    println("$buildDir/kibana")
+    def files =  fileTree("$buildDir/kibana").filter { it.isFile() }.files.name
+    for(file in files) {
+        println(file)
+    }
 }
 
 task run_kibana_tests(dependsOn: get_jenkins_exe) {
-    doFirst {
+    doLast {
 
         println("******* SECTION: RUN KIBANA TESTS *******")
 
@@ -111,10 +127,15 @@ task run_kibana_tests(dependsOn: get_jenkins_exe) {
         println envList
         println "************"
 
+        println("$buildDir/kibana")
+        def files =  fileTree("$buildDir/kibana").filter { it.isFile() }.files.name
+        for(file in files) {
+            println(file)
+        }
+
         println "Running Kibana Tests...."
         // Run Kibana tests
-        ShellCommand shell
-        shell = new ShellCommand("./jenkins_kibana_tests.sh upgrade", "$buildDir/kibana", envList)
+        ShellCommand shell = new ShellCommand("./jenkins_kibana_tests.sh upgrade", "$buildDir/kibana", envList)
         shell.waitFor()
 
         if (shell.getRc() != 0) {
