@@ -1,5 +1,6 @@
 import groovy.json.JsonSlurper
 import org.estf.gradle.CreateEssDeployment
+import org.estf.gradle.EditEssDeployment
 import org.estf.gradle.ShutdownEssDeployment
 import org.estf.gradle.UpgradeEssDeployment
 import org.estf.gradle.UploadData
@@ -80,6 +81,14 @@ task ess_shutdown_deployment(type: ShutdownEssDeployment) {
     doFirst {
         println("******* SECTION: SHUTDOWN DEPLOYMENT *******")
         deploymentId = rootProject.deployment_id
+    }
+}
+
+task ess_disable_saml_login(type: EditEssDeployment) {
+    doFirst {
+        println("******* SECTION: DISABLE SAML LOGIN *******")
+        deploymentId = rootProject.deployment_id
+        disableSamlLogin = true
     }
 }
 
@@ -263,8 +272,8 @@ ess_setup.dependsOn ess_create_deployment
 ess_setup.finalizedBy ess_shutdown_deployment
 
 ess_upgrade.dependsOn ess_create_deployment
-kibana_upgrade_tests.dependsOn ess_upgrade
-kibana_upgrade_tests.mustRunAfter ess_upgrade
+ess_disable_saml_login.mustRunAfter ess_upgrade
+kibana_upgrade_tests.dependsOn ess_upgrade, ess_disable_saml_login
 tasks.getByPath(':kibana:run_kibana_tests').onlyIf {
     final_version_7_12_0_later >= 0
 }

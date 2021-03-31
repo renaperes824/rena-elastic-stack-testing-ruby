@@ -185,7 +185,7 @@ public class UpgradeEssDeployment extends DefaultTask {
             false,
             null);
 
-        Waiter.setWait(Duration.ofMinutes(30));
+        Waiter.setWait(Duration.ofMinutes(20));
         cloudApi.waitForElasticsearch(deploymentsApi, deploymentId);
         cloudApi.waitForKibana(deploymentsApi, deploymentId);
 

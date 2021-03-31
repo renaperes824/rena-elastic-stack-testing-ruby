@@ -89,23 +89,23 @@ public class CreateEssDeployment extends DefaultTask {
     }
 
     private void setInstanceConfiguration(CloudApi cloudApi) {
-        esInstanceCfg = "aws.data.highio.i3";
+        esInstanceCfg = "aws.data.highcpu.m5d";
         kbnInstanceCfg = "aws.kibana.r5d";
-        mlInstanceCfg = "aws.ml.m5";
-        ingestInstanceCfg = "aws.coordinating.m5";
+        mlInstanceCfg = "aws.ml.m5d";
+        ingestInstanceCfg = "aws.coordinating.m5d";
         apmInstanceCfg = "aws.apm.r5d";
         enterpriseSearchInstanceCfg = "aws.enterprisesearch.m5d";
         dataRegion = cloudApi.getEnvRegion();
         if (dataRegion != null) {
             if (dataRegion.contains("gcp")) {
-                esInstanceCfg = "gcp.data.highio.1";
+                esInstanceCfg = "gcp.data.highcpu.1";
                 kbnInstanceCfg = "gcp.kibana.1";
                 mlInstanceCfg = "gcp.ml.1";
                 ingestInstanceCfg = "gcp.coordinating.1";
                 apmInstanceCfg = "gcp.apm.1";
                 enterpriseSearchInstanceCfg = "gcp.enterprisesearch.1d";
             } else if (dataRegion.contains("azure")) {
-                esInstanceCfg = "azure.data.highio.l32sv23";
+                esInstanceCfg = "azure.data.highcpu.d64sv3";
                 kbnInstanceCfg = "azure.kibana.e32sv3";
                 mlInstanceCfg = "azure.ml.d64sv3";
                 ingestInstanceCfg = "azure.coordinating.d64sv3";
@@ -183,7 +183,7 @@ public class CreateEssDeployment extends DefaultTask {
     }
 
     private ElasticsearchPayload getElasticsearchPayload(CloudApi api) {
-        final String deploymentTemplate = "aws-io-optimized";
+        final String deploymentTemplate = "aws-compute-optimized-v2";
 
         ElasticsearchNodeType esNodeType = new ElasticsearchNodeType().data(true).master(true);
         ElasticsearchNodeType ingestNodeType = new ElasticsearchNodeType().ingest(true);
@@ -241,7 +241,7 @@ public class CreateEssDeployment extends DefaultTask {
 
         KibanaClusterTopologyElement kbnTopology = new KibanaClusterTopologyElement()
                 .instanceConfigurationId(kbnInstanceCfg)
-                .zoneCount(2)
+                .zoneCount(1)
                 .size(getTopologySize(2048));
 
         KibanaConfiguration kbnCfg = new KibanaConfiguration()
@@ -333,7 +333,7 @@ public class CreateEssDeployment extends DefaultTask {
 
         deploymentId = response.getId();
 
-        Waiter.setWait(Duration.ofMinutes(30));
+        Waiter.setWait(Duration.ofMinutes(20));
         cloudApi.waitForElasticsearch(deploymentsApi, deploymentId);
         cloudApi.waitForKibana(deploymentsApi, deploymentId);
 
