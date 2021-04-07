@@ -272,8 +272,8 @@ ess_setup.dependsOn ess_create_deployment
 ess_setup.finalizedBy ess_shutdown_deployment
 
 ess_upgrade.dependsOn ess_create_deployment
-ess_disable_saml_login.mustRunAfter ess_upgrade
-kibana_upgrade_tests.dependsOn ess_upgrade, ess_disable_saml_login
+ess_disable_saml_login.dependsOn ess_upgrade
+kibana_upgrade_tests.dependsOn ess_disable_saml_login
 tasks.getByPath(':kibana:run_kibana_tests').onlyIf {
     final_version_7_12_0_later >= 0
 }

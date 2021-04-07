@@ -86,11 +86,32 @@ public class EditEssDeployment extends DefaultTask {
                 false);
         KibanaClusterPlan kbnClusterPlan =  kbnResourceInfo.getInfo().getPlanInfo().getCurrent().getPlan();
 
+        EnterpriseSearchResourceInfo ensResourceInfo = null;
+        EnterpriseSearchPlan ensPlan = null;
+        try {
+            ensResourceInfo = deploymentsApi.getDeploymentEnterpriseSearchResourceInfo(deploymentId,
+                    cloudApi.getEnsRefId(),
+                    false,
+                    true,
+                    true,
+                    false,
+                    false,
+                    false);
+
+            ensPlan = ensResourceInfo.getInfo().getPlanInfo().getCurrent().getPlan();
+
+        } catch(Exception ignored) {}
+
         DeploymentUpdateResources deploymentUpdateResources = new DeploymentUpdateResources();
 
         if (disableSamlLogin) {
             String kbnId =  kbnResourceInfo.getId();
             esUserSettings = "xpack.security.authc.realms.saml.cloud-saml-kibana-" + kbnId + ".enabled: false";
+            if (ensResourceInfo != null) {
+                String ensId =  ensResourceInfo.getId();
+                esUserSettings = esUserSettings + "\n" +
+                        "xpack.security.authc.realms.saml.cloud-saml-enterprise_search-" + ensId + ".enabled: false";
+            }
         }
 
         if (esUserSettings != null) {
@@ -112,6 +133,14 @@ public class EditEssDeployment extends DefaultTask {
                     .refId(kbnResourceInfo.getRefId())
                     .plan(kbnClusterPlan));
 
+        if (ensPlan != null) {
+            deploymentUpdateResources.addEnterpriseSearchItem(new EnterpriseSearchPayload()
+                    .elasticsearchClusterRefId(ensResourceInfo.getElasticsearchClusterRefId())
+                    .region(ensResourceInfo.getRegion())
+                    .refId(ensResourceInfo.getRefId())
+                    .plan(ensPlan));
+        }
+
         DeploymentUpdateRequest deploymentUpdateRequest = new DeploymentUpdateRequest()
                 .name(deploymentGetResponse.getName())
                 .pruneOrphans(true)
@@ -127,6 +156,9 @@ public class EditEssDeployment extends DefaultTask {
         Waiter.setWait(Duration.ofMinutes(20));
         cloudApi.waitForElasticsearch(deploymentsApi, deploymentId);
         cloudApi.waitForKibana(deploymentsApi, deploymentId);
+        if (ensPlan != null) {
+            cloudApi.waitForEnterpriseSearch(deploymentsApi, deploymentId);
+        }
     }
 
 }
