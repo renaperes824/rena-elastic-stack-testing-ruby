@@ -904,7 +904,8 @@ function install_kibana() {
 function set_percy_target_branch() {
   get_branch
   export PERCY_TARGET_BRANCH=$Glb_Kibana_Branch
-  export PERCY_BRANCH=${branch_specifier##*refs\/heads\/}
+  #export PERCY_BRANCH=${branch_specifier##*refs\/heads\/}
+  export PERCY_BRANCH=$Glb_Kibana_Branch
   echo_info "PERCY_BRANCH: $PERCY_BRANCH"
   echo_info "PERCY_TARGET_BRANCH: $PERCY_TARGET_BRANCH"
 }
