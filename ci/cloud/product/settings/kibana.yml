@@ -15,3 +15,5 @@ xpack.reporting.capture.timeouts.openUrl: 60000
 map.proxyElasticMapsServiceInMaps: true
 xpack.reporting.capture.networkPolicy.rules: [ { "allow": true,"protocol": "http:" },{ "allow": false,"host": "via.placeholder.com" },{ "allow": true,"protocol": "https:" },{ "allow": true,"protocol": "data:" },{ "allow": false } ]
 xpack.data_enhanced.search.sessions.enabled: true
+xpack.data_enhanced.search.sessions.notTouchedTimeout: 15s
+xpack.data_enhanced.search.sessions.trackingInterval: 5s
