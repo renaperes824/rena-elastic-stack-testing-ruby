@@ -192,13 +192,13 @@ public class CreateEssDeployment extends DefaultTask {
         ElasticsearchClusterTopologyElement esTopology = new ElasticsearchClusterTopologyElement()
                 .instanceConfigurationId(esInstanceCfg)
                 .nodeType(esNodeType)
-                .zoneCount(2)
+                .zoneCount(1)
                 .size(getTopologySize(8192));
 
         ElasticsearchClusterTopologyElement ingestTopology = new ElasticsearchClusterTopologyElement()
                 .instanceConfigurationId(ingestInstanceCfg)
                 .nodeType(ingestNodeType)
-                .zoneCount(2)
+                .zoneCount(1)
                 .size(getTopologySize());
 
         ElasticsearchClusterTopologyElement mlTopology = new ElasticsearchClusterTopologyElement()
@@ -293,7 +293,7 @@ public class CreateEssDeployment extends DefaultTask {
         EnterpriseSearchTopologyElement enterpriseSearchTopologyElementTopology = new EnterpriseSearchTopologyElement()
                 .instanceConfigurationId(enterpriseSearchInstanceCfg)
                 .nodeType(enterpriseSearchNodeTypes)
-                .zoneCount(2)
+                .zoneCount(1)
                 .size(getTopologySize(2048));
 
         EnterpriseSearchConfiguration ensCfg = new EnterpriseSearchConfiguration()
