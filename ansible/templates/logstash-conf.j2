@@ -16,6 +16,7 @@ output {
 {% elif ait_args is defined %}
     {{ ait_args.get('ait_logstash_conf_xpack') }}
 {%- endif -%}
+    data_stream => "false"
   }
   stdout { codec => rubydebug }
 }
