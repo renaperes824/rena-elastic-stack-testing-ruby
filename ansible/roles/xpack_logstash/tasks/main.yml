@@ -17,12 +17,13 @@
   with_first_found:
     - files:
         - '{{ ansible_system | lower }}/{{ ait_action }}.yml'
-      skip: true
+  ignore_errors: true
   when: ait_action is defined
 
-# If tasks are for cloud, fail if cloud id is not set 
-- fail:
+# If tasks are for cloud, fail if cloud id is not set
+- name: Check for cloud ID
+  fail:
     msg: "Please set env var: ELASTIC_CLOUD_ID to run cloud tasks"
-  when: ((ait_role is defined and ait_role | search("cloud")) or
-         (ait_action is defined and ait_action | search("cloud"))) and
-        (elastic_cloud_id is not defined or not elastic_cloud_id)
+  when:  (ait_role is defined and ait_role is search('cloud') or
+          ait_action is defined and ait_action is search('cloud')) and
+         (elastic_cloud_id is not defined or not elastic_cloud_id)

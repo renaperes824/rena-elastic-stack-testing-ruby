@@ -43,5 +43,5 @@
         - '{{ ansible_system | lower }}/{{ ait_action }}_{{ ait_auditbeat_pkg_ext }}.yml'
         - '{{ ansible_system | lower }}/{{ ait_action }}_{{ ait_auditbeat_pkg_mgr | trim }}.yml'
         - '{{ ansible_system | lower }}/{{ ait_action }}_{{ ait_auditbeat_srv_mgr | trim }}.yml'
-      skip: true
+  ignore_errors: true
   when: ait_action is defined

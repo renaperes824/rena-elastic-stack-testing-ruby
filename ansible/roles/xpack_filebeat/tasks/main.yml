@@ -17,5 +17,5 @@
   with_first_found:
     - files:
         - '{{ ansible_system | lower }}/{{ ait_action }}.yml'
-      skip: true
+  ignore_errors: true
   when: ait_action is defined
