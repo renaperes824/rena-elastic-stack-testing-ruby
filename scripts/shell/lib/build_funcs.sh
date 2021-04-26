@@ -217,6 +217,8 @@ activate_python_virtual_env() {
   # Activate env
   source ${PYTHON_VENV_NAME}/bin/activate
   echo_info "Python venv name: $PYTHON_VENV_NAME"
+  echo_info "Upgrade PIP"
+  pip install --upgrade pip
 }
 
 # ----------------------------------------------------------------------------
