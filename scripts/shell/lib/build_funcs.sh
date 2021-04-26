@@ -200,6 +200,8 @@ check_python_virtual_env() {
     echo "Python virtual envrionment is not activated"
     exit 1
   fi
+  echo_info "Upgrade PIP"
+  pip install --upgrade pip
 }
 
 # ----------------------------------------------------------------------------
@@ -217,8 +219,6 @@ activate_python_virtual_env() {
   # Activate env
   source ${PYTHON_VENV_NAME}/bin/activate
   echo_info "Python venv name: $PYTHON_VENV_NAME"
-  echo_info "Upgrade PIP"
-  pip install --upgrade pip
 }
 
 # ----------------------------------------------------------------------------
