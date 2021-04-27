@@ -200,8 +200,31 @@ check_python_virtual_env() {
     echo "Python virtual envrionment is not activated"
     exit 1
   fi
-  echo_info "Upgrade PIP"
-  pip install --upgrade pip
+  echo_info "Upgrade pip"
+  $PYTHON_EXE -m pip install --upgrade pip
+}
+
+# ----------------------------------------------------------------------------
+function compare_ver {
+  printf "%03d%03d%03d%03d" $(echo "$1" | tr '.' ' ');
+}
+
+# ----------------------------------------------------------------------------
+function set_python_exe {
+  if [ ! -z $PYTHON_EXE ]; then
+    return
+  fi
+  least_ver="3.6"
+  for p in $(compgen -c python | grep -v "config"); do
+    curr_ver=$(echo $p | egrep -o '[0-9]+\.[0-9]+')
+    if [ $(compare_ver $curr_ver) -ge $(compare_ver $least_ver) ]; then
+      export PYTHON_EXE="python$curr_ver"
+      break
+    fi
+  done
+  if [ -z $PYTHON_EXE ]; then
+    echo_error "Need at least python ${least_ver} installed, none found!"
+  fi
 }
 
 # ----------------------------------------------------------------------------
@@ -215,7 +238,8 @@ activate_python_virtual_env() {
   echo_info "Create and activate python venv"
   export PYTHON_VENV_NAME=${WORKSPACE}/es-venv
   # Create python virtual env
-  python3 -m venv ${PYTHON_VENV_NAME}
+  set_python_exe
+  $PYTHON_EXE -m venv ${PYTHON_VENV_NAME}
   # Activate env
   source ${PYTHON_VENV_NAME}/bin/activate
   echo_info "Python venv name: $PYTHON_VENV_NAME"
@@ -229,20 +253,22 @@ python_install_packages() {
   RC=$?
   if [ $RC == 1 ] && [ ! -z $PYENV_VIRTUALENV_INIT ]; then
     echo_info "Install python"
-    pyver = $(cat .python-version)
+    pyver=$(cat .python-version)
     pyenv install -s $pyver
     pyenv global $pyver
+    echo_info "Set python exe"
+    export PYTHON_EXE="python$(cat .python-version | egrep -o '[0-9]+\.[0-9]+')"
   fi
   echo_info "Install python packages"
   if [ ! -z $type ] && [ "$type" == "cloud" ]; then
     echo_info "requirements_cloud.txt"
-    pip install -r requirements_cloud.txt
+    $PYTHON_EXE -m pip install -r requirements_cloud.txt
   else
     echo_info "requirements.txt"
-    pip install -r requirements.txt
+    $PYTHON_EXE -m pip install -r requirements.txt
    fi
   echo_info "List installed python packages"
-  pip list
+  $PYTHON_EXE -m pip list
 }
 
 # ----------------------------------------------------------------------------
@@ -250,9 +276,9 @@ java_install_packages() {
   check_python_virtual_env
   echo_info "Install java sdk package"
   if [ ! -z $ESTF_UPGRADE_CLOUD_VERSION ] || ([ ! -z $TASK ] && [ $TASK == "kibana_upgrade_tests" ]); then
-     python ${AIT_SCRIPTS}/python/install_cloud_sdk_upgrades.py
+     $PYTHON_EXE ${AIT_SCRIPTS}/python/install_cloud_sdk_upgrades.py
   else
-    python ${AIT_SCRIPTS}/python/install_cloud_sdk.py
+    $PYTHON_EXE ${AIT_SCRIPTS}/python/install_cloud_sdk.py
   fi
   RC=$?
   if [ $RC -ne 0 ]; then
@@ -274,7 +300,7 @@ generate_build_variables() {
   fi
   # Create build vars file for ansible
   echo_info "Run script to build ansible variables from env"
-  python ${AIT_SCRIPTS}/python/ansible_es_build_vars.py
+  $PYTHON_EXE ${AIT_SCRIPTS}/python/ansible_es_build_vars.py
   if [ $? -ne 0 ]; then
     echo_error "FAILED! Did not create ansible build variables!"
     exit 1
