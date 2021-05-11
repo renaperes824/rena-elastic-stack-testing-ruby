@@ -6,11 +6,11 @@ xpack.encryptedSavedObjects.encryptionKey: "DkdXazszSCYexXqz4YktBGHCRkV6hyNK"
 xpack.maps.preserveDrawingBuffer: true
 xpack.maps.showMapsInspectorAdapter: true
 xpack.reporting.capture.maxAttempts: 1
+xpack.reporting.capture.timeouts.openUrl: 60000
 xpack.reporting.csv.checkForFormulas: false
 xpack.reporting.csv.enablePanelActionDownload: true
 xpack.reporting.csv.maxSizeBytes: 2850
 xpack.reporting.queue.pollInterval: 3000
+xpack.reporting.roles.enabled: false
 xpack.security.encryptionKey: "wuGNaIhoMpk5sO4UBxgr3NyW1sFcLgIf"
 xpack.security.session.idleTimeout: 3600000
-xpack.reporting.capture.timeouts.openUrl: 60000
-
