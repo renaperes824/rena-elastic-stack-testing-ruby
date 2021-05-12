@@ -14,7 +14,6 @@ xpack.reporting.csv.checkForFormulas: false
 xpack.reporting.csv.enablePanelActionDownload: true
 xpack.reporting.csv.maxSizeBytes: 2850
 xpack.reporting.queue.pollInterval: 3000
-xpack.reporting.roles.enabled: false
 xpack.data_enhanced.search.sessions.enabled: true
 xpack.data_enhanced.search.sessions.notTouchedTimeout: 15s
 xpack.data_enhanced.search.sessions.trackingInterval: 5s
