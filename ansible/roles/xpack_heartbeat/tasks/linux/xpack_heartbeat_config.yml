@@ -57,3 +57,10 @@
         ssl.certificate: {{ heartbeat_rootdir | trim }}/node/node.crt
         ssl.key: {{ heartbeat_rootdir | trim }}/node/node.key
   become: true
+
+- name: Enable elasticsearch monitor
+  replace:
+    path: '{{ heartbeat_config_file }}'
+    regexp: '(^- type: http\n)(^\s*#.*\n)*(\s)*(enabled: false)'
+    replace: '\1\2\3 enabled: true'
+  become: true

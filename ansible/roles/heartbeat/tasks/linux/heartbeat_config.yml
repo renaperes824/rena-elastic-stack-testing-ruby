@@ -61,3 +61,10 @@
         content: '{{ internal_heartbeat_config_params }}'
       become: true
   when: heartbeat_config_params_strict is not defined or not heartbeat_config_params_strict
+
+- name: Enable elasticsearch monitor
+  replace:
+    path: '{{ heartbeat_config_file }}'
+    regexp: '(^- type: http\n)(^\s*#.*\n)*(\s)*(enabled: false)'
+    replace: '\1\2\3 enabled: true'
+  become: true
