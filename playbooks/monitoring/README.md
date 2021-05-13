@@ -52,10 +52,13 @@ Each product's tests follow this general high-level approach:
 ### Diagnosing test failures
 
 These tests run in Jenkins CI, about once a day. There is a CI job per active branch / version of the Elastic Stack, 
-e.g. `master`, `7.x`, etc. Search for `estf-monitoring` under https://internal-ci.elastic.co/view/Stack%20Tests/.
+e.g. `master`, `7.x`, etc. Search for `estf-monitoring` under https://internal-ci.elastic.co/view/Stack%20Tests/. For 
+example, for the 7.13 branch, you'll look for elastic+estf-monitoring-snapshots+7.13, and then find the sub-job that
+corresponds to the product that is failing, e.g. "elasticsearch" would be "elastic+estf-monitoring-snapshots+7.13+multijob-elasticsearch".
 
 When a CI job for this test fails, look at the console output for the failed job in Jenkins. Note the branch and 
-snapshot URL that were used. Snapshot URLs look like `https://snapshots.elastic.co/$VERSION-$SHA`.
+snapshot URL that were used. Snapshot URLs look like `https://snapshots.elastic.co/$VERSION-$SHA`, and can be found by
+viewing the "full log output" and doing a "Find in page" search for "ES_BUILD_URL". 
 
 Tests can fail for multiple reasons. The most common ones are that the very last step in the test process failed — 
 that documents of the same type did not have structural parity with each other. This type of failure usually 
@@ -74,6 +77,13 @@ See the sections below on how to run the tests locally and some useful diagnosis
 
 #### Running the tests
 
+_Note: You will need Vagrant and Virtualbox installed. You can use homebrew for this if you have it:_
+
+```
+brew install vagrant
+brew install virtualbox
+```
+
 1. Clone this repository, say into a folder named `elastic-stack-testing`.
 
    ```
@@ -87,7 +97,7 @@ See the sections below on how to run the tests locally and some useful diagnosis
    git checkout $BRANCH # e.g. `master`, `7.x`, etc.
    ```
 
-3. Edit `playbooks/monitoring/buildenv.sh` and set `ES_BUILD_URL=` to the snapshot URL from the failing CI job.
+3. Edit `playbooks/monitoring/buildenv.sh` and set `ES_BUILD_URL=` to the snapshot URL from the failing CI job. _Remember, you can find this URL in the full build log output, if you search for ES_BUILD_URL._
 
    ```
    export ES_BUILD_URL=https://snapshots.elastic.co/$VERSION-$SHA
