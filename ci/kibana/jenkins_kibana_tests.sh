@@ -280,11 +280,12 @@ function get_os() {
 
   if [[ "$Glb_Arch" == "aarch64" ]]; then
     local _distr=$(cat /etc/os-release | grep "^NAME=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
-    if [[ "$_distr" == "CentOS" ]]; then
-      Glb_SkipTests="yes"
-    fi
+    #if [[ "$_distr" == "CentOS" ]]; then
+    #  Glb_SkipTests="yes"
+    #fi
     if  [[ "$Glb_SkipTests" == "no" ]]; then
-      install_pkg "chromium-chromedriver"
+      install_pkg "chromium"
+      install_pkg "chromedriver"
     fi
     Glb_Chromium=$(which chromium-browser)
     Glb_ChromeDriver=$(which chromedriver)
@@ -323,6 +324,7 @@ function install_pkg() {
     sudo apt-get update
     sudo apt-get install -y $pkg
   elif command -v yum >/dev/null; then
+    sudo yum update -y
     sudo yum install -y $pkg
   fi
   if [ $? -ne 0 ]; then
