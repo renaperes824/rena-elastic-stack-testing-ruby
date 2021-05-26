@@ -2511,7 +2511,9 @@ function set_package() {
   local _distr=$(cat /etc/os-release | grep "^NAME=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
   local _distr_ver=$(cat /etc/os-release | grep "^VERSION=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
 
-  if [[ "$Glb_Arch" == "aarch64" ]] && [[ "$_distr" == "CentOS" ]] && [[ $_isNodeSupported == 0 ]]; then
+  # Even though node is now supported Kibana 7.14+, looks like chromium is not, segfaults
+  # Going to disable these tests again
+  if [[ "$Glb_Arch" == "aarch64" ]] && [[ "$_distr" == "CentOS" ]]; then
     Glb_SkipTests="yes"
   fi
 
