@@ -267,7 +267,6 @@ function get_os() {
   echo_debug "Uname: $_uname"
   if [[ "$_uname" == *"MINGW64_NT"* ]]; then
     Glb_OS="windows"
-    #Glb_SkipTests="yes"
   elif [[ "$_uname" == "Darwin" ]]; then
     Glb_OS="darwin"
   elif [[ "$_uname" == "Linux" ]]; then
@@ -280,12 +279,13 @@ function get_os() {
 
   if [[ "$Glb_Arch" == "aarch64" ]]; then
     local _distr=$(cat /etc/os-release | grep "^NAME=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
-    #if [[ "$_distr" == "CentOS" ]]; then
-    #  Glb_SkipTests="yes"
-    #fi
     if  [[ "$Glb_SkipTests" == "no" ]]; then
-      install_pkg "chromium"
-      install_pkg "chromedriver"
+      if [[ "$_distr" == "CentOS" ]]; then
+        install_pkg "chromium"
+        install_pkg "chromedriver"
+      else
+        install_pkg "chromium-chromedriver"
+      fi
     fi
     Glb_Chromium=$(which chromium-browser)
     Glb_ChromeDriver=$(which chromedriver)
@@ -2507,8 +2507,13 @@ function set_package() {
   local _splitStr=(${Glb_Kibana_Version//./ })
   local _version=${_splitStr[0]}.${_splitStr[1]}
   local _isPkgSupported=$(vge $_version "7.11")
+  local _isNodeSupported=$(vge $_version "7.14")
   local _distr=$(cat /etc/os-release | grep "^NAME=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
   local _distr_ver=$(cat /etc/os-release | grep "^VERSION=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
+
+  if [[ "$Glb_Arch" == "aarch64" ]] && [[ "$_distr" == "CentOS" ]] && [[ $_isNodeSupported == 0 ]]; then
+    Glb_SkipTests="yes"
+  fi
 
   if [[ $_isPkgSupported == 0 ]]; then
     export ESTF_TEST_PACKAGE="tar.gz"
