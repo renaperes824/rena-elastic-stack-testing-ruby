@@ -51,6 +51,7 @@ readonly Glb_Cache_Dir
 Glb_KbnBootStrapped="no"
 Glb_KbnClean="no"
 Glb_SkipTests="no"
+Glb_ApiOnly="no"
 
 Glb_KbnSkipUbi="no"
 readonly Glb_KbnSkipUbi
@@ -1499,6 +1500,9 @@ function run_xpack_ext_tests() {
       if [ $cfg == "test/functional/config.js" ] && [ $funcTests == "false" ]; then
         continue
       fi
+      if [[ $Glb_ApiOnly == "yes" ]] && [[ "$cfg" != *"api"* ]]; then
+        continue
+      fi
       export ESTF_RUN_NUMBER=$i
       update_report_name $cfg
 
@@ -2152,6 +2156,9 @@ function run_standalone_xpack_ext_tests() {
       if [ $cfg == "test/functional/config.js" ] && [ $funcTests == "false" ]; then
         continue
       fi
+      if [[ $Glb_ApiOnly == "yes" ]] && [[ "$cfg" != *"api"* ]]; then
+        continue
+      fi
       if [ ! -f $cfg ]; then
         echo "Warning invalid configuration: $cfg"
         continue
@@ -2512,9 +2519,10 @@ function set_package() {
   local _distr_ver=$(cat /etc/os-release | grep "^VERSION=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
 
   # Even though node is now supported Kibana 7.14+, looks like chromium is not, segfaults
-  # Going to disable these tests again
-  if [[ "$Glb_Arch" == "aarch64" ]] && [[ "$_distr" == "CentOS" ]]; then
+  # Going to only enable API tests for now
+  if [[ "$Glb_Arch" == "aarch64" ]] && [[ "$_distr" == "CentOS" ]] && [[ "$_grp" != *"xpackExt"* ]]; then
     Glb_SkipTests="yes"
+    Glb_ApiOnly="yes"
   fi
 
   if [[ $_isPkgSupported == 0 ]]; then
