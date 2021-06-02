@@ -265,6 +265,8 @@ function get_os() {
     _uname="Docker"
   fi
   Glb_Arch=$(uname -m)
+  Glb_Distr=""
+  Glb_Distr_Ver=""
   echo_debug "Uname: $_uname"
   if [[ "$_uname" == *"MINGW64_NT"* ]]; then
     Glb_OS="windows"
@@ -272,6 +274,8 @@ function get_os() {
     Glb_OS="darwin"
   elif [[ "$_uname" == "Linux" ]]; then
     Glb_OS="linux"
+    Glb_Distr=$(cat /etc/os-release | grep "^NAME=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
+    Glb_Distr_Ver=$(cat /etc/os-release | grep "^VERSION=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
   elif [[ "$_uname" == "Docker" ]]; then
     Glb_OS="docker"
   else
@@ -279,9 +283,9 @@ function get_os() {
   fi
 
   if [[ "$Glb_Arch" == "aarch64" ]]; then
-    local _distr=$(cat /etc/os-release | grep "^NAME=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
     if  [[ "$Glb_SkipTests" == "no" ]]; then
-      if [[ "$_distr" == "CentOS" ]]; then
+      install_pkg "jq"
+      if [[ "$Glb_Distr" == "CentOS" ]]; then
         install_pkg "chromium"
         install_pkg "chromedriver"
       else
@@ -308,8 +312,10 @@ function get_os() {
 
   echo_info "Running on OS: $Glb_OS"
   echo_info "Running on Arch: $Glb_Arch"
+  echo_info "Running on Dist: $Glb_Distr"
+  echo_info "Running on Dist Ver: $Glb_Distr_Ver"
 
-  readonly Glb_OS Glb_Arch Glb_Chromium Glb_ChromeDriver
+  readonly Glb_OS Glb_Arch Glb_Chromium Glb_ChromeDriver Glb_Distr Glb_Distr_Ver
 }
 
 # ----------------------------------------------------------------------------
@@ -1862,9 +1868,19 @@ function _wait_for_es_ready_docker() {
 # -----------------------------------------------------------------------------
 function wait_for_es_ready_docker {
   local timeout=${1:-40}
+  local _es_protocol=${TEST_ES_PROTOCOL:-http}
+  local _es_host=${TEST_ES_HOSTNAME:-localhost}
+  local _es_port=${TEST_ES_PORT:-9200}
+  local _creds=""
+  if [ ! -z $TEST_ES_USER ]; then
+    _creds="-u ${TEST_ES_USER}:${TEST_ES_PASS}"
+  fi
   run_with_timeout _wait_for_es_ready_docker $timeout
   if [ $? -ne 0 ]; then
-    echo_error_exit "Elasticsearch server not ready"
+    curl -sX GET $_creds "$_es_protocol://$_es_host:$_es_port/_cluster/health" | jq '.status' | grep "green"
+    if [ $? -ne 0 ]; then
+      echo_error_exit "Elasticsearch server not ready"
+    fi
   fi
 }
 
@@ -1886,9 +1902,19 @@ function _wait_for_kbn_ready_docker {
 # -----------------------------------------------------------------------------
 function wait_for_kbn_ready_docker {
   local timeout=${1:-90}
+  local _kbn_protocol=${TEST_KIBANA_PROTOCOL:-http}
+  local _kbn_host=${TEST_KIBANA_HOSTNAME:-localhost}
+  local _kbn_port=${TEST_KIBANA_PORT:-5601}
+  local _creds=""
+  if [ ! -z $TEST_KIBANA_USER ]; then
+    _creds="-u ${TEST_KIBANA_USER}:${TEST_KIBANA_PASS}"
+  fi
   run_with_timeout _wait_for_kbn_ready_docker $timeout
   if [ $? -ne 0 ]; then
-    echo_error_exit "Kibana server not ready"
+    curl -sX GET $_creds "$_kbn_protocol://$_kbn_host:$_kbn_port/api/status" | jq '.status.overall.state' | grep "green"
+    if [ $? -ne 0 ]; then
+      echo_error_exit "Kibana server not ready"
+    fi
   fi
 }
 
@@ -1929,13 +1955,14 @@ function docker_load {
     if [ $? -ne 0 ]; then
         echo_error_exit "Docker compose up failed"
     fi
-    wait_for_es_ready_docker
-    wait_for_kbn_ready_docker
 
     export TEST_KIBANA_PROTOCOL=http
     export TEST_KIBANA_PORT=5601
     export TEST_ES_PROTOCOL=http
     export TEST_ES_PORT=9200
+
+    wait_for_es_ready_docker
+    wait_for_kbn_ready_docker
 
   else
 
@@ -1981,8 +2008,6 @@ function docker_load {
     if [ $? -ne 0 ]; then
       echo_error_exit "Docker compose up failed"
     fi
-    wait_for_es_ready_docker
-    wait_for_kbn_ready_docker
 
     export TEST_KIBANA_PROTOCOL=https
     export TEST_KIBANA_PORT=5601
@@ -1994,6 +2019,9 @@ function docker_load {
     export TEST_ES_PASS=$espw
     export NODE_TLS_REJECT_UNAUTHORIZED=0
     export TEST_IGNORE_CERT_ERRORS=1
+
+    wait_for_es_ready_docker
+    wait_for_kbn_ready_docker
 
   fi
 
@@ -2411,9 +2439,19 @@ function _wait_for_es_ready_logs() {
 # -----------------------------------------------------------------------------
 function wait_for_es_ready_logs() {
   local timeout=${1:-60}
+  local _es_protocol=${TEST_ES_PROTOCOL:-http}
+  local _es_host=${TEST_ES_HOSTNAME:-localhost}
+  local _es_port=${TEST_ES_PORT:-9200}
+  local _creds=""
+  if [ ! -z $TEST_ES_USER ]; then
+    _creds="-u ${TEST_ES_USER}:${TEST_ES_PASS}"
+  fi
   run_with_timeout _wait_for_es_ready_logs $timeout
   if [ $? -ne 0 ]; then
-    echo_error_exit "Elasticsearch server not ready"
+    curl -sX GET $_creds "$_es_protocol://$_es_host:$_es_port/_cluster/health" | jq '.status' | grep "green"
+    if [ $? -ne 0 ]; then
+      echo_error_exit "Elasticsearch server not ready"
+    fi
   fi
 }
 
@@ -2444,9 +2482,19 @@ function _wait_for_kbn_ready_logs() {
 # -----------------------------------------------------------------------------
 function wait_for_kbn_ready_logs() {
   local timeout=${1:-90}
+  local _kbn_protocol=${TEST_KIBANA_PROTOCOL:-http}
+  local _kbn_host=${TEST_KIBANA_HOSTNAME:-localhost}
+  local _kbn_port=${TEST_KIBANA_PORT:-5601}
+  local _creds=""
+  if [ ! -z $TEST_KIBANA_USER ]; then
+    _creds="-u ${TEST_KIBANA_USER}:${TEST_KIBANA_PASS}"
+  fi
   run_with_timeout _wait_for_kbn_ready_logs $timeout
   if [ $? -ne 0 ]; then
-    echo_error_exit "Kibana server not ready"
+    curl -sX GET $_creds "$_kbn_protocol://$_kbn_host:$_kbn_port/api/status" | jq '.status.overall.state' | grep "green"
+    if [ $? -ne 0 ]; then
+      echo_error_exit "Kibana server not ready"
+    fi
   fi
 }
 
@@ -2515,12 +2563,10 @@ function set_package() {
   local _version=${_splitStr[0]}.${_splitStr[1]}
   local _isPkgSupported=$(vge $_version "7.11")
   local _isNodeSupported=$(vge $_version "7.14")
-  local _distr=$(cat /etc/os-release | grep "^NAME=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
-  local _distr_ver=$(cat /etc/os-release | grep "^VERSION=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
 
   # Even though node is now supported Kibana 7.14+, looks like chromium is not, segfaults
   # Going to only enable API tests for now
-  if [[ "$Glb_Arch" == "aarch64" ]] && [[ "$_distr" == "CentOS" ]] && [[ "$_grp" != *"xpackExt"* ]]; then
+  if [[ "$Glb_Arch" == "aarch64" ]] && [[ "$Glb_Distr" == "CentOS" ]] && [[ "$_grp" != *"xpackExt"* ]]; then
     Glb_SkipTests="yes"
     Glb_ApiOnly="yes"
   fi
@@ -2535,7 +2581,7 @@ function set_package() {
     return
   fi
 
-  #if [[ "$_distr" == "Debian" ]] && [[ "$_distr_ver" == "10" ]]; then
+  #if [[ "$Glb_Distr" == "Debian" ]] && [[ "$Glb_Distr_Ver" == "10" ]]; then
   #  export ESTF_TEST_PACKAGE="tar.gz"
   #  return
   #fi
@@ -2844,9 +2890,16 @@ function start_elasticsearch_service() {
     sudo /bin/systemctl daemon-reload
     sudo /bin/systemctl enable elasticsearch.service
     sudo /bin/systemctl start elasticsearch.service
+    set_elasticsearch_jvm_options
+    echo_info "Restart Elasticsearch service"
+    sudo /bin/systemctl restart elasticsearch.service
   else
     sudo -i service elasticsearch start
+    set_elasticsearch_jvm_options
+    echo_info "Restart Elasticsearch service"
+    sudo -i service elasticsearch start
   fi
+
   if [ $? -ne 0 ]; then
     echo_error_exit "Starting elasticsearch service failed"
   fi
@@ -2888,6 +2941,8 @@ function start_elasticsearch() {
 
   echo_info "Start Elasticsearch"
 
+  set_elasticsearch_jvm_options "$Glb_Es_Dir/config"
+
   $Glb_Es_Dir/bin/elasticsearch${_ext} &
 
   if [ $? -ne 0 ]; then
@@ -2917,6 +2972,20 @@ function start_kibana() {
   fi
   echo_info "Wait for kibana to be ready"
   wait_for_http_ready $url
+}
+
+# -----------------------------------------------------------------------------
+# set_elasticsearch_jvm_options
+# -----------------------------------------------------------------------------
+function set_elasticsearch_jvm_options() {
+  local dir=${1:-"/etc/elasticsearch"}
+  echo_info "Set JVM Options"
+  echo_debug "Directory: $dir"
+  echo "-Xms1g" | sudo tee -a $dir/jvm.options.d/jvm.options
+  echo "-Xmx1g" | sudo tee -a $dir/jvm.options.d/jvm.options
+  if [ $? -ne 0 ]; then
+    echo_error_exit "Error setting JVM options"
+  fi
 }
 
 # -----------------------------------------------------------------------------
@@ -2958,8 +3027,6 @@ function install_packages() {
 
   update_kibana_settings
 
-  start_kibana_service
-
   if [ "$type" == "basic" ]; then
     export TEST_KIBANA_PROTOCOL=http
     export TEST_KIBANA_PORT=5601
@@ -2967,6 +3034,7 @@ function install_packages() {
     export TEST_ES_PORT=9200
   fi
 
+  start_kibana_service
 }
 
 # -----------------------------------------------------------------------------
@@ -3049,7 +3117,6 @@ function install_compressed_packages() {
 
   update_kibana_settings
 
-  start_kibana $kbn_url
 
   if [ "$type" == "basic" ]; then
     export TEST_KIBANA_PROTOCOL=http
@@ -3058,6 +3125,7 @@ function install_compressed_packages() {
     export TEST_ES_PORT=9200
   fi
 
+  start_kibana $kbn_url
 }
 
 # ----------------------------------------------------------------------------
