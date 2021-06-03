@@ -114,6 +114,10 @@ def handle_special_case_index_stats(legacy_doc, metricbeat_doc):
   if 'hidden' in metricbeat_doc['index_stats'] and 'hidden' not in legacy_doc['index_stats']:
     legacy_doc['index_stats']['hidden'] = metricbeat_doc['index_stats']['hidden']
 
+  # Deleting this, since we are not using this anywhere in the Stack Monitoring code.
+  # Additional context: https://github.com/elastic/beats/pull/25113
+  del legacy_doc['index_stats']['created']
+
 def handle_special_cases(doc_type, legacy_doc, metricbeat_doc):
     if doc_type == "index_recovery":
         handle_special_case_index_recovery(legacy_doc, metricbeat_doc)
