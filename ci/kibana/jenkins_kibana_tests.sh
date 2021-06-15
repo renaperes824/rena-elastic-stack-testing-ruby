@@ -3189,6 +3189,7 @@ function cleanup_docker() {
 # -----------------------------------------------------------------------------
 function check_docker_package() {
   local _platform=$1
+  local _grp=$2
 
   if [[ "$_platform" != "docker" ]]; then
     return
@@ -3209,6 +3210,12 @@ function check_docker_package() {
   local _isPkgSupported=$(vge $_version "7.13")
 
   if [[ $_isPkgSupported == 1 ]]; then
+    # Even though node is now supported Kibana 7.14+, looks like chromium is not, segfaults
+    # Going to only enable API tests for now
+    if [[ "$Glb_Arch" == "aarch64" ]] && [[ "$Glb_Distr" == "CentOS" ]] && [[ "$_grp" != *"xpackExt"* ]]; then
+      Glb_SkipTests="yes"
+      Glb_ApiOnly="yes"
+    fi
     return
   fi
 
@@ -3276,7 +3283,7 @@ export GCS_UPLOAD_PREFIX="internal-ci-artifacts/jobs/${JOB_NAME}/${BUILD_NUMBER}
 set_package $PLATFORM $TEST_GROUP
 
 # Check docker package
-check_docker_package $PLATFORM
+check_docker_package $PLATFORM $TEST_GROUP
 
 case "$TEST_GROUP" in
   intake)
