@@ -82,7 +82,7 @@ public class UpgradeAssistantApi extends DefaultTask {
         }
     }
 
-    public void runMigrationAssistant5(RestApi api) throws IOException {
+    public void runMigrationAssistant5(RestApi api) throws IOException, InterruptedException {
         HttpResponse response;
         HttpEntity entity;
         String content;
@@ -193,7 +193,7 @@ public class UpgradeAssistantApi extends DefaultTask {
         }
     }
 
-    public void setKibanaIndexReadOnly(RestApi api) throws IOException {
+    public void setKibanaIndexReadOnly(RestApi api) throws IOException, InterruptedException {
         String path = "/.kibana/_settings";
         String jsonStr = "{\"index.blocks.write\":true}";
         HttpResponse response = api.put(esBaseUrl + path, jsonStr, false);
@@ -206,7 +206,7 @@ public class UpgradeAssistantApi extends DefaultTask {
         }
     }
 
-    public void createKibana6Index(RestApi api) throws IOException {
+    public void createKibana6Index(RestApi api) throws IOException, InterruptedException {
         String path = "/.kibana-6";
         String file = "buildSrc/src/main/resources/mappings6.json";
         String jsonStr = new String(Files.readAllBytes(Paths.get(file)));
@@ -224,7 +224,7 @@ public class UpgradeAssistantApi extends DefaultTask {
         }
     }
 
-    public void reindexKibana6Index(RestApi api) throws IOException {
+    public void reindexKibana6Index(RestApi api) throws IOException, InterruptedException {
         String path = "/_reindex?wait_for_completion=true";
         String file = "buildSrc/src/main/resources/reindex6.json";
         String jsonStr = new String(Files.readAllBytes(Paths.get(file)));
@@ -238,7 +238,7 @@ public class UpgradeAssistantApi extends DefaultTask {
         }
     }
 
-    public void aliasKibana6Index(RestApi api) throws IOException {
+    public void aliasKibana6Index(RestApi api) throws IOException, InterruptedException {
         String path = "/_aliases";
         String file = "buildSrc/src/main/resources/alias6.json";
         String jsonStr = new String(Files.readAllBytes(Paths.get(file)));

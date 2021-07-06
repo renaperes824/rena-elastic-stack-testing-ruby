@@ -846,6 +846,10 @@ function check_git_changes() {
   if [ "$_git_changes" ]; then
     echo_error_exit "'yarn kbn bootstrap' caused changes to the following files:\n$_git_changes"
   fi
+
+  # Update retries on role security for cloud
+  sed -i 's/retries: 0/retries: 10/g' test/common/services/security/role.ts
+
 }
 
 # -----------------------------------------------------------------------------

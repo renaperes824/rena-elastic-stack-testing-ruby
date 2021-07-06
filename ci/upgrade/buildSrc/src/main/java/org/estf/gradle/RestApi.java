@@ -30,6 +30,8 @@ public class RestApi {
     private int majorVersion;
     private int majorUpgradeVersion;
 
+    final private int MAX_RETRIES = 5;
+
     public RestApi(String username, String password, String version, String upgradeVersion) {
         this.username = username;
         this.password = password;
@@ -38,79 +40,115 @@ public class RestApi {
         setCredentials();
     }
 
-    public HttpResponse post(String path, String jsonStr, Boolean postToKbn) throws IOException {
-        HttpPost postRequest = new HttpPost(path);
-        postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
-        if (postToKbn) {
-            postRequest.setHeader("kbn-xsrf", "automation");
-        }
-        System.out.println("** POST REQUEST **");
-        System.out.println("Path: " + path);
-        System.out.println("Payload: " + jsonStr);
-        postRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-        StringEntity entity = new StringEntity(jsonStr);
-        entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        postRequest.setEntity(entity);
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpResponse response = client.execute(postRequest);
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode != 200) {
-            throw new IOException("FAILED! POST: " + response.getStatusLine() + " " + path);
-        }
-        return response;
-    }
-
-    public HttpResponse put(String path, String jsonStr, Boolean postToKbn) throws IOException {
-        HttpPut putRequest = new HttpPut(path);
-        putRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
-        if (postToKbn) {
-            putRequest.setHeader("kbn-xsrf", "automation");
-        }
-        System.out.println("** PUT REQUEST **");
-        System.out.println("Path: " + path);
-        System.out.println("Payload: " + jsonStr);
-        putRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-        StringEntity entity = new StringEntity(jsonStr);
-        entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        putRequest.setEntity(entity);
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpResponse response = client.execute(putRequest);
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode != 200) {
-            throw new IOException("FAILED! PUT: " + response.getStatusLine() + " " + path);
+    public HttpResponse post(String path, String jsonStr, Boolean postToKbn) throws IOException, InterruptedException {
+        HttpResponse response = null;
+        for (int retries = 0;; retries++) {
+            HttpPost postRequest = new HttpPost(path);
+            postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+            if (postToKbn) {
+                postRequest.setHeader("kbn-xsrf", "automation");
+            }
+            System.out.println("** POST REQUEST **");
+            System.out.println("Path: " + path);
+            System.out.println("Payload: " + jsonStr);
+            postRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+            StringEntity entity = new StringEntity(jsonStr);
+            entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            postRequest.setEntity(entity);
+            HttpClient client = HttpClientBuilder.create().build();
+            response = client.execute(postRequest);
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode == 200) {
+                break;
+            }
+            if (retries < MAX_RETRIES) {
+                System.out.println("** Retrying post request **");
+                Thread.sleep(2000);
+            } else {
+                throw new IOException("FAILED! POST: " + response.getStatusLine() + " " + path);
+            }
         }
         return response;
     }
 
-    public HttpResponse get(String path) throws IOException {
-        HttpGet getRequest = new HttpGet(path);
-        getRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
-        getRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-        System.out.println("** GET REQUEST **");
-        System.out.println("Path: " + path);
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpResponse response = client.execute(getRequest);
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode != 200) {
-            throw new IOException("FAILED! GET: " + response.getStatusLine() + " " + path);
+    public HttpResponse put(String path, String jsonStr, Boolean postToKbn) throws IOException, InterruptedException {
+        HttpResponse response = null;
+        for (int retries = 0;; retries++) {
+            HttpPut putRequest = new HttpPut(path);
+            putRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+            if (postToKbn) {
+                putRequest.setHeader("kbn-xsrf", "automation");
+            }
+            System.out.println("** PUT REQUEST **");
+            System.out.println("Path: " + path);
+            System.out.println("Payload: " + jsonStr);
+            putRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+            StringEntity entity = new StringEntity(jsonStr);
+            entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            putRequest.setEntity(entity);
+            HttpClient client = HttpClientBuilder.create().build();
+            response = client.execute(putRequest);
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode == 200) {
+                break;
+            }
+            if (retries < MAX_RETRIES) {
+                System.out.println("** Retrying put request **");
+                Thread.sleep(2000);
+            } else {
+                throw new IOException("FAILED! PUT: " + response.getStatusLine() + " " + path);
+            }
         }
         return response;
     }
 
-    public HttpResponse delete(String path, Boolean postToKbn) throws IOException {
-        HttpDelete deleteRequest = new HttpDelete(path);
-        deleteRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
-        if (postToKbn) {
-            deleteRequest.setHeader("kbn-xsrf", "automation");
+    public HttpResponse get(String path) throws IOException, InterruptedException {
+        HttpResponse response = null;
+        for (int retries = 0;; retries++) {
+            HttpGet getRequest = new HttpGet(path);
+            getRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+            getRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+            System.out.println("** GET REQUEST **");
+            System.out.println("Path: " + path);
+            HttpClient client = HttpClientBuilder.create().build();
+            response = client.execute(getRequest);
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode == 200) {
+                break;
+            }
+            if (retries < MAX_RETRIES) {
+                System.out.println("** Retrying get request **");
+                Thread.sleep(2000);
+            } else {
+                throw new IOException("FAILED! GET: " + response.getStatusLine() + " " + path);
+            }
         }
-        deleteRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-        System.out.println("** DELETE REQUEST **");
-        System.out.println("Path: " + path);
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpResponse response = client.execute(deleteRequest);
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode != 200) {
-            throw new IOException("FAILED! DELETE: " + response.getStatusLine() + " " + path);
+        return response;
+    }
+
+    public HttpResponse delete(String path, Boolean postToKbn) throws IOException, InterruptedException {
+        HttpResponse response = null;
+        for (int retries = 0;; retries++) {
+            HttpDelete deleteRequest = new HttpDelete(path);
+            deleteRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+            if (postToKbn) {
+                deleteRequest.setHeader("kbn-xsrf", "automation");
+            }
+            deleteRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+            System.out.println("** DELETE REQUEST **");
+            System.out.println("Path: " + path);
+            HttpClient client = HttpClientBuilder.create().build();
+            response = client.execute(deleteRequest);
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode == 200) {
+                break;
+            }
+            if (retries < MAX_RETRIES) {
+                System.out.println("** Retrying delete request **");
+                Thread.sleep(2000);
+            } else {
+                throw new IOException("FAILED! DELETE: " + response.getStatusLine() + " " + path);
+            }
         }
         return response;
     }
