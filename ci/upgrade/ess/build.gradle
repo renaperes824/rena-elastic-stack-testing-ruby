@@ -4,6 +4,7 @@ import org.estf.gradle.EditEssDeployment
 import org.estf.gradle.ShutdownEssDeployment
 import org.estf.gradle.UpgradeEssDeployment
 import org.estf.gradle.UploadData
+import org.estf.gradle.UploadSecuritySolutionData
 import org.estf.gradle.UpgradeAssistantApi
 
 
@@ -243,6 +244,18 @@ if (rootProject.createVersion && upgrade_versions ) {
             }
         }
 
+        tasks.create("upload_security_solution_data" + i, UploadSecuritySolutionData) {
+            doFirst {
+                println("******* SECTION: UPLOAD SECURITY SOLUTION DATA *******")
+                esBaseUrl = rootProject.props.elasticsearch_url
+                kbnBaseUrl = rootProject.props.kibana_url
+                username = rootProject.props.es_username
+                password = rootProject.props.es_password
+                version = originating_version
+                upgradeVersion = upgrade_version
+            }
+        }
+
         tasks.create("upgrade_assistant" + i, UpgradeAssistantApi) {
             doFirst {
                 println("******* SECTION: UPGRADE ASSISTANT *******")
@@ -267,11 +280,11 @@ if (rootProject.createVersion && upgrade_versions ) {
 
         if (i == 0) {
             tasks.create("ess_upgrade" + i) {
-                dependsOn "upload_data" + i, "upgrade_assistant" + i, "ess_upgrade_deployment" + i
+                dependsOn "upload_data" + i, "upload_security_solution_data" + i, "upgrade_assistant" + i, "ess_upgrade_deployment" + i
             }
         } else if (upload_data_interm && next_version_6_5_0_later >= 0) {
             tasks.create("ess_upgrade" + i) {
-                dependsOn "upload_data" + i, "upgrade_assistant" + i, "ess_upgrade_deployment" + i
+                dependsOn "upload_data" + i, "upload_security_solution_data" + i, "upgrade_assistant" + i, "ess_upgrade_deployment" + i
             }
             upload_data_interm = false
         } else {
@@ -281,7 +294,8 @@ if (rootProject.createVersion && upgrade_versions ) {
         }
 
         ess_upgrade.dependsOn "ess_upgrade" + i
-        tasks.findByName("upgrade_assistant" + i).mustRunAfter("upload_data" + i)
+        tasks.findByName("upload_security_solution_data" + i).mustRunAfter("upload_data" + i)
+        tasks.findByName("upgrade_assistant" + i).mustRunAfter("upload_security_solution_data" + i)
         tasks.findByName("ess_upgrade_deployment" + i).mustRunAfter("upgrade_assistant" + i)
     }
 }

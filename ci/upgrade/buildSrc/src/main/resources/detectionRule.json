@@ -1,0 +1,16 @@
+{
+  "rule_id": "123",
+  "risk_score": 7,
+  "description": "My description",
+  "interval": "10s",
+  "name": "Rule Name",
+  "severity": "low",
+  "type": "query",
+  "from": "now-17520h",
+  "index": [
+    "auditbeat-upgrade-*"
+  ],
+  "query": "*:*",
+  "language": "kuery",
+  "enabled": true
+}
