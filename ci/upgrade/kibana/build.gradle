@@ -7,6 +7,8 @@
 
 import org.estf.gradle.ShellCommand
 import org.ajoberstar.grgit.Grgit
+import java.util.stream.Collectors
+
 
 plugins {
   id 'org.ajoberstar.grgit' version '4.1.0' apply false
@@ -75,6 +77,10 @@ task get_kibana_commit(type:Exec, dependsOn: clone_kibana_repo) {
 task run_kibana_tests(dependsOn: get_kibana_commit) {
     doFirst {
 
+        def sel_test_suites = System.env.ESTF_KIBANA_TEST_SUITES ?: 'all'
+        def test_suites = sel_test_suites.split(',')
+        def test_failures = []
+
         println("******* SECTION: RUN KIBANA TESTS *******")
 
         // Add system environment variables
@@ -83,89 +89,68 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
             envList.add(key + "=" + value)
         }
 
+        println "************ SYSTEM ENVIRONMENT VARS ************"
+        println System.getenv()
+        println "*************************************************"
+
+        // Add specific Kibana environment variables
+        if (rootProject.hasProperty('tls_reject')) {
+            envList.add("NODE_TLS_REJECT_UNAUTHORIZED=0")
+            envList.add("TEST_IGNORE_CERT_ERRORS=1")
+        }
+
         def kibanaUri = new URI(rootProject.props.kibana_url)
         def elasticUri = new URI(rootProject.props.elasticsearch_url)
 
-        // Add specific Kibana environment variables
-        envList.add("TEST_KIBANA_HOSTNAME=" + kibanaUri?.getHost())
-        envList.add("TEST_KIBANA_PROTOCOL=" + 'https')
-        envList.add("TEST_KIBANA_PORT=" + kibanaUri?.getPort())
-        envList.add("TEST_KIBANA_USER=" + rootProject.props.es_username)
-        envList.add("TEST_KIBANA_PASS=" + rootProject.props.es_password)
-
-        envList.add("TEST_ES_HOSTNAME=" + elasticUri?.getHost())
-        envList.add("TEST_ES_PROTOCOL=" + 'https')
-        envList.add("TEST_ES_PORT=" + elasticUri?.getPort())
-        envList.add("TEST_ES_USER=" + rootProject.props.es_username)
-        envList.add("TEST_ES_PASS=" + rootProject.props.es_password)
-
-        if (rootProject.hasProperty('tls_reject')) {
-            envList.add("NODE_TLS_REJECT_UNAUTHORIZED=0")
-            envList.add("TEST_IGNORE_CERT_ERRORS=1")
-        }
-
-        println "************"
-        println System.getenv()
-        println "************"
-
-        println "************"
-        println envList
-        println "************"
-
-        println "Running Kibana Tests...."
-        // Run Kibana tests
-        ShellCommand shell = new ShellCommand("./jenkins_kibana_tests.sh upgrade", "$buildDir/kibana", envList)
-        shell.waitFor()
-
-        if (shell.getRc() != 0) {
-            throw new GradleException("Kibana Tests Failed!")
-        }
-    }
-}
-
-task run_security_solution_tests(dependsOn: get_kibana_commit) {
-    doFirst {
-
-        println("******* SECTION: RUN SECURITY SOLUTION TESTS *******")
-
-        // Add system environment variables
-        def envList = []
-        System.getenv().each { key, value ->
-            envList.add(key + "=" + value)
-        }
-
-        def kibanaUri = new URI(rootProject.props.kibana_url)
-
-        // Add specific Kibana environment variables
-        envList.add("TEST_KIBANA_URL=" + rootProject.props.kibana_url)
         envList.add("TEST_KIBANA_HOSTNAME=" + kibanaUri?.getHost())
         envList.add("TEST_KIBANA_PROTOCOL=" + 'https')
         envList.add("TEST_KIBANA_PORT=" + kibanaUri?.getPort())
 
-        envList.add("TEST_ES_URL=" + rootProject.props.elasticsearch_url)
         envList.add("TEST_ES_USER=" + rootProject.props.es_username)
         envList.add("TEST_ES_PASS=" + rootProject.props.es_password)
 
-        if (rootProject.hasProperty('tls_reject')) {
-            envList.add("NODE_TLS_REJECT_UNAUTHORIZED=0")
-            envList.add("TEST_IGNORE_CERT_ERRORS=1")
+        if ('kibana' in test_suites || 'all' in test_suites) {
+
+            def envList1 = []
+            envList1.addAll(envList)
+
+            envList1.add("TEST_KIBANA_USER=" + rootProject.props.es_username)
+            envList1.add("TEST_KIBANA_PASS=" + rootProject.props.es_password)
+
+            envList1.add("TEST_ES_HOSTNAME=" + elasticUri?.getHost())
+            envList1.add("TEST_ES_PROTOCOL=" + 'https')
+            envList1.add("TEST_ES_PORT=" + elasticUri?.getPort())
+
+            println "************ KIBANA TEST ENVIRONMENT VARS ************"
+            println envList1
+            println "******************************************************"
+
+            println "Running Kibana Tests...."
+            ShellCommand kibanaTests = new ShellCommand("./jenkins_kibana_tests.sh upgrade", "$buildDir/kibana", envList1)
+            kibanaTests.waitFor()
+            test_failures.add(kibanaTests.getRc())
         }
 
-        println "************"
-        println System.getenv()
-        println "************"
+        if ('security-solutions' in test_suites || 'all' in test_suites) {
+            def envList2 = []
+            envList2.addAll(envList)
+            envList2.add("TEST_KIBANA_URL=" + kibanaUri)
+            envList2.add("TEST_ES_URL=" + elasticUri)
 
-        println "************"
-        println envList
-        println "************"
+            println "************ KIBANA TEST ENVIRONMENT VARS ************"
+            println envList2
+            println "******************************************************"
 
-        println "Running Kibana Tests...."
-        // Run Kibana tests
-        ShellCommand shell = new ShellCommand("./jenkins_kibana_tests.sh upgrade_security_solution", "$buildDir/kibana", envList)
-        shell.waitFor()
+            println "Running Security Solution Tests...."
+            ShellCommand securitySolnTests = new ShellCommand("./jenkins_kibana_tests.sh upgrade_security_solution", "$buildDir/kibana", envList2)
+            securitySolnTests.waitFor()
+            test_failures.add(securitySolnTests.getRc())
+        }
 
-        if (shell.getRc() != 0) {
-            throw new GradleException("Kibana Security Solution Tests Failed!")
+        def test_failure_list = test_failures.stream().distinct().collect(Collectors.toList())
+        if (test_failure_list.size() > 1 ||
+            (test_failure_list.size() == 1 && test_failure_list.get(0) != 0)) {
+             throw new GradleException("Kibana Tests Failed!")
         }
     }
 }
