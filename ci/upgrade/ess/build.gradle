@@ -110,6 +110,11 @@ task kibana_upgrade_tests {
     dependsOn tasks.getByPath(':kibana:run_kibana_tests')
 }
 
+task security_solution_upgrade_tests {
+    rootProject.ext.test_task = "${name}"
+    dependsOn tasks.getByPath(':kibana:run_security_solution_tests')
+}
+
 static def get_kibana_info(String url, String username, String password) {
     int max_retries = 10
     for (int retries = 0; ; retries++) {
@@ -311,3 +316,13 @@ tasks.getByPath(':kibana:run_kibana_tests').onlyIf {
 }
 tasks.getByPath(':kibana:run_kibana_tests').finalizedBy ess_shutdown_deployment
 kibana_upgrade_tests.finalizedBy ess_shutdown_deployment
+
+security_solution_upgrade_tests.dependsOn ess_disable_saml_login
+tasks.getByPath(':kibana:run_security_solution_tests').onlyIf {
+    final_version_7_12_0_later >= 0
+}
+tasks.getByPath(':kibana:run_security_solution_tests').finalizedBy ess_shutdown_deployment
+security_solution_upgrade_tests.finalizedBy ess_shutdown_deployment
+
+
+

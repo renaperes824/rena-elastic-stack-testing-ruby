@@ -3,7 +3,7 @@
   "risk_score": 7,
   "description": "My description",
   "interval": "10s",
-  "name": "Rule Name",
+  "name": "Custom query rule for upgrade",
   "severity": "low",
   "type": "query",
   "from": "now-17520h",

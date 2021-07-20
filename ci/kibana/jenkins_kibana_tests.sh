@@ -1836,6 +1836,47 @@ function run_upgrade_tests() {
 }
 
 # -----------------------------------------------------------------------------
+# Method to run security solution upgrade tests
+# -----------------------------------------------------------------------------
+function run_security_solution_upgrade_tests() {
+  echo_info "In run_security_solution_upgrade_tests"
+  local maxRuns="${ESTF_NUMBER_EXECUTIONS:-1}"
+
+  run_ci_setup
+  update_test_files
+
+  local _xpack_dir="$(cd x-pack; pwd)"
+  echo_info "-> XPACK_DIR ${_xpack_dir}"
+  cd "$_xpack_dir"
+
+  # To fix FTR ssl certificate issue: https://github.com/elastic/kibana/pull/73317
+  export TEST_CLOUD=1
+
+  nodeOpts=" "
+  if [ ! -z $NODE_TLS_REJECT_UNAUTHORIZED ] && [[ $NODE_TLS_REJECT_UNAUTHORIZED -eq 0 ]]; then
+    nodeOpts="--no-warnings "
+  fi
+
+  failures=0
+  for i in $(seq 1 1 $maxRuns); do
+    export ESTF_RUN_NUMBER=$i
+    update_report_name "test/security_solution_cypress/upgrade_config.ts"
+
+    echo_info " -> Running upgrade security solution tests, run $i of $maxRuns"
+    eval node $nodeOpts ../scripts/functional_test_runner \
+          --config test/security_solution_cypress/upgrade_config.ts \
+          --debug
+    if [ $? -ne 0 ]; then
+      failures=1
+    fi
+  done
+
+  run_ci_cleanup
+
+  exit_script $failures "Upgrade Security Solution Tests failed!"
+}
+
+# -----------------------------------------------------------------------------
 # Run with timeout
 # -----------------------------------------------------------------------------
 function run_with_timeout {
@@ -3331,6 +3372,9 @@ case "$TEST_GROUP" in
     ;;
   upgrade)
     run_upgrade_tests
+    ;;
+  upgrade_security_solution)
+    run_security_solution_upgrade_tests
     ;;
   selenium)
     run_basic_tests
