@@ -22,6 +22,7 @@
     src: '{{ kibana_package }}'
     dest: '{{ kibana_install_dir }}'
     remote_src: True
+    list_files: True
   register: kibana_archive_contents
 
 - name: Rename directory if it does not match base package name

@@ -22,6 +22,7 @@
     src: '{{ elasticsearch_package }}'
     dest: '{{ elasticsearch_install_dir }}'
     remote_src: True
+    list_files: True
   register: elasticsearch_archive_contents
 
 - name: Rename directory if it does not match base package name
