@@ -77,7 +77,7 @@ task get_kibana_commit(type:Exec, dependsOn: clone_kibana_repo) {
 task run_kibana_tests(dependsOn: get_kibana_commit) {
     doFirst {
 
-        def sel_test_suites = System.env.ESTF_KIBANA_TEST_SUITES ?: 'all'
+        def sel_test_suites = rootProject.ext.test_suites
         def test_suites = sel_test_suites.split(',')
         def test_failures = []
 
