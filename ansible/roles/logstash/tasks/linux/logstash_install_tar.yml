@@ -22,7 +22,6 @@
     src: '{{ logstash_package }}'
     dest: '{{ logstash_install_dir }}'
     remote_src: True
-    list_files: yes
   register: logstash_archive_contents
 
 - name: Rename directory if it does not match base package name
