@@ -59,7 +59,7 @@ task ess_create_deployment(type: CreateEssDeployment) {
         }
     }
     doLast {
-        int version_7_12_0_later = compareVersion(stackVersion, "7.12.0")
+        int version_7_8_0_later = compareVersion(stackVersion, "7.8.0")
         def propFile = getPropertiesFile()
         Properties properties = new Properties()
         File propertiesFile = new File(propFile.trim())
@@ -71,7 +71,7 @@ task ess_create_deployment(type: CreateEssDeployment) {
         rootProject.ext.cluster_id = getElasticsearchClusterId()
         rootProject.ext.kibana_cluster_id = getKibanaClusterId()
         rootProject.ext.test_suites = System.env.ESTF_KIBANA_TEST_SUITES ?: 'all'
-        if (version_7_12_0_later < 0) {
+        if (version_7_8_0_later < 0) {
             rootProject.ext.test_suites = 'kibana'
         }
         get_kibana_info(properties.kibana_url as String,
