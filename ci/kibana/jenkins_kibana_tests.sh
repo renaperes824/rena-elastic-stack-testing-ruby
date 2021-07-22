@@ -234,6 +234,10 @@ function get_version() {
     Glb_Kibana_Version="${Glb_Kibana_Version}-SNAPSHOT"
   fi
 
+  if [[ "$ESTF_BUILD_ID" == *"alpha1"* ]]; then
+     Glb_Kibana_Version="${Glb_Kibana_Version}-alpha1"
+  fi
+
   readonly Glb_Kibana_Version
 }
 
