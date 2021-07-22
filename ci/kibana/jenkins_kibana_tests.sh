@@ -2620,6 +2620,10 @@ function set_package() {
     Glb_ApiOnly="yes"
   fi
 
+  if [[ "$Glb_Distr" == "SLES" ]] && [[ "$Glb_Distr_Ver" == "12-SP5" ]]; then
+    Glb_SkipTests="yes"
+  fi
+
   if [[ $_isPkgSupported == 0 ]]; then
     export ESTF_TEST_PACKAGE="tar.gz"
     return
