@@ -2787,7 +2787,7 @@ function elasticsearch_generate_certs() {
   local _esHome="/etc/elasticsearch"
   local _esBin="/usr/share/elasticsearch"
   local _kbnHome="/etc/kibana"
-  local _ip=$(hostname -I | sed 's/ *$//g' | awk '{print $1}')
+  local _ip=$(get_hostname)
   local _isNewCertUtils=$(vge $_version "8.0")
 
   local _sudo="sudo -s"
@@ -2874,7 +2874,7 @@ EOM
 function elasticsearch_setup_passwords() {
   local _esBin="/usr/share/elasticsearch"
   local _kbnHome="/etc/kibana"
-  local _ip=$(hostname -I | sed 's/ *$//g' | awk '{print $1}')
+  local _ip=$(get_hostname)
 
   local _sudo="sudo -s"
   if [ "$ESTF_TEST_PACKAGE" == "tar.gz" ] || [ "$ESTF_TEST_PACKAGE" == "zip" ]; then
@@ -3153,7 +3153,7 @@ function install_compressed_packages() {
   if [ "$type" != "basic" ]; then
     elasticsearch_generate_certs
     protocol="https"
-    host=$(hostname -I | sed 's/ *$//g' | awk '{print $1}')
+    host=$(get_hostname)
     if [[ "$Glb_OS" == "windows" ]]; then
       host=$(ipconfig | grep IPv4 | cut -d: -f2 | awk '{print $1}')
     fi
@@ -3274,6 +3274,15 @@ function check_docker_package() {
 
   echo_error_exit "Docker aarch64 packages are only supported 7.13+"
 
+}
+
+function get_hostname() {
+  opt=" -I "
+  if [[ "$Glb_Distr" == "SLES" ]] && [[ "$Glb_Distr_Ver" == "12-SP5" ]]; then
+    opt=" -i "
+  fi
+  result=$(hostname $opt | sed 's/ *$//g' | awk '{print $1}')
+  echo $result
 }
 
 # ****************************************************************************
