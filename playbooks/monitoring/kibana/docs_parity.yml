@@ -141,7 +141,7 @@
 
     - name: Wait for metricbeat to index a few monitoring documents
       wait_for:
-        timeout: 15
+        timeout: 25
 
     - name: Stop metricbeat
       include_role:
