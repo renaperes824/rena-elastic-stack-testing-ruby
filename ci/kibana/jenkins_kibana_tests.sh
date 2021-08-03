@@ -1572,8 +1572,8 @@ function run_cloud_basic_tests() {
     echo_info " -> Running cloud basic functional tests, run $i of $maxRuns"
     eval node $nodeOpts scripts/functional_test_runner \
           --config test/functional/config.js \
-          --exclude-tag skipCloud \
-          --debug " $includeTags"
+          --exclude-tag skipCloud " $includeTags"
+
     if [ $? -ne 0 ]; then
       failures=1
     fi
@@ -1603,7 +1603,7 @@ function run_cloud_xpack_func_tests() {
   export TEST_BROWSER_HEADLESS=1
   # To fix FTR ssl certificate issue: https://github.com/elastic/kibana/pull/73317
   export TEST_CLOUD=1
-
+q
   nodeOpts=" "
   if [ ! -z $NODE_TLS_REJECT_UNAUTHORIZED ] && [[ $NODE_TLS_REJECT_UNAUTHORIZED -eq 0 ]]; then
     nodeOpts="--no-warnings "
@@ -1617,8 +1617,8 @@ function run_cloud_xpack_func_tests() {
     echo_info " -> Running cloud xpack func tests, run $i of $maxRuns"
     eval node $nodeOpts ../scripts/functional_test_runner \
           --config test/functional/config.js \
-          --exclude-tag skipCloud \
-          --debug " $includeTags"
+          --exclude-tag skipCloud " $includeTags"
+
     if [ $? -ne 0 ]; then
       failures=1
     fi
@@ -1729,10 +1729,8 @@ function run_cloud_xpack_ext_tests() {
       update_report_name $cfg
 
       echo " -> Running cloud xpack ext tests config: $cfg, run $i of $maxRuns"
-      node $nodeOpts ../scripts/functional_test_runner \
-        --config $cfg \
-        --exclude-tag skipCloud \
-        --debug
+      node $nodeOpts ../scripts/functional_test_runner --config $cfg --exclude-tag skipCloud
+
       if [ $? -ne 0 ]; then
         failures=1
       fi
@@ -1827,8 +1825,8 @@ function run_upgrade_tests() {
     echo_info " -> Running upgrade tests, run $i of $maxRuns"
     eval xvfb-run node $nodeOpts ../scripts/functional_test_runner \
           --config test/upgrade/config.ts \
-          --exclude-tag skipCloud \
-          --debug " $includeTags"
+          --exclude-tag skipCloud " $includeTags"
+
     if [ $? -ne 0 ]; then
       failures=1
     fi
@@ -1868,8 +1866,8 @@ function run_security_solution_upgrade_tests() {
 
     echo_info " -> Running upgrade security solution tests, run $i of $maxRuns"
     eval node $nodeOpts ../scripts/functional_test_runner \
-          --config test/security_solution_cypress/upgrade_config.ts \
-          --debug
+          --config test/security_solution_cypress/upgrade_config.ts
+
     if [ $? -ne 0 ]; then
       failures=1
     fi
@@ -2113,9 +2111,8 @@ function run_standalone_basic_tests() {
     update_report_name "test/functional/config.js"
 
     echo_info " -> Running standalone basic functional tests, run $i of $maxRuns"
-    eval node scripts/functional_test_runner \
-          --config test/functional/config.js \
-          --debug " $includeTags"
+    eval node scripts/functional_test_runner --config test/functional/config.js " $includeTags"
+
     if [ $? -ne 0 ]; then
       failures=1
     fi
@@ -2172,8 +2169,8 @@ function run_standalone_xpack_func_tests() {
 
     echo_info " -> Running standalone xpack func tests, run $i of $maxRuns"
     eval node $nodeOpts ../scripts/functional_test_runner \
-          --config test/functional/config.js \
-          --debug " $includeTags"
+          --config test/functional/config.js " $includeTags"
+
     if [ $? -ne 0 ]; then
       failures=1
     fi
@@ -2244,9 +2241,8 @@ function run_standalone_xpack_ext_tests() {
       update_report_name $cfg
 
       echo " -> Running standalone xpack ext tests config: $cfg, run $i of $maxRuns"
-      node $nodeOpts ../scripts/functional_test_runner \
-        --config $cfg \
-        --debug
+      node $nodeOpts ../scripts/functional_test_runner --config $cfg
+
       if [ $? -ne 0 ]; then
         failures=1
       fi
