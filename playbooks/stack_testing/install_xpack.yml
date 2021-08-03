@@ -14,14 +14,38 @@
     - { role: xpack_elasticsearch, ait_role: xpack_elasticsearch_install_gencert_config_start_verify }
     - { role: xpack_kibana, ait_role: xpack_kibana_install_config_start_verify }
     - { role: xpack_logstash, ait_role: xpack_logstash_install_config_start_verify }
-    - { role: xpack_filebeat, ait_role: xpack_filebeat_install_config_start_verify_import_dashboards }
-    - { role: xpack_metricbeat, ait_role: xpack_metricbeat_install_config_start_verify_import_dashboards }
-    - { role: xpack_packetbeat, ait_role: xpack_packetbeat_install_config_start_verify_import_dashboards }
+    - { role: xpack_filebeat, ait_role: xpack_filebeat_install_config_start_verify }
+    - { role: xpack_metricbeat, ait_role: xpack_metricbeat_install_config_start_verify }
+    - { role: xpack_packetbeat, ait_role: xpack_packetbeat_install_config_start_verify }
     - { role: xpack_apm_server, ait_role: xpack_apm_server_install_config_start_verify }
     - { role: xpack_heartbeat, ait_role: xpack_heartbeat_install_config_start_verify }
-    - { role: xpack_auditbeat, ait_role: xpack_auditbeat_install_config_start_verify_import_dashboards }
+    - { role: xpack_auditbeat, ait_role: xpack_auditbeat_install_config_start_verify }
 
   tasks:
+
+    - name: Import filebeat dashboard
+      include_role:
+        name: filebeat
+      vars:
+        ait_action: filebeat_import_dashboards
+
+    - name: Import metricbeat dashboard
+      include_role:
+        name: metricbeat
+      vars:
+        ait_action: metricbeat_import_dashboards
+
+    - name: Import packetbeat dashboard
+      include_role:
+        name: packetbeat
+      vars:
+        ait_action: packetbeat_import_dashboards
+
+    - name: Import auditbeat dashboard
+      include_role:
+        name: auditbeat
+      vars:
+        ait_action: auditbeat_import_dashboards
 
     - name: Wait for some documents to be indexed
       wait_for:
