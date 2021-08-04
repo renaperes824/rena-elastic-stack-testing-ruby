@@ -2366,7 +2366,7 @@ function disable_security_user() {
   file_modified=$(grep -c "disableTestUser" $configFile)
   echo "$configFile already modified: $file_modified"
   if [[ $file_modified == 0 ]]; then
-    gawk -i inplace '/\s+security:.*/{print;print "      disableTestUser: true,";next}1' $configFile
+    gawk '/\s+security:.*/{print;print "      disableTestUser: true,";next}1' $configFile > config.js.tmp && mv -f config.js.tmp $configFile
     echo $?
   fi
 
@@ -2582,24 +2582,6 @@ function set_package() {
   local _platform=$1
   local _grp=$2
 
-  export ESTF_TEST_STANDALONE=false
-
-  if [[ "$_platform" == "docker" ]]; then
-    export ESTF_TEST_PACKAGE="docker"
-    export ESTF_TEST_STANDALONE=true
-    return
-  elif [[ "$_platform" != "linux" ]]; then
-    if [[ "$_platform" == "windows" ]]; then
-      export ESTF_TEST_PACKAGE="zip"
-      #export ESTF_TEST_STANDALONE=true
-    elif [[ "$_platform" == "darwin" ]]; then
-      export ESTF_TEST_PACKAGE="tar.gz"
-    fi
-    return
-  elif [[ "$_platform" == "cloud" ]]; then
-    return
-  fi
-
   get_build_server
   get_version
   get_os
@@ -2618,6 +2600,24 @@ function set_package() {
 
   if [[ "$Glb_Distr" == "SLES" ]] && [[ "$Glb_Distr_Ver" == "12-SP5" ]]; then
     Glb_SkipTests="yes"
+  fi
+
+  export ESTF_TEST_STANDALONE=false
+
+  if [[ "$_platform" == "docker" ]]; then
+    export ESTF_TEST_PACKAGE="docker"
+    export ESTF_TEST_STANDALONE=true
+    return
+  elif [[ "$_platform" != "linux" ]]; then
+    if [[ "$_platform" == "windows" ]]; then
+      export ESTF_TEST_PACKAGE="zip"
+      #export ESTF_TEST_STANDALONE=true
+    elif [[ "$_platform" == "darwin" ]]; then
+      export ESTF_TEST_PACKAGE="tar.gz"
+    fi
+    return
+  elif [[ "$_platform" == "cloud" ]]; then
+    return
   fi
 
   if [[ $_isPkgSupported == 0 ]]; then
