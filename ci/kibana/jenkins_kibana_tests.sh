@@ -276,24 +276,42 @@ function get_os() {
     Glb_OS="windows"
   elif [[ "$_uname" == "Darwin" ]]; then
     Glb_OS="darwin"
-  elif [[ "$_uname" == "Linux" ]]; then
-    Glb_OS="linux"
+  elif [[ "$_uname" == "Linux" ]] || [[ "$_uname" == "Docker" ]]; then
+    if [[ "$_uname" == "Docker" ]]; then
+      Glb_OS="docker"
+    else
+      Glb_OS="linux"
+    fi
     Glb_Distr=$(cat /etc/os-release | grep "^NAME=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
     Glb_Distr_Ver=$(cat /etc/os-release | grep "^VERSION=" | awk -F"=" '{print $2}' | sed 's/\"//g' | awk '{print $1}')
-  elif [[ "$_uname" == "Docker" ]]; then
-    Glb_OS="docker"
   else
     echo_error_exit "Unknown OS: $_uname"
+  fi
+
+  # Even though node is now supported Kibana 7.14+, looks like chromium is not, segfaults
+  # Going to only enable API tests for now
+  if [[ "$Glb_Arch" == "aarch64" ]] && [[ "$Glb_Distr" == "CentOS" ]]; then
+    if [[ "$_grp" != *"xpackExt"* ]]; then
+      Glb_SkipTests="yes"
+    else
+      Glb_ApiOnly="yes"
+    fi
+  fi
+
+  if [[ "$Glb_Distr" == "SLES" ]] && [[ "$Glb_Distr_Ver" == "12-SP5" ]]; then
+    Glb_SkipTests="yes"
   fi
 
   if [[ "$Glb_Arch" == "aarch64" ]]; then
     if  [[ "$Glb_SkipTests" == "no" ]]; then
       install_pkg "jq"
-      if [[ "$Glb_Distr" == "CentOS" ]]; then
-        install_pkg "chromium"
-        install_pkg "chromedriver"
-      else
-        install_pkg "chromium-chromedriver"
+      if [[ $Glb_ApiOnly == "no" ]]; then
+        if [[ "$Glb_Distr" == "CentOS" ]]; then
+          install_pkg "chromium"
+          install_pkg "chromedriver"
+        else
+          install_pkg "chromium-chromedriver"
+        fi
       fi
     fi
     Glb_Chromium=$(which chromium-browser)
@@ -2582,26 +2600,6 @@ function set_package() {
   local _platform=$1
   local _grp=$2
 
-  get_build_server
-  get_version
-  get_os
-
-  local _splitStr=(${Glb_Kibana_Version//./ })
-  local _version=${_splitStr[0]}.${_splitStr[1]}
-  local _isPkgSupported=$(vge $_version "7.11")
-  local _isNodeSupported=$(vge $_version "7.14")
-
-  # Even though node is now supported Kibana 7.14+, looks like chromium is not, segfaults
-  # Going to only enable API tests for now
-  if [[ "$Glb_Arch" == "aarch64" ]] && [[ "$Glb_Distr" == "CentOS" ]] && [[ "$_grp" != *"xpackExt"* ]]; then
-    Glb_SkipTests="yes"
-    Glb_ApiOnly="yes"
-  fi
-
-  if [[ "$Glb_Distr" == "SLES" ]] && [[ "$Glb_Distr_Ver" == "12-SP5" ]]; then
-    Glb_SkipTests="yes"
-  fi
-
   export ESTF_TEST_STANDALONE=false
 
   if [[ "$_platform" == "docker" ]]; then
@@ -2619,6 +2617,14 @@ function set_package() {
   elif [[ "$_platform" == "cloud" ]]; then
     return
   fi
+
+  get_build_server
+  get_version
+  get_os
+
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
+  local _isPkgSupported=$(vge $_version "7.11")
 
   if [[ $_isPkgSupported == 0 ]]; then
     export ESTF_TEST_PACKAGE="tar.gz"
@@ -3244,13 +3250,13 @@ function check_docker_package() {
     return
   fi
 
-  if [[ "$Glb_Arch" != "aarch64" ]]; then
-    return
-  fi
-
   get_build_server
   get_version
   get_os
+
+  if [[ "$Glb_Arch" != "aarch64" ]]; then
+    return
+  fi
 
   #cleanup_docker
 
@@ -3259,12 +3265,6 @@ function check_docker_package() {
   local _isPkgSupported=$(vge $_version "7.13")
 
   if [[ $_isPkgSupported == 1 ]]; then
-    # Even though node is now supported Kibana 7.14+, looks like chromium is not, segfaults
-    # Going to only enable API tests for now
-    if [[ "$Glb_Arch" == "aarch64" ]] && [[ "$Glb_Distr" == "CentOS" ]] && [[ "$_grp" != *"xpackExt"* ]]; then
-      Glb_SkipTests="yes"
-      Glb_ApiOnly="yes"
-    fi
     return
   fi
 
