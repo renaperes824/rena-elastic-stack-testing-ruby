@@ -303,7 +303,7 @@ function get_os() {
   fi
 
   if [[ "$Glb_Arch" == "aarch64" ]]; then
-    if  [[ "$Glb_SkipTests" == "no" ]]; then
+    if [[ "$Glb_SkipTests" == "no" ]]; then
       install_pkg "jq"
       if [[ $Glb_ApiOnly == "no" ]]; then
         if [[ "$Glb_Distr" == "CentOS" ]]; then
@@ -316,7 +316,7 @@ function get_os() {
     fi
     Glb_Chromium=$(which chromium-browser)
     Glb_ChromeDriver=$(which chromedriver)
-    if  [[ "$Glb_SkipTests" == "no" ]] && ([[ -z $Glb_Chromium ]] || [[ -z $Glb_ChromeDriver ]]); then
+    if ([[ "$Glb_SkipTests" == "no" ]] && [[ $Glb_ApiOnly == "no" ]]) && ([[ -z $Glb_Chromium ]] || [[ -z $Glb_ChromeDriver ]]); then
       echo_error_exit "Chromium and Chromedriver must be installed! Chromium: $Glb_Chromium, ChromeDriver: $Glb_ChromeDriver"
     fi
   fi
