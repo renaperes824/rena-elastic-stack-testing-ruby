@@ -141,19 +141,7 @@
 
     - name: Wait for metricbeat to index a few monitoring documents
       wait_for:
-        timeout: 25
-
-    - name: Stop metricbeat
-      include_role:
-        name: metricbeat
-      vars:
-        ait_action: metricbeat_shutdown
-
-    - name: Stop kibana
-      include_role:
-        name: kibana
-      vars:
-        ait_role: kibana_shutdown_verify
+        timeout: 15
 
     - name: Get sample metricbeat-indexed docs from monitoring index
       uri:
@@ -166,14 +154,29 @@
         body: '{ "collapse": { "field": "type" }, "sort": { "timestamp": "asc" } }'
         body_format: json
         status_code: 200
+      until: xpack_elasticsearch_monitoring_sample_docs.json.hits.total.value > 0
+      retries: 5
+      delay: 10
       register: xpack_elasticsearch_monitoring_sample_docs
-
+    
     - name: Write sample docs to temp files
       copy:
         content: "{{ item._source }}"
         dest: "{{ monitoring_docs_dir }}/kibana/metricbeat/{{ item._source.type }}.json"
       with_items: "{{ xpack_elasticsearch_monitoring_sample_docs.json.hits.hits }}"
       delegate_to: localhost
+    
+    - name: Stop metricbeat
+      include_role:
+        name: metricbeat
+      vars:
+        ait_action: metricbeat_shutdown
+
+    - name: Stop kibana
+      include_role:
+        name: kibana
+      vars:
+        ait_role: kibana_shutdown_verify
 
     - name: Stop elasticsearch
       include_role:
