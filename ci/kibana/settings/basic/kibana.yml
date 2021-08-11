@@ -1,9 +1,9 @@
-home.disableWelcomeScreen: true
-status.allowAnonymous: true
 data.search.aggs.shardDelay.enabled: true
+home.disableWelcomeScreen: true
+savedObjects.maxImportPayloadBytes: 10485760
 security.showInsecureClusterWarning: false
-telemetry.banner: false
-telemetry.url: https://telemetry-staging.elastic.co/xpack/v2/send
-telemetry.optInStatusUrl: https://telemetry-staging.elastic.co/opt_in_status/v2/send
-telemetry.optIn: false
+server.maxPayload: 1679958
 server.maxPayloadBytes: 1679958
+status.allowAnonymous: true
+telemetry.banner: false
+telemetry.optIn: false
