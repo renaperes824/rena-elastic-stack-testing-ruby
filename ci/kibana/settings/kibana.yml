@@ -4,6 +4,7 @@ map.proxyElasticMapsServiceInMaps: true
 savedObjects.maxImportPayloadBytes: 10485760
 security.showInsecureClusterWarning: false
 server.maxPayload: 1679958
+server.publicBaseUrl: "https://localhost:5601"
 server.uuid: 5b2de169-2785-441b-ae8c-186a1936b17d
 status.allowAnonymous: true
 telemetry.banner: false
