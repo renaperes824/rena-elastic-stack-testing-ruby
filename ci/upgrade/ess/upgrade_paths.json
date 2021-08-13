@@ -1,10 +1,14 @@
 {
-  "upgradeTest1": "7.14,5.6.16,6.8.17,7.14.0",
-  "upgradeTest2": "7.14,6.8.17,7.14.0",
+  "upgradeTest1": "7.14,5.6.16,6.8.18,7.14.0",
+  "upgradeTest2": "7.14,6.8.18,7.14.0",
   "upgradeTest3": "7.14,7.8.1,7.14.0",
   "upgradeTest4": "7.14,7.9.3,7.14.0",
   "upgradeTest5": "7.14,7.10.2,7.14.0",
   "upgradeTest6": "7.14,7.11.2,7.14.0",
   "upgradeTest7": "7.14,7.12.1,7.14.0",
-  "upgradeTest8": "7.14,7.13.4,7.14.0"
+  "upgradeTest8": "7.14,7.13.4,7.14.0",
+  "upgradeTest9": "7.14,6.8.19-SNAPSHOT,7.14.1-SNAPSHOT",
+  "upgradeTest10": "7.x,6.8.19-SNAPSHOT,7.15.0-SNAPSHOT",
+  "upgradeTest11": "7.x,6.8.19-SNAPSHOT,7.14.1-SNAPSHOT,7.15.0-SNAPSHOT",
+  "upgradeTest12": "7.x,7.14.1-SNAPSHOT,7.15.0-SNAPSHOT"
 }
