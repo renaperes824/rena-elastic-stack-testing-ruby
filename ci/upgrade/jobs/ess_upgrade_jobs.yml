@@ -13,5 +13,6 @@ JOB:
   - upgradeTest10
   - upgradeTest11
   - upgradeTest12
+  - upgradeTest13
 
 exclude: ~
