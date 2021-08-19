@@ -1917,6 +1917,38 @@ function run_with_timeout {
 # -----------------------------------------------------------------------------
 # Method wait for elasticsearch server to be ready
 # -----------------------------------------------------------------------------
+function elasticsearch_service_status() {
+  local syssvc=$(ps -p 1)
+
+  echo_info "Elasticsearch service status"
+  if [[ "$syssvc" = *"systemd"* ]]; then
+    sudo /bin/systemctl status elasticearch.service
+    sudo journalctl -u elasticearch.service
+  else
+    sudo -i service elasticsearch status
+    sudo cat /var/log/elasticearch/elasticearch.log
+  fi
+}
+
+# -----------------------------------------------------------------------------
+# Method wait for elasticsearch server to be ready
+# -----------------------------------------------------------------------------
+function kibana_service_status() {
+  local syssvc=$(ps -p 1)
+
+  echo_info "Kibana service status"
+  if [[ "$syssvc" = *"systemd"* ]]; then
+    sudo /bin/systemctl status kibana.service
+    sudo journalctl -u kibana.service
+  else
+    sudo -i service kibana status
+    sudo cat /var/log/kibana/kibana.log
+  fi
+}
+
+# -----------------------------------------------------------------------------
+# Method wait for elasticsearch server to be ready
+# -----------------------------------------------------------------------------
 function _wait_for_es_ready_docker() {
   while true; do
     docker logs es01 | grep -E -i -w '(es01.*to \[GREEN\])|(to \[GREEN\].*elasticsearch)|(es01.*started)'
@@ -1944,6 +1976,8 @@ function wait_for_es_ready_docker {
   if [ $? -ne 0 ]; then
     curl -sX GET $_creds "$_es_protocol://$_es_host:$_es_port/_cluster/health" | jq '.status' | grep "green"
     if [ $? -ne 0 ]; then
+      docker logs es01
+      curl -X GET $_creds "$_es_protocol://$_es_host:$_es_port/_cluster/health"
       echo_error_exit "Elasticsearch server not ready"
     fi
   fi
@@ -1966,7 +2000,7 @@ function _wait_for_kbn_ready_docker {
 # Method wait for kibana server to be ready
 # -----------------------------------------------------------------------------
 function wait_for_kbn_ready_docker {
-  local timeout=${1:-90}
+  local timeout=${1:-120}
   local _kbn_protocol=${TEST_KIBANA_PROTOCOL:-http}
   local _kbn_host=${TEST_KIBANA_HOSTNAME:-localhost}
   local _kbn_port=${TEST_KIBANA_PORT:-5601}
@@ -1978,6 +2012,8 @@ function wait_for_kbn_ready_docker {
   if [ $? -ne 0 ]; then
     curl -sX GET $_creds "$_kbn_protocol://$_kbn_host:$_kbn_port/api/status" | jq '.status.overall.state' | grep "green"
     if [ $? -ne 0 ]; then
+      docker logs kib01
+      curl -X GET $_creds "$_kbn_protocol://$_kbn_host:$_kbn_port/api/status"
       echo_error_exit "Kibana server not ready"
     fi
   fi
@@ -2025,9 +2061,6 @@ function docker_load {
     export TEST_KIBANA_PORT=5601
     export TEST_ES_PROTOCOL=http
     export TEST_ES_PORT=9200
-
-    wait_for_es_ready_docker
-    wait_for_kbn_ready_docker
 
   else
 
@@ -2085,10 +2118,16 @@ function docker_load {
     export NODE_TLS_REJECT_UNAUTHORIZED=0
     export TEST_IGNORE_CERT_ERRORS=1
 
-    wait_for_es_ready_docker
-    wait_for_kbn_ready_docker
-
   fi
+
+  wait_for_es_ready_docker
+  wait_for_kbn_ready_docker
+
+  # Check docker logs after some time has passed
+  sleep 15
+
+  docker logs es01
+  docker logs kib01
 
 }
 
@@ -2513,6 +2552,8 @@ function wait_for_es_ready_logs() {
   if [ $? -ne 0 ]; then
     curl -sX GET $_creds "$_es_protocol://$_es_host:$_es_port/_cluster/health" | jq '.status' | grep "green"
     if [ $? -ne 0 ]; then
+      elasticsearch_service_status
+      curl -X GET $_creds "$_es_protocol://$_es_host:$_es_port/_cluster/health"
       echo_error_exit "Elasticsearch server not ready"
     fi
   fi
@@ -2544,7 +2585,7 @@ function _wait_for_kbn_ready_logs() {
 # Method wait for kibana server to be ready
 # -----------------------------------------------------------------------------
 function wait_for_kbn_ready_logs() {
-  local timeout=${1:-90}
+  local timeout=${1:-120}
   local _kbn_protocol=${TEST_KIBANA_PROTOCOL:-http}
   local _kbn_host=${TEST_KIBANA_HOSTNAME:-localhost}
   local _kbn_port=${TEST_KIBANA_PORT:-5601}
@@ -2556,6 +2597,8 @@ function wait_for_kbn_ready_logs() {
   if [ $? -ne 0 ]; then
     curl -sX GET $_creds "$_kbn_protocol://$_kbn_host:$_kbn_port/api/status" | jq '.status.overall.state' | grep "green"
     if [ $? -ne 0 ]; then
+      kibana_service_status
+      curl -X GET $_creds "$_kbn_protocol://$_kbn_host:$_kbn_port/api/status"
       echo_error_exit "Kibana server not ready"
     fi
   fi
@@ -3090,6 +3133,12 @@ function install_packages() {
   fi
 
   start_kibana_service
+
+  # Check service status after some time has passed
+  sleep 15
+  elasticsearch_service_status
+  kibana_service_status
+
 }
 
 # -----------------------------------------------------------------------------
