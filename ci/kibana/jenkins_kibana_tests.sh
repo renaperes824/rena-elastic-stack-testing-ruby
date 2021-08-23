@@ -3091,6 +3091,8 @@ function set_elasticsearch_jvm_options() {
 # -----------------------------------------------------------------------------
 function install_packages() {
   local type=${TEST_KIBANA_BUILD:-basic}
+  local _esHome="/etc/elasticsearch"
+  local _sudo="sudo -s"
 
   if [ "$ESTF_TEST_PACKAGE" != "rpm" ] && [ "$ESTF_TEST_PACKAGE" != "deb" ]; then
     echo_error_exit "Invalid pkg: $ESTF_TEST_PACKAGE"
@@ -3115,6 +3117,10 @@ function install_packages() {
 
   if [ "$type" != "basic" ]; then
     elasticsearch_generate_certs
+  else
+${_sudo} tee -a $_esHome/elasticsearch.yml <<- EOM
+xpack.security.enabled: false
+EOM
   fi
 
   start_elasticsearch_service
