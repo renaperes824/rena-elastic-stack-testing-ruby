@@ -1922,11 +1922,11 @@ function elasticsearch_service_status() {
 
   echo_info "Elasticsearch service status"
   if [[ "$syssvc" = *"systemd"* ]]; then
-    sudo /bin/systemctl status elasticearch.service
-    sudo journalctl -u elasticearch.service
+    sudo /bin/systemctl status elasticsearch.service
+    sudo journalctl -u elasticsearch.service
   else
     sudo -i service elasticsearch status
-    sudo cat /var/log/elasticearch/elasticearch.log
+    sudo cat /var/log/elasticsearch/elasticsearch.log
   fi
 }
 
@@ -2860,7 +2860,7 @@ function elasticsearch_generate_certs() {
 
     ${_sudo} $_esBin/bin/elasticsearch-certutil${_ext} ca --silent --pem --pass password --out "$_esHome/cabundle.zip"
     if [ $? -ne 0 ]; then
-      echo_error_exit "elasticearch-certgen ca failed!"
+      echo_error_exit "elasticsearch-certgen ca failed!"
     fi
 
     ${_sudo} unzip $_esHome/cabundle.zip -d $_esHome
@@ -2870,7 +2870,7 @@ function elasticsearch_generate_certs() {
 
     ${_sudo} $_esBin/bin/elasticsearch-certutil${_ext} cert --silent --pem --ca-key "$_esHome/ca/ca.key" --ca-cert  "$_esHome/ca/ca.crt" --ca-pass password --in "$(pwd)/instances.yml" --out "$_esHome/certsbundle.zip"
     if [ $? -ne 0 ]; then
-      echo_error_exit "elasticearch-certgen failed!"
+      echo_error_exit "elasticsearch-certgen failed!"
     fi
 
     ${_sudo} unzip $_esHome/certsbundle.zip -d $_esHome
@@ -2882,7 +2882,7 @@ function elasticsearch_generate_certs() {
 
     ${_sudo} $_esBin/bin/elasticsearch-certutil${_ext} cert --silent --pem  --in "$(pwd)/instances.yml" --out "$_esHome/certsbundle.zip"
     if [ $? -ne 0 ]; then
-      echo_error_exit "elasticearch-certgen failed!"
+      echo_error_exit "elasticsearch-certgen failed!"
     fi
 
     ${_sudo} unzip $_esHome/certsbundle.zip -d $_esHome
