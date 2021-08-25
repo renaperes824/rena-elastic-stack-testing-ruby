@@ -12,7 +12,6 @@ xpack.data_enhanced.search.sessions.trackingInterval: 5s
 xpack.discoverEnhanced.actions.exploreDataInContextMenu.enabled: true
 xpack.maps.preserveDrawingBuffer: true
 xpack.maps.showMapsInspectorAdapter: true
-xpack.maps.showMapVisualizationTypes: true
 xpack.observability.unsafe.cases.enabled: true
 xpack.reporting.capture.maxAttempts: 1
 xpack.reporting.capture.networkPolicy.rules: [ { "allow": true,"protocol": "http:" },{ "allow": false,"host": "via.placeholder.com" },{ "allow": true,"protocol": "https:" },{ "allow": true,"protocol": "data:" },{ "allow": false } ]
