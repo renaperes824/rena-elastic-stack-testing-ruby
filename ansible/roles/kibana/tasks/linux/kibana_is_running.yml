@@ -20,5 +20,3 @@
       fail:
         msg: 'kibana is not running'
       when: kibana_process_id.stdout == ""
-    - pause:
-        seconds: 30

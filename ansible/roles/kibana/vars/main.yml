@@ -1,9 +1,8 @@
-#-----------------------------------------------------------------------------------------------------------------------
-# Elasticsearch vars file
+# -----------------------------------------------------------------------------
+# Kibana vars
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
-
+# -----------------------------------------------------------------------------
 ---
 
 # Timeout
@@ -20,22 +19,24 @@ kibana_password: "{{ lookup('env','AIT_KIBANA_PASSWORD') | default('changeme', t
 # Must have role name (key), action and args that map to individual task files
 kibana_roles:
   kibana_install_config_start_verify:
-    - { action: 'kibana_install', args: {} }
-    - { action: 'kibana_config', args: {} }
-    - { action: 'kibana_startup', args: {} }
-    - { action: 'kibana_log_tail', args: {ait_log_searchstr: started} }
-    - { action: 'kibana_is_running', args: {} }
+    - {action: 'kibana_install', args: {}}
+    - {action: 'kibana_config', args: {}}
+    - {action: 'kibana_startup', args: {}}
+    - {action: 'kibana_log_tail', args: {ait_log_searchstr: started}}
+    - {action: 'kibana_is_running', args: {}}
+    - {action: 'kibana_api_status', args: {}}
   kibana_startup_verify:
-    - { action: 'kibana_startup', args: {} }
-    - { action: 'kibana_log_tail', args: {ait_log_searchstr: started} }
-    - { action: 'kibana_is_running', args: {} }
+    - {action: 'kibana_startup', args: {}}
+    - {action: 'kibana_log_tail', args: {ait_log_searchstr: started}}
+    - {action: 'kibana_is_running', args: {}}
+    - {action: 'kibana_api_status', args: {}}
   kibana_shutdown_verify:
-    - { action: 'kibana_shutdown', args: {} }
-    - { action: 'kibana_is_not_running', args: {} }
+    - {action: 'kibana_shutdown', args: {}}
+    - {action: 'kibana_is_not_running', args: {}}
   kibana_shutdown_uninstall_verify:
-    - { action: 'kibana_shutdown', args: {} }
-    - { action: 'kibana_uninstall', args: {} }
-    - { action: 'kibana_is_not_running', args: {} }
+    - {action: 'kibana_shutdown', args: {}}
+    - {action: 'kibana_uninstall', args: {}}
+    - {action: 'kibana_is_not_running', args: {}}
 
 # Task files for ait_role, keep in sync with tasks/main.yml
 kibana_task_files:

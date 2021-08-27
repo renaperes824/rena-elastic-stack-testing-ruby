@@ -102,9 +102,9 @@
 
     - name: Start kibana
       include_role:
-        name: kibana
+        name: xpack_kibana
       vars:
-        ait_role: kibana_startup_verify
+        ait_role: xpack_kibana_startup_verify
 
     - name: Install metricbeat
       include_role:
