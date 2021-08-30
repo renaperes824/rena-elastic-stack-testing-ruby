@@ -24,5 +24,10 @@ JOB:
   - upgradeTest4a
   - upgradeTest4b
   - upgradeTest4c
+  - upgradeTest5a
+  - upgradeTest5b
+  - upgradeTest5c
+  - upgradeTest5d
+  - upgradeTest5e
 
 exclude: ~
