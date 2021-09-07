@@ -18,7 +18,7 @@
   until:
     - kibana_api_status_output.status == 200
     - kibana_api_status_output.json is defined
-    - kibana_api_status_output.json.status.overall.state == 'green'
+    - kibana_api_status_output.json.status.overall.level == 'available'
   retries: 28
   delay: 15
   when: check_kibana_active | default(True)
