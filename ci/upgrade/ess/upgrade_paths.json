@@ -22,9 +22,9 @@
   "upgradeTest4a": "7.15,6.8.19-SNAPSHOT,7.15.0-SNAPSHOT",
   "upgradeTest4b": "7.15,6.8.19-SNAPSHOT,7.14.1-SNAPSHOT,7.15.0-SNAPSHOT",
   "upgradeTest4c": "7.15,7.14.1-SNAPSHOT,7.15.0-SNAPSHOT",
-  "upgradeTest5a": "7.16,6.8.19-SNAPSHOT,7.16.0-SNAPSHOT",
-  "upgradeTest5b": "7.16,6.8.19-SNAPSHOT,7.14.1-SNAPSHOT,7.16.0-SNAPSHOT",
-  "upgradeTest5c": "7.16,6.8.19-SNAPSHOT,7.15.0-SNAPSHOT,7.16.0-SNAPSHOT",
-  "upgradeTest5d": "7.16,7.14.1-SNAPSHOT,7.16.0-SNAPSHOT",
-  "upgradeTest5e": "7.16,7.15.0-SNAPSHOT,7.16.0-SNAPSHOT"
+  "upgradeTest5a": "7.x,6.8.19-SNAPSHOT,7.16.0-SNAPSHOT",
+  "upgradeTest5b": "7.x,6.8.19-SNAPSHOT,7.14.1-SNAPSHOT,7.16.0-SNAPSHOT",
+  "upgradeTest5c": "7.x,6.8.19-SNAPSHOT,7.15.0-SNAPSHOT,7.16.0-SNAPSHOT",
+  "upgradeTest5d": "7.x,7.14.1-SNAPSHOT,7.16.0-SNAPSHOT",
+  "upgradeTest5e": "7.x,7.15.0-SNAPSHOT,7.16.0-SNAPSHOT"
 }
