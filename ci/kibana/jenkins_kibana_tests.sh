@@ -2000,7 +2000,7 @@ function _wait_for_kbn_ready_docker {
 # Method wait for kibana server to be ready
 # -----------------------------------------------------------------------------
 function wait_for_kbn_ready_docker {
-  local timeout=${1:-120}
+  local timeout=${1:-90}
   local _kbn_protocol=${TEST_KIBANA_PROTOCOL:-http}
   local _kbn_host=${TEST_KIBANA_HOSTNAME:-localhost}
   local _kbn_port=${TEST_KIBANA_PORT:-5601}
@@ -2010,7 +2010,7 @@ function wait_for_kbn_ready_docker {
   fi
   run_with_timeout _wait_for_kbn_ready_docker $timeout
   if [ $? -ne 0 ]; then
-    curl -sX GET $_creds "$_kbn_protocol://$_kbn_host:$_kbn_port/api/status" | jq '.status.overall.state' | grep "green"
+    run_with_timeout _wait_for_kbn_api_status $timeout
     if [ $? -ne 0 ]; then
       docker logs kib01
       curl -X GET $_creds "$_kbn_protocol://$_kbn_host:$_kbn_port/api/status"
@@ -2516,6 +2516,28 @@ function random_docker_image() {
 }
 
 # -----------------------------------------------------------------------------
+#
+# -----------------------------------------------------------------------------
+function _wait_for_kbn_api_status() {
+  local _kbn_protocol=${TEST_KIBANA_PROTOCOL:-http}
+  local _kbn_host=${TEST_KIBANA_HOSTNAME:-localhost}
+  local _kbn_port=${TEST_KIBANA_PORT:-5601}
+  local _creds=""
+  if [ ! -z $TEST_KIBANA_USER ]; then
+    _creds="-u ${TEST_KIBANA_USER}:${TEST_KIBANA_PASS}"
+  fi
+  set -o pipefail
+  jq_script='if (.status.overall.state == "green") or (.status.overall.level == "available") then true else false end'
+  while true; do
+     curl -sX GET $_creds "$_kbn_protocol://$_kbn_host:$_kbn_port/api/status" | jq -e "$jq_script"
+      if [ $? -eq 0 ]; then
+      break
+    fi
+    sleep 1;
+  done
+}
+
+# -----------------------------------------------------------------------------
 # Method wait for elasticsearch server to be ready
 # -----------------------------------------------------------------------------
 function _wait_for_es_ready_logs() {
@@ -2585,7 +2607,7 @@ function _wait_for_kbn_ready_logs() {
 # Method wait for kibana server to be ready
 # -----------------------------------------------------------------------------
 function wait_for_kbn_ready_logs() {
-  local timeout=${1:-120}
+  local timeout=${1:-90}
   local _kbn_protocol=${TEST_KIBANA_PROTOCOL:-http}
   local _kbn_host=${TEST_KIBANA_HOSTNAME:-localhost}
   local _kbn_port=${TEST_KIBANA_PORT:-5601}
@@ -2595,7 +2617,7 @@ function wait_for_kbn_ready_logs() {
   fi
   run_with_timeout _wait_for_kbn_ready_logs $timeout
   if [ $? -ne 0 ]; then
-    curl -sX GET $_creds "$_kbn_protocol://$_kbn_host:$_kbn_port/api/status" | jq '.status.overall.state' | grep "green"
+    run_with_timeout _wait_for_kbn_api_status $timeout
     if [ $? -ne 0 ]; then
       kibana_service_status
       curl -X GET $_creds "$_kbn_protocol://$_kbn_host:$_kbn_port/api/status"

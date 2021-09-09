@@ -116,7 +116,7 @@ task kibana_upgrade_tests {
 }
 
 static def get_kibana_info(String url, String username, String password) {
-    int max_retries = 10
+    int max_retries = 50
     for (int retries = 0; ; retries++) {
         def kbn_url = new URL(url + "/api/status" as String).openConnection()
         String userPassword = username + ":" + password
