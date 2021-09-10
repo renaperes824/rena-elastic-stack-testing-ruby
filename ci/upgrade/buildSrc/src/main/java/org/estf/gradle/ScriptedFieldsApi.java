@@ -48,9 +48,12 @@ public class ScriptedFieldsApi extends DefaultTask {
         updateScriptedField(api);
     }
 
-    public String getIndexPatternId(RestApi api, String name) {
+    public String getIndexPatternId(RestApi api, String name, String space) {
         try {
             String path = "/api/saved_objects/_find?type=index-pattern&search_fields=title&search=" + name;
+            if (!space.isEmpty()) {
+                path = "/s/" + space + "/api/saved_objects/_find?type=index-pattern&search_fields=title&search=" + name;
+            }
             HttpResponse response = api.get(kbnBaseUrl + path);
             HttpEntity entity = response.getEntity();
             String content = EntityUtils.toString(entity);
@@ -64,8 +67,10 @@ public class ScriptedFieldsApi extends DefaultTask {
 
     public void updateScriptedField(RestApi api) {
         try {
-            String[] ids = {this.getIndexPatternId(api, "kibana_sample_data_flights"),
-                            this.getIndexPatternId(api, "kibana_sample_data_logs")};
+            String[] ids = {this.getIndexPatternId(api, "kibana_sample_data_flights", ""),
+                            this.getIndexPatternId(api, "kibana_sample_data_logs", ""),
+                            this.getIndexPatternId(api, "kibana_sample_data_flights", "automation"),
+                            this.getIndexPatternId(api, "kibana_sample_data_logs", "automation")};
             for (int i = 0; i < ids.length; i++) {
                 String path = "/api/index_patterns/index_pattern/" + ids[i] + "/scripted_field/hour_of_day";
                 api.post(kbnBaseUrl + path,
