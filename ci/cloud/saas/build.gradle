@@ -23,11 +23,20 @@ def genSetupTask(testname) {
         esUserSettings = System.env.ESTF_ES_USER_SETTINGS
         kibanaUserSettings = System.env.ESTF_KIBANA_USER_SETTINGS
         try {
-            kibanaUserSettingsOverride = new URL("https://raw.githubusercontent.com/elastic/elastic-stack-testing/" +
-                                                  version + "/ci/cloud/product/settings/kibana.yml").getText('UTF-8')
-        } catch(Exception ex) {
-            // Catch the block
-        }
+            URL defaultCfgUrl =  new URL("https://raw.githubusercontent.com/elastic/elastic-stack-testing/" +
+                                         version + "/ci/cloud/product/settings/kibana.yml")
+
+            URL jobCfgUrl = new URL("https://raw.githubusercontent.com/elastic/elastic-stack-testing/" +
+                                    version + "/ci/cloud/product/settings/" + System.env.JOB.trim() + ".yml")
+
+            HttpURLConnection jobCfgHttp = (HttpURLConnection)jobCfgUrl.openConnection()
+            if (jobCfgHttp.getResponseCode() == 200) {
+                kibanaUserSettingsOverride = jobCfgUrl.getText('UTF-8')
+            } else {
+                kibanaUserSettingsOverride = defaultCfgUrl.getText('UTF-8')
+            }
+        } catch(Exception ignored) {}
+
         if (System.env.JOB == "xpackGrp3") {
             mlTesting = true
             ingestNodeTesting = true

@@ -3370,6 +3370,7 @@ Glb_xpackExtGrp1Cfg="test/api_integration/config.js
                      test/reporting/configs/chromium_functional.js
                      test/reporting_api_integration/config.js
                      test/reporting_api_integration/reporting_and_security.config.ts
+                     test/reporting_functional/reporting_and_security.config.ts
                     "
 Glb_xpackExtGrp2Cfg="test/detection_engine_api_integration/security_and_spaces/config.ts
                      test/ingest_manager_api_integration/config.ts
