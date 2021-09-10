@@ -6,6 +6,7 @@ import org.estf.gradle.UpgradeEssDeployment
 import org.estf.gradle.UploadData
 import org.estf.gradle.UploadSecuritySolutionData
 import org.estf.gradle.UpgradeAssistantApi
+import org.estf.gradle.ScriptedFieldsApi
 
 
 /**
@@ -95,6 +96,18 @@ task ess_disable_saml_login(type: EditEssDeployment) {
         println("******* SECTION: DISABLE SAML LOGIN *******")
         deploymentId = rootProject.deployment_id
         disableSamlLogin = true
+    }
+}
+
+task update_scripted_fields(type: ScriptedFieldsApi) {
+    doFirst {
+        println("******* SECTION: UPDATED SCRIPTED FIELDS *******")
+        esBaseUrl = "dontcare"
+        kbnBaseUrl = rootProject.props.kibana_url
+        username = rootProject.props.es_username
+        password = rootProject.props.es_password
+        version = "dontcare"
+        upgradeVersion = "dontcare"
     }
 }
 
@@ -310,7 +323,8 @@ ess_setup.finalizedBy ess_shutdown_deployment
 
 ess_upgrade.dependsOn ess_create_deployment
 ess_disable_saml_login.dependsOn ess_upgrade
-kibana_upgrade_tests.dependsOn ess_disable_saml_login
+update_scripted_fields.dependsOn ess_disable_saml_login
+kibana_upgrade_tests.dependsOn update_scripted_fields
 tasks.getByPath(':kibana:run_kibana_tests').onlyIf {
     final_version_7_12_0_later >= 0
 }
