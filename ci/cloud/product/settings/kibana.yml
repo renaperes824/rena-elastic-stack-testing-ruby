@@ -13,11 +13,3 @@ xpack.discoverEnhanced.actions.exploreDataInContextMenu.enabled: true
 xpack.maps.preserveDrawingBuffer: true
 xpack.maps.showMapsInspectorAdapter: true
 xpack.observability.unsafe.cases.enabled: true
-xpack.reporting.capture.maxAttempts: 1
-xpack.reporting.capture.networkPolicy.rules: [ { "allow": true,"protocol": "http:" },{ "allow": false,"host": "via.placeholder.com" },{ "allow": true,"protocol": "https:" },{ "allow": true,"protocol": "data:" },{ "allow": false } ]
-xpack.reporting.capture.timeouts.openUrl: 60000
-xpack.reporting.csv.checkForFormulas: false
-xpack.reporting.csv.enablePanelActionDownload: true
-xpack.reporting.csv.maxSizeBytes: 6000
-xpack.reporting.queue.pollInterval: 3000
-xpack.reporting.roles.enabled: false
