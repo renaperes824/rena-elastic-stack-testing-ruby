@@ -76,10 +76,16 @@ public class UploadSecuritySolutionData extends DefaultTask {
         String basicAuthPayload = "Basic " + Base64.getEncoder().encodeToString(creds.getBytes());
 
         for (int retries = 0; ; retries++) {
-            HttpPut putRequest = new HttpPut(esBaseUrl + "/.siem-signals-default-000001");
-            putRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+            String jsonstr = "";
+            StringEntity entity = new StringEntity(jsonstr);
+            entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            HttpPost postRequest = new HttpPost(kbnBaseUrl + "/api/detection_engine/index");
+            postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+            postRequest.setHeader("kbn-xsrf", "automation");
+            postRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+            postRequest.setEntity(entity);
             HttpClient client = HttpClientBuilder.create().build();
-            HttpResponse response = client.execute(putRequest);
+            HttpResponse response = client.execute(postRequest);
             int statusCode = response.getStatusLine().getStatusCode();
             System.out.println(statusCode);
             if (statusCode == 200) {
@@ -93,23 +99,6 @@ public class UploadSecuritySolutionData extends DefaultTask {
             }
         }
 
-        for (int retries = 0; ; retries++) {
-            HttpPut putRequest = new HttpPut(esBaseUrl + "/.siem-signals-default-000001/_alias/.siem-signals-default");
-            putRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
-            HttpClient client = HttpClientBuilder.create().build();
-            HttpResponse response = client.execute(putRequest);
-            int statusCode = response.getStatusLine().getStatusCode();
-            System.out.println(statusCode);
-            if (statusCode == 200) {
-                break;
-            }
-            if (retries < MAX_RETRIES) {
-                System.out.println("** Retrying to create siem signals index **");
-                Thread.sleep(5000);
-            } else {
-                throw new IOException("Failed to create siem signals index");
-            }
-        }
     }
 
     public void createsDetectionRule() throws IOException, InterruptedException {
