@@ -236,7 +236,7 @@ public class CreateCloudCluster extends DefaultTask {
             kbnTopo = new KibanaClusterTopologyElementBuilder()
                 .setInstanceConfigurationId(kbnConfigId)
                 .setZoneCount(kibanaZone)
-                .setSize(topologySize2G)
+                .setSize(topologySize8G)
                 .build();
         } else {
             kbnTopo = new KibanaClusterTopologyElementBuilder()
