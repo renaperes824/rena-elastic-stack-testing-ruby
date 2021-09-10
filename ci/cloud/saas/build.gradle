@@ -41,8 +41,11 @@ def genSetupTask(testname) {
             mlTesting = true
             ingestNodeTesting = true
             kbnReportsTesting = true
+        } else if (System.env.JOB == "xpackGrp2" || System.env.JOB == "xpackGrp4") {
+            kbnReportsTesting = true
         } else if (System.env.JOB == "xpackExtGrp1") {
             mlTesting = true
+            kbnReportsTesting = true
         } else if (System.env.JOB == "xpackExtGrp2") {
             ingestNodeTesting = true
         }
