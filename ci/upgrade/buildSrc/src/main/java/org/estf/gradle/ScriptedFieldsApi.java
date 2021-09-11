@@ -73,6 +73,9 @@ public class ScriptedFieldsApi extends DefaultTask {
                             this.getIndexPatternId(api, "kibana_sample_data_logs", "automation")};
             for (int i = 0; i < ids.length; i++) {
                 String path = "/api/index_patterns/index_pattern/" + ids[i] + "/scripted_field/hour_of_day";
+                if (i>=2) {
+                    path = "/s/automation/api/index_patterns/index_pattern/" + ids[i] + "/scripted_field/hour_of_day";
+                }
                 api.post(kbnBaseUrl + path,
                         "{\"field\": {\"script\": \"doc['timestamp'].value.getHour()\"}}",
                         true);
