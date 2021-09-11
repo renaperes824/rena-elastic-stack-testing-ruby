@@ -234,8 +234,9 @@ function get_version() {
     Glb_Kibana_Version="${Glb_Kibana_Version}-SNAPSHOT"
   fi
 
-  if [[ "$ESTF_BUILD_ID" == *"alpha1"* ]]; then
-     Glb_Kibana_Version="${Glb_Kibana_Version}-alpha1"
+  REGEXP="(alpha[1-9]+)"
+  if [[ $ESTF_BUILD_ID =~ $REGEXP ]]; then
+     Glb_Kibana_Version="${Glb_Kibana_Version}-${BASH_REMATCH[1]}"
   fi
 
   readonly Glb_Kibana_Version
