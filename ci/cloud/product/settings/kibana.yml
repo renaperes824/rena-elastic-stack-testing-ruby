@@ -4,7 +4,6 @@ map.proxyElasticMapsServiceInMaps: true
 server.publicBaseUrl: "http://myhost.com"
 server.uuid: 5b2de169-2785-441b-ae8c-186a1936b17d
 telemetry.banner: false
-vis_type_timelion.ui.enabled: true
 xpack.data_enhanced.search.sessions.cleanupInterval: 5s
 xpack.data_enhanced.search.sessions.enabled: true
 xpack.data_enhanced.search.sessions.notTouchedTimeout: 15s
