@@ -2064,8 +2064,14 @@ function docker_load {
     export TEST_ES_PORT=9200
 
   else
-
-    curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/settings/kibana.yml --output kibana.yml
+    defaultCfgUrl=https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/settings/kibana.yml
+    jobCfgUrl=https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/settings/${JOB}.yml
+    curl --output /dev/null --silent --head --fail "$jobCfgUrl"
+    if [[ $? -eq 0 ]]; then
+      curl -s  $jobCfgUrl --output kibana.yml
+    else
+      curl -s $defaultCfgUrl --output kibana.yml
+    fi
     curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/docker/default/create-certs.yml --output create-certs.yml
     curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/docker/default/elastic-docker-tls.yml --output elastic-docker-tls.yml
     curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/docker/default/instances.yml --output instances.yml
@@ -2829,7 +2835,14 @@ function update_kibana_settings() {
   if [ "$type" == "basic" ]; then
     curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/settings/basic/kibana.yml --output kibana.yml
   else
-    curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/settings/kibana.yml --output kibana.yml
+    defaultCfgUrl=https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/settings/kibana.yml
+    jobCfgUrl=https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/settings/${JOB}.yml
+    curl --output /dev/null --silent --head --fail "$jobCfgUrl"
+    if [[ $? -eq 0 ]]; then
+      curl -s  $jobCfgUrl --output kibana.yml
+    else
+      curl -s $defaultCfgUrl --output kibana.yml
+    fi
   fi
   if [ $? -ne 0 ]; then
     echo_error_exit "Download Kibana settings failed"
