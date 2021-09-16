@@ -3376,9 +3376,7 @@ function get_hostname() {
 # SECTION: Cloud/Docker Configurations
 # ****************************************************************************
 
-Glb_xpackExtGrp1Cfg="test/api_integration/config.js
-                     test/api_integration/config.ts
-                     test/apm_api_integration/trial/config.ts
+Glb_xpackExtGrp1Cfg="test/apm_api_integration/trial/config.ts
                      test/functional_enterprise_search/without_host_configured.config.ts
                      test/reporting/configs/chromium_api.js
                      test/reporting/configs/chromium_functional.js
@@ -3386,7 +3384,9 @@ Glb_xpackExtGrp1Cfg="test/api_integration/config.js
                      test/reporting_api_integration/reporting_and_security.config.ts
                      test/reporting_functional/reporting_and_security.config.ts
                     "
-Glb_xpackExtGrp2Cfg="test/detection_engine_api_integration/security_and_spaces/config.ts
+Glb_xpackExtGrp2Cfg="test/api_integration/config.js
+                     test/api_integration/config.ts
+                     test/detection_engine_api_integration/security_and_spaces/config.ts
                      test/ingest_manager_api_integration/config.ts
                      test/security_solution_endpoint/config.ts
                      test/security_solution_endpoint_api_int/config.ts
