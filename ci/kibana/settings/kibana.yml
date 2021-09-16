@@ -27,7 +27,6 @@ xpack.fleet.packages.0.name: endpoint
 xpack.fleet.packages.0.version: latest
 xpack.maps.preserveDrawingBuffer: true
 xpack.maps.showMapsInspectorAdapter: true
-xpack.observability.unsafe.cases.enabled: true
 xpack.ruleRegistry.write.enabled: true
 xpack.security.encryptionKey: "wuGNaIhoMpk5sO4UBxgr3NyW1sFcLgIf"
 xpack.security.session.idleTimeout: 3600000

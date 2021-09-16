@@ -11,4 +11,3 @@ xpack.data_enhanced.search.sessions.trackingInterval: 5s
 xpack.discoverEnhanced.actions.exploreDataInContextMenu.enabled: true
 xpack.maps.preserveDrawingBuffer: true
 xpack.maps.showMapsInspectorAdapter: true
-xpack.observability.unsafe.cases.enabled: true
