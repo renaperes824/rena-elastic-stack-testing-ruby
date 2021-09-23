@@ -1,16 +1,17 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Metricbeat cloud
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 
 - name: Save original metricbeat configuration
   copy:
     src: '{{ metricbeat_config_file }}'
     dest: '{{ metricbeat_config_file }}.org'
-    remote_src: True
-    force: no
+    mode: 0660
+    remote_src: true
+    force: false
   become: true
 
 - name: Change metricbeat configuration file owner to root

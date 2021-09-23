@@ -1,8 +1,8 @@
-##-----------------------------------------------------------------------------------------------------------------------
+## ----------------------------------------------------------------------------
 # Check if heartbeat is running
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Verify heartbeat is running
@@ -16,4 +16,4 @@
     - name: Fail if heartbeat process is not running
       fail:
         msg: 'heartbeat is not running'
-      when: heartbeat_process_id.stdout == ""
+      when: heartbeat_process_id.stdout | length == 0

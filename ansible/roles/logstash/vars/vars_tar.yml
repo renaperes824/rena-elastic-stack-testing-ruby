@@ -1,8 +1,8 @@
-#----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Variables for tar package
 #
 # Author: liza.dayoub@elastic.co
-#----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 ---
 
@@ -16,7 +16,7 @@ logstash_install_dir: '{{ install_dir }}'
 logstash_package: '{{ logstash_install_dir }}/{{ logstash_package_url | basename }}'
 
 # logstash root directory
-logstash_rootdir: '{{ logstash_package.split(logstash_package_ext)[0] | replace("oss-", "") | trim }}'
+logstash_rootdir: "{{ logstash_install_dir }}/{{ logstash_package | regex_search('(logstash-[0-9.]+(-SNAPSHOT){0,1})', '\\1') | first }}"
 
 # logstash bin
 logstash_bin_dir: '{{ logstash_rootdir | trim }}/bin'

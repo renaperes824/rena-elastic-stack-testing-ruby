@@ -1,4 +1,4 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Configure heartbeat on Linux
 #
 # Set certain parameters in heartbeat configuration
@@ -7,7 +7,7 @@
 # If a user specifies heartbeat_config_params_strict=True internal params are appended, otherwise they are appended
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Remove heartbeat configuration parameters

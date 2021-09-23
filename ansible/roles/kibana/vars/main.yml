@@ -21,12 +21,12 @@ kibana_roles:
   kibana_install_config_start_verify:
     - {action: 'kibana_install', args: {}}
     - {action: 'kibana_config', args: {}}
-    - {action: 'kibana_startup', args: {}}
+    - {action: 'kibana_restart', args: {}}
     - {action: 'kibana_log_tail', args: {ait_log_searchstr: started}}
     - {action: 'kibana_is_running', args: {}}
     - {action: 'kibana_api_status', args: {}}
   kibana_startup_verify:
-    - {action: 'kibana_startup', args: {}}
+    - {action: 'kibana_restart', args: {}}
     - {action: 'kibana_log_tail', args: {ait_log_searchstr: started}}
     - {action: 'kibana_is_running', args: {}}
     - {action: 'kibana_api_status', args: {}}

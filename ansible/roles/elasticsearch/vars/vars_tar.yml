@@ -1,8 +1,8 @@
-#----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Variables for tar package
 #
 # Author: liza.dayoub@elastic.co
-#----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 ---
 
@@ -16,7 +16,7 @@ elasticsearch_install_dir: "{{ install_dir }}"
 elasticsearch_package: '{{ elasticsearch_install_dir }}/{{ elasticsearch_package_url | basename }}'
 
 # Elasticsearch root directory
-elasticsearch_rootdir: '{{ elasticsearch_package.split(elasticsearch_package_ext)[0] | replace("oss-", "") | trim }}'
+elasticsearch_rootdir: "{{ elasticsearch_install_dir }}/{{ elasticsearch_package | regex_search('(elasticsearch-[0-9.]+(-SNAPSHOT){0,1})', '\\1') | first }}"
 
 # Elasticsearch bin
 elasticsearch_bin_dir: '{{ elasticsearch_rootdir | trim }}/bin'
@@ -25,6 +25,7 @@ elasticsearch_plugin_exe: '{{ elasticsearch_bin_dir }}/elasticsearch-plugin'
 elasticsearch_xpack_bin_dir: '{{ elasticsearch_bin_dir }}'
 elasticsearch_certgen_exe: '{{ elasticsearch_xpack_bin_dir }}/elasticsearch-certgen'
 elasticsearch_setup_passwords_exe: '{{ elasticsearch_xpack_bin_dir }}/elasticsearch-setup-passwords'
+elasticsearch_keystore_exe: '{{ elasticsearch_xpack_bin_dir }}/elasticsearch-keystore'
 
 # Elasticsearch config
 elasticsearch_config_dir: '{{ elasticsearch_rootdir | trim }}/config'

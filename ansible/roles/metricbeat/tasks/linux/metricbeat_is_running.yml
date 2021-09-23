@@ -1,8 +1,8 @@
-##-----------------------------------------------------------------------------------------------------------------------
+## ----------------------------------------------------------------------------
 # Check if metricbeat is running
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Verify metricbeat is running
@@ -16,4 +16,4 @@
     - name: Fail if metricbeat process is not running
       fail:
         msg: 'metricbeat is not running'
-      when: metricbeat_process_id.stdout == ""
+      when: metricbeat_process_id.stdout | length == 0

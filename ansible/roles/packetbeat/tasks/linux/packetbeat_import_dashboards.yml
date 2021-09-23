@@ -1,34 +1,37 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Import packetbeat dashboards
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Grab protocol from packetbeat yaml file
-  shell: awk '/BEGIN ANSIBLE MANAGED BLOCK/,/END ANSIBLE MANAGED BLOCK/' {{ packetbeat_config_file }} | grep protocol | head -n 1 | awk '{print $2}'
+  shell: set -o pipefail &&
+         awk '/BEGIN ANSIBLE MANAGED BLOCK/,/END ANSIBLE MANAGED BLOCK/' {{ packetbeat_config_file }} | grep protocol | head -n 1 | awk '{print $2}'
   args:
     executable: /bin/bash
   register: packetbeat_get_es_protocol
   become: true
+  changed_when: false
 
-- set_fact:
+- name: Set packetbeat_es_protocol
+  set_fact:
     packetbeat_es_protocol: "{{ (packetbeat_get_es_protocol.stdout == '') | ternary('http', packetbeat_get_es_protocol.stdout) }}"
 
-- set_fact:
+- name: Set packetbeat_es_url
+  set_fact:
     packetbeat_es_url: '{%- if packetbeat_es_protocol == "https" -%}
-                          https://{{ elasticsearch_username }}:{{ elasticsearch_password}}@{{ current_host_ip }}:{{ elasticsearch_port }}
+                          https://{{ elasticsearch_username }}:{{ elasticsearch_password }}@{{ current_host_ip }}:{{ elasticsearch_port }}
                         {%- else -%}
                           http://{{ current_host_ip }}:{{ elasticsearch_port }}
                         {%- endif -%}'
 
 - name: Check if setup dashboards is supported
-  shell: '{{ packetbeat_exe }} setup --help'
-  args:
-    executable: /bin/bash
+  command: '{{ packetbeat_exe }} setup --help'
   register: packetbeat_setup_help_output
-  ignore_errors: yes
+  ignore_errors: true
   become: true
+  changed_when: false
 
 - name: Check if import dashboards executable exists
   stat:
@@ -37,16 +40,12 @@
   become: true
 
 - name: Import packetbeat dashboards through import_dashboards
-  shell: "{{ packetbeat_scripts }}/import_dashboards --insecure -es {{ packetbeat_es_url }} -url {{ beats_dashboards_package_url }}"
-  args:
-    executable: /bin/bash
+  command: "{{ packetbeat_scripts }}/import_dashboards --insecure -es {{ packetbeat_es_url }} -url {{ beats_dashboards_package_url }}"
   become: true
   when: file_import_dashboards.stat.exists is defined and file_import_dashboards.stat.exists
 
 - name: Import packetbeat dashboards through setup
-  shell: '{{ packetbeat_exe }} setup -c {{ packetbeat_config_file }}'
-  args:
-    executable: /bin/bash
+  command: '{{ packetbeat_exe }} setup -c {{ packetbeat_config_file }}'
   become: true
   register: packetbeat_dashboard_setup
   until: packetbeat_dashboard_setup is not failed

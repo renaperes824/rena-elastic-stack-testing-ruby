@@ -1,28 +1,31 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Kibana x-pack configuration
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Copy certificates ca from localhost
   copy:
     src: "{{ local_certs_dir }}/ca"
     dest: "{{ kibana_config_dir }}"
+    mode: 0660
   become: '{{ kibana_run_as_root | default(omit) }}'
 
 - name: Copy certificates cert and key from localhost
   copy:
     src: "{{ local_certs_dir }}/node"
     dest: "{{ kibana_config_dir }}"
+    mode: 0660
   become: '{{ kibana_run_as_root | default(omit) }}'
 
 - name: Save original kibana configuration
   copy:
     src: '{{ kibana_config_file }}'
     dest: '{{ kibana_config_file }}.org'
-    remote_src: True
-    force: no
+    mode: 0660
+    remote_src: true
+    force: false
   become: '{{ kibana_run_as_root | default(omit) }}'
 
 - name: Create kibana log directory
@@ -49,6 +52,7 @@
   copy:
     src: '{{ kibana_config_params_file }}'
     dest: '{{ kibana_config_file }}'
+    mode: 0660
   become: '{{ kibana_run_as_root | default(omit) }}'
   when: kibana_config_params_file is defined
 
@@ -68,5 +72,6 @@
       server.ssl.key: {{ kibana_config_dir | trim }}/node/node.key
       elasticsearch.ssl.certificateAuthorities: [ '{{ kibana_config_dir | trim }}/ca/ca.crt' ]
       elasticsearch.ssl.verificationMode: none
+      xpack.encryptedSavedObjects.encryptionKey: "1XY4AB78901RET567XT073405PK890RT"
   become: '{{ kibana_run_as_root | default(omit) }}'
   when: kibana_config_params_strict is not defined or not kibana_config_params_strict

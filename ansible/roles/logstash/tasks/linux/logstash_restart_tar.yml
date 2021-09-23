@@ -1,14 +1,17 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Start elasticsearch
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Restart logstash process
   block:
+    # Changed from SIGTERM to SIGKILL on Oct 23, 2019 by mike.place@elastic.co
+    # This should be changed back to SIGTERM after the issue below is resolved:
+    # https://github.com/elastic/logstash/issues/11253
     - name: Stop logstash process
-      shell: "ps -efw | grep logstash | grep -v grep | awk '{print $2}' | xargs kill -SIGTERM"
+      shell: "ps -efw | grep logstash | grep -v grep | awk '{print $2}' | xargs kill -SIGKILL"
       args:
         executable: /bin/bash
     - name: Start logstash process

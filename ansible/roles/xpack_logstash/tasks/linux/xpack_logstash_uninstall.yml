@@ -1,22 +1,23 @@
-#----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Install kibana .tar package
 #
 # Author: liza.dayoub@elastic.co
 #
-#----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Get Logstash X-Pack Plugins
-  shell: "{{ logstash_plugin_exe }} list"
+  command: "{{ logstash_plugin_exe }} list"
   register: list_plugins_before
+  changed_when: false
 
 - name: Uninstall logstash x-pack
   block:
     - name: Remove logstash x-pack
-      shell: '{{ logstash_plugin_exe }} remove x-pack'
+      command: '{{ logstash_plugin_exe }} remove x-pack'
       register: output
     - name: List logstash plugins
-      shell: "{{ logstash_plugin_exe }} list"
+      command: "{{ logstash_plugin_exe }} list"
       register: list_plugins_after
     - name: Fail if logstash x-pack is installed
       fail:

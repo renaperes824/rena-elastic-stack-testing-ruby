@@ -19,7 +19,7 @@ xpack_kibana_roles:
     - {action: 'kibana_is_running', parent: 'kibana', args: {}}
     - {action: 'xpack_kibana_api_status', parent: '', args: {}}
   xpack_kibana_startup_verify:
-    - {action: 'kibana_startup', parent: 'kibana', args: {}}
+    - {action: 'kibana_restart', parent: 'kibana', args: {}}
     - {action: 'kibana_log_tail', parent: 'kibana', args: {ait_log_searchstr: started}}
     - {action: 'kibana_is_running', parent: 'kibana', args: {}}
     - {action: 'xpack_kibana_api_status', parent: '', args: {}}

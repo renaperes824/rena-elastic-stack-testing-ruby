@@ -1,26 +1,29 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Logstash x-pack configuration
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Copy certificates ca from localhost
   copy:
     src: "{{ local_certs_dir }}/ca"
     dest: "{{ logstash_rootdir }}"
+    mode: 0660
   become: '{{ logstash_run_as_root | default(omit) }}'
 
 - name: Copy certificates cert and key from localhost
   copy:
     src: "{{ local_certs_dir }}/node"
     dest: "{{ logstash_rootdir }}"
+    mode: 0660
   become: '{{ logstash_run_as_root | default(omit) }}'
 
 - name: Save original logstash configuration file
   copy:
     src: '{{ logstash_config_file }}'
     dest: '{{ logstash_config_file }}.org'
-    remote_src: True
-    force: no
+    mode: 0660
+    remote_src: true
+    force: false
   become: '{{ logstash_run_as_root | default(omit) }}'

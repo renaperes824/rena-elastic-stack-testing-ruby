@@ -1,34 +1,37 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Import auditbeat dashboards
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Grab protocol from auditbeat yaml file
-  shell: awk '/BEGIN ANSIBLE MANAGED BLOCK/,/END ANSIBLE MANAGED BLOCK/' {{ auditbeat_config_file }} | grep protocol | head -n 1 | awk '{print $2}'
+  shell: set -o pipefail && >
+    awk '/BEGIN ANSIBLE MANAGED BLOCK/,/END ANSIBLE MANAGED BLOCK/' {{ auditbeat_config_file }} | grep protocol | head -n 1 | awk '{print $2}'
   args:
     executable: /bin/bash
   register: auditbeat_get_es_protocol
   become: true
+  changed_when: false
 
-- set_fact:
+- name: Set auditbeat es protocol
+  set_fact:
     auditbeat_es_protocol: "{{ (auditbeat_get_es_protocol.stdout == '') | ternary('http', auditbeat_get_es_protocol.stdout) }}"
 
-- set_fact:
+- name: Set auditbeat es url
+  set_fact:
     auditbeat_es_url: '{%- if auditbeat_es_protocol == "https" -%}
-                          https://{{ elasticsearch_username }}:{{ elasticsearch_password}}@{{ current_host_ip }}:{{ elasticsearch_port }}
+                          https://{{ elasticsearch_username }}:{{ elasticsearch_password }}@{{ current_host_ip }}:{{ elasticsearch_port }}
                         {%- else -%}
                           http://{{ current_host_ip }}:{{ elasticsearch_port }}
                         {%- endif -%}'
 
 - name: Check if setup dashboards is supported
-  shell: '{{ auditbeat_exe }} setup --help'
-  args:
-    executable: /bin/bash
+  command: '{{ auditbeat_exe }} setup --help'
   register: auditbeat_setup_help_output
-  ignore_errors: yes
+  ignore_errors: true
   become: true
+  changed_when: false
 
 - name: Check if import dashboards executable exists
   stat:
@@ -37,16 +40,12 @@
   become: true
 
 - name: Import auditbeat dashboards through import_dashboards
-  shell: "{{ auditbeat_scripts }}/import_dashboards --insecure -es {{ auditbeat_es_url }} -url {{ beats_dashboards_package_url }}"
-  args:
-    executable: /bin/bash
+  command: "{{ auditbeat_scripts }}/import_dashboards --insecure -es {{ auditbeat_es_url }} -url {{ beats_dashboards_package_url }}"
   become: true
   when: file_import_dashboards.stat.exists is defined and file_import_dashboards.stat.exists
 
 - name: Import auditbeat dashboards through setup
-  shell: '{{ auditbeat_exe }} setup -c {{ auditbeat_config_file }}'
-  args:
-    executable: /bin/bash
+  command: '{{ auditbeat_exe }} setup -c {{ auditbeat_config_file }}'
   become: true
   register: auditbeat_dashboard_setup
   until: auditbeat_dashboard_setup is not failed

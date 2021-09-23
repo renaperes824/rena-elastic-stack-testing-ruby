@@ -1,8 +1,8 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # logstash tasks
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 # Include task files in group use
@@ -24,6 +24,6 @@
 - name: Check for cloud ID
   fail:
     msg: "Please set env var: ELASTIC_CLOUD_ID to run cloud tasks"
-  when:  (ait_role is defined and ait_role is search('cloud') or
-          ait_action is defined and ait_action is search('cloud')) and
-         (elastic_cloud_id is not defined or not elastic_cloud_id)
+  when: (ait_role is defined and ait_role is search('cloud') or
+         ait_action is defined and ait_action is search('cloud')) and
+        (elastic_cloud_id is not defined or not elastic_cloud_id)

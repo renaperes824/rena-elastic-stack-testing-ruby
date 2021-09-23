@@ -1,15 +1,16 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Elasticsearch x-pack configuration
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
-- set_fact:
+- name: Set facts for elasticsearch certificate generator
+  set_fact:
     instances_file: "{{ elasticsearch_xpack_config_dir }}/instances.yml"
     cert_bundle_file: "{{ elasticsearch_xpack_config_dir }}/certificate-bundle.zip"
     local_cert_bundle_file: "{{ local_certs_dir }}/certificate-bundle.zip"
 
-- name: Delete certs files
+- name: Delete certificates
   file:
     state: absent
     path: "{{ cert_bundle_file }}"
@@ -18,32 +19,35 @@
   template:
     src: "{{ lookup('env','ANSIBLE_TEMPLATES') }}/instances.j2"
     dest: "{{ instances_file }}"
+    mode: 0777
 
 - name: Run certgen
-  shell: "{{ elasticsearch_certgen_exe }} -in {{ instances_file }} -out {{ cert_bundle_file }}"
+  command: "{{ elasticsearch_certgen_exe }} -in {{ instances_file }} -out {{ cert_bundle_file }}"
   register: output
+  changed_when: false
 
 - name: Extract certificate package
   unarchive:
     src: "{{ cert_bundle_file }}"
     dest: "{{ elasticsearch_xpack_config_dir }}"
-    remote_src: True
+    remote_src: true
 
 - name: Create certificate directory on localhost
   file:
     path: "{{ local_certs_dir }}"
     state: directory
+    mode: 0777
   delegate_to: localhost
 
 - name: Fetch certificates, store on localhost
   fetch:
     src: "{{ cert_bundle_file }}"
     dest: "{{ local_cert_bundle_file }}"
-    flat: yes
+    flat: true
 
 - name: Extract certificate package on localhost
   unarchive:
     src: "{{ local_cert_bundle_file }}"
     dest: "{{ local_certs_dir }}"
-    remote_src: True
+    remote_src: true
   delegate_to: localhost

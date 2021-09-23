@@ -1,4 +1,4 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Configure elasticsearch on Linux
 #
 # Set certain parameters in elasticsearch configuration
@@ -7,15 +7,16 @@
 # If a user specifies elasticsearch_config_params_strict=True internal params are appended, otherwise they are appended
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Save original elasticsearch configuration
   copy:
     src: '{{ elasticsearch_config_file }}'
     dest: '{{ elasticsearch_config_file }}.org'
-    remote_src: True
-    force: no
+    mode: 0660
+    remote_src: true
+    force: false
   become: '{{ elasticsearch_run_as_root | default(omit) }}'
 
 - name: Elasticsearch configuration - append
@@ -34,6 +35,7 @@
   copy:
     src: '{{ elasticsearch_config_params_file }}'
     dest: '{{ elasticsearch_config_file }}'
+    mode: 0660
   become: '{{ elasticsearch_run_as_root | default(omit) }}'
   when: elasticsearch_config_params_file is defined
 
@@ -41,7 +43,7 @@
   block:
     - name: Set network host
       set_fact:
-        internal_elasticsearch_config_params: | 
+        internal_elasticsearch_config_params: |
                         network.host: {{ current_host_ip }} |
                         discovery.type: single-node
 

@@ -5,6 +5,17 @@ galaxy_info:
   description: Elastic Stack
   company: elastic.co
   license: 'License (Apache)'
+  min_ansible_version: '2.10'
+  platforms:
+    - name: Ubuntu
+      versions:
+        - "bionic"
+        - "focal"
+  galaxy_tags:
+    - elasticsearch
+    - kibana
+    - logstash
+    - beats
 
 dependencies:
   - {role: common}

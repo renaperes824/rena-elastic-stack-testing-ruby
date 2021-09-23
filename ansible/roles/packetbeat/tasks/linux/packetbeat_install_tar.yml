@@ -1,8 +1,8 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Install Linux packetbeat packages
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Download packetbeat tar package
@@ -11,17 +11,16 @@
     dest: '{{ packetbeat_package }}'
     timeout: '{{ url_timeout }}'
     checksum: 'sha512:{{ packetbeat_package_url }}.sha512'
-  tags: package_packetbeat
-  become: true
   register: packetbeat_get_url
   until: packetbeat_get_url is not failed
   retries: 2
   delay: 30
+  become: true
 
 - name: Install packetbeat tar package
   unarchive:
     src: '{{ packetbeat_package }}'
     dest: '{{ packetbeat_install_dir }}'
-    remote_src: True
+    remote_src: true
   tags: install_packetbeat
   become: true

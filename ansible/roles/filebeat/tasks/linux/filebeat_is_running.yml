@@ -1,8 +1,8 @@
-##-----------------------------------------------------------------------------------------------------------------------
+## ----------------------------------------------------------------------------
 # Check if filebeat is running
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Verify filebeat is running
@@ -16,4 +16,4 @@
     - name: Fail if filebeat process is not running
       fail:
         msg: 'filebeat is not running'
-      when: filebeat_process_id.stdout == ""
+      when: filebeat_process_id.stdout | length == 0

@@ -10,7 +10,6 @@
     url: "http://{{ current_host_ip }}:{{ kibana_port }}/api/status"
     method: GET
     return_content: true
-    force_basic_auth: true
   register: kibana_api_status_output
   until:
     - kibana_api_status_output.status == 200

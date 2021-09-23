@@ -1,8 +1,8 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Install Linux kibana packages
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Download kibana tar package
@@ -11,7 +11,6 @@
     dest: '{{ kibana_package }}'
     timeout: '{{ url_timeout }}'
     checksum: 'sha512:{{ kibana_package_url }}.sha512'
-  tags: package_kibana
   register: kibana_get_url
   until: kibana_get_url is not failed
   retries: 2
@@ -21,13 +20,4 @@
   unarchive:
     src: '{{ kibana_package }}'
     dest: '{{ kibana_install_dir }}'
-    remote_src: True
-    list_files: True
-  register: kibana_archive_contents
-
-- name: Rename directory if it does not match base package name
-  command:
-    mv '{{ kibana_archive_contents.files[0].split('/')[0] }}' '{{ kibana_rootdir | basename }}'
-  args:
-    chdir: '{{ kibana_install_dir}}'
-  when: "'{{ kibana_rootdir | basename }}' not in '{{ kibana_archive_contents.files[0].split('/')[0] }}'"
+    remote_src: true

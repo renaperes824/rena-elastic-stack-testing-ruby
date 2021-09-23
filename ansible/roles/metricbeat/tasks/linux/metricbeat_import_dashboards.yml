@@ -1,34 +1,37 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Import metricbeat dashboards
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Grab protocol from metricbeat yaml file
-  shell: awk '/BEGIN ANSIBLE MANAGED BLOCK/,/END ANSIBLE MANAGED BLOCK/' {{ metricbeat_config_file }} | grep protocol | head -n 1 | awk '{print $2}'
+  shell: set -o pipefail &&
+         awk '/BEGIN ANSIBLE MANAGED BLOCK/,/END ANSIBLE MANAGED BLOCK/' {{ metricbeat_config_file }} | grep protocol | head -n 1 | awk '{print $2}'
   args:
     executable: /bin/bash
   register: metricbeat_get_es_protocol
   become: true
+  changed_when: false
 
-- set_fact:
+- name: Set metricbeat_es_protocol
+  set_fact:
     metricbeat_es_protocol: "{{ (metricbeat_get_es_protocol.stdout == '') | ternary('http', metricbeat_get_es_protocol.stdout) }}"
 
-- set_fact:
+- name: Set metricbeat_es_url
+  set_fact:
     metricbeat_es_url: '{%- if metricbeat_es_protocol == "https" -%}
-                          https://{{ elasticsearch_username }}:{{ elasticsearch_password}}@{{ current_host_ip }}:{{ elasticsearch_port }}
+                          https://{{ elasticsearch_username }}:{{ elasticsearch_password }}@{{ current_host_ip }}:{{ elasticsearch_port }}
                         {%- else -%}
                           http://{{ current_host_ip }}:{{ elasticsearch_port }}
                         {%- endif -%}'
 
 - name: Check if setup dashboards is supported
-  shell: '{{ metricbeat_exe }} setup --help'
-  args:
-    executable: /bin/bash
+  command: '{{ metricbeat_exe }} setup --help'
   register: metricbeat_setup_help_output
-  ignore_errors: yes
+  ignore_errors: true
   become: true
+  changed_when: false
 
 - name: Check if import dashboards executable exists
   stat:
@@ -37,16 +40,12 @@
   register: file_import_dashboards
 
 - name: Import metricbeat dashboards through import_dashboards
-  shell: "{{ metricbeat_scripts }}/import_dashboards --insecure  -es {{ metricbeat_es_url }} -url {{ beats_dashboards_package_url }}"
-  args:
-    executable: /bin/bash
+  command: "{{ metricbeat_scripts }}/import_dashboards --insecure  -es {{ metricbeat_es_url }} -url {{ beats_dashboards_package_url }}"
   become: true
   when: file_import_dashboards.stat.exists is defined and file_import_dashboards.stat.exists
 
 - name: Import metricbeat dashboards through setup
-  shell: '{{ metricbeat_exe }} setup -c {{ metricbeat_config_file }}'
-  args:
-    executable: /bin/bash
+  command: '{{ metricbeat_exe }} setup -c {{ metricbeat_config_file }}'
   become: true
   register: metricbeat_dashboard_setup
   until: metricbeat_dashboard_setup is not failed

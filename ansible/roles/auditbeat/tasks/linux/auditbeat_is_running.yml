@@ -1,8 +1,8 @@
-##-----------------------------------------------------------------------------------------------------------------------
+## ----------------------------------------------------------------------------
 # Check if auditbeat is running
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Verify auditbeat is running
@@ -16,4 +16,4 @@
     - name: Fail if auditbeat process is not running
       fail:
         msg: 'auditbeat is not running'
-      when: auditbeat_process_id.stdout == ""
+      when: auditbeat_process_id.stdout| length == 0

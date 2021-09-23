@@ -1,14 +1,15 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Copy conf logstash on Linux
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Copy logstash.conf file
   template:
     src: "{{ lookup('env','ANSIBLE_TEMPLATES') }}/logstash-conf.j2"
     dest: '{{ logstash_conf_path }}'
+    mode: 0660
   become: '{{ logstash_run_as_root | default(omit) }}'
 
 - name: Check logstash.conf has been copied

@@ -1,35 +1,38 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Import filebeat dashboards
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 
 - name: Grab protocol from filebeat yaml file
-  shell: awk '/BEGIN ANSIBLE MANAGED BLOCK/,/END ANSIBLE MANAGED BLOCK/' {{ filebeat_config_file }} | grep protocol | head -n 1 | awk '{print $2}'
+  shell: set -o pipefail &&
+         awk '/BEGIN ANSIBLE MANAGED BLOCK/,/END ANSIBLE MANAGED BLOCK/' {{ filebeat_config_file }} | grep protocol | head -n 1 | awk '{print $2}'
   args:
     executable: /bin/bash
   register: filebeat_get_es_protocol
   become: true
+  changed_when: false
 
-- set_fact:
+- name: Set filebeat ES protocol
+  set_fact:
     filebeat_es_protocol: "{{ (filebeat_get_es_protocol.stdout == '') | ternary('http', filebeat_get_es_protocol.stdout) }}"
 
-- set_fact:
+- name: Set filebeat ES URL
+  set_fact:
     filebeat_es_url: '{%- if filebeat_es_protocol == "https" -%}
-                          https://{{ elasticsearch_username }}:{{ elasticsearch_password}}@{{ current_host_ip }}:{{ elasticsearch_port }}
+                          https://{{ elasticsearch_username }}:{{ elasticsearch_password }}@{{ current_host_ip }}:{{ elasticsearch_port }}
                       {%- else -%}
                           http://{{ current_host_ip }}:{{ elasticsearch_port }}
                       {%- endif -%}'
 
 - name: Check if setup dashboards is supported
-  shell: '{{ filebeat_exe }} setup --help'
-  args:
-    executable: /bin/bash
+  command: '{{ filebeat_exe }} setup --help'
   register: filebeat_setup_help_output
-  ignore_errors: yes
+  ignore_errors: true
   become: true
+  changed_when: false
 
 - name: Check if import dashboards executable exists
   stat:
@@ -38,16 +41,12 @@
   register: file_import_dashboards
 
 - name: Import filebeat dashboards through import_dashboards
-  shell: "{{ filebeat_scripts }}/import_dashboards --insecure -es {{ filebeat_es_url }} -url {{ beats_dashboards_package_url }}"
-  args:
-    executable: /bin/bash
+  command: "{{ filebeat_scripts }}/import_dashboards --insecure -es {{ filebeat_es_url }} -url {{ beats_dashboards_package_url }}"
   become: true
   when: file_import_dashboards.stat.exists is defined and file_import_dashboards.stat.exists
 
 - name: Import filebeat dashboards through setup
-  shell: '{{ filebeat_exe }} setup -c {{ filebeat_config_file }}'
-  args:
-    executable: /bin/bash
+  command: '{{ filebeat_exe }} setup -c {{ filebeat_config_file }}'
   become: true
   register: filebeat_dashboard_setup
   until: filebeat_dashboard_setup is not failed
@@ -55,4 +54,3 @@
   delay: 10
   when: not filebeat_setup_help_output.failed and
         filebeat_setup_help_output.stdout is defined and (filebeat_setup_help_output.stdout is search('--dashboards'))
-

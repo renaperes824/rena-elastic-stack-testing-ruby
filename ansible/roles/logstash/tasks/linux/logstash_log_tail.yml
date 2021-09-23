@@ -1,25 +1,29 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Logstash log tail
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Get system date
-  shell: date
+  command: date
   register: logstash_date
+  changed_when: false
 
 - name: Get date now
-  shell: date +"%Y-%m-%dT%H:%M" --date "{{ logstash_date.stdout }}"
+  command: date +"%Y-%m-%dT%H:%M" --date "{{ logstash_date.stdout }}"
   register: logstash_date_now
+  changed_when: false
 
 - name: Get date lower limit
-  shell: date +"%Y-%m-%dT%H:%M" --date "{{ logstash_date.stdout }} -1 minutes"
+  command: date +"%Y-%m-%dT%H:%M" --date "{{ logstash_date.stdout }} -1 minutes"
   register: logstash_date_lower
+  changed_when: false
 
 - name: Get date higher limit
-  shell: date +"%Y-%m-%dT%H:%M" --date "{{ logstash_date.stdout }} +1 minutes"
+  command: date +"%Y-%m-%dT%H:%M" --date "{{ logstash_date.stdout }} +1 minutes"
   register: logstash_date_higher
+  changed_when: false
 
 - name: Set search string
   set_fact:

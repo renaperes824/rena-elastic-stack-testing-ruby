@@ -1,4 +1,4 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Configure logstash on Linux
 #
 # Set certain parameters in logstash configuration
@@ -7,15 +7,16 @@
 # If a user specifies logstash_config_params_strict=True internal params are appended, otherwise they are appended
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Save original logstash configuration
   copy:
     src: '{{ logstash_config_file }}'
     dest: '{{ logstash_config_file }}.org'
-    remote_src: True
-    force: no
+    mode: 0660
+    remote_src: true
+    force: false
   become: '{{ logstash_run_as_root | default(omit) }}'
 
 - name: Create logstash log directory
@@ -42,6 +43,7 @@
   copy:
     src: '{{ logstash_config_params_file }}'
     dest: '{{ logstash_config_file }}'
+    mode: 0660
   become: '{{ logstash_run_as_root | default(omit) }}'
   when: logstash_config_params_file is defined
 

@@ -1,8 +1,8 @@
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Install Linux heartbeat packages
 #
 # Author: liza.dayoub@elastic.co
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 ---
 
 - name: Download heartbeat tar package
@@ -11,18 +11,15 @@
     dest: '{{ heartbeat_package }}'
     timeout: '{{ url_timeout }}'
     checksum: 'sha512:{{ heartbeat_package_url }}.sha512'
-  tags: package_heartbeat
-  become: true
   register: heartbeat_get_url
   until: heartbeat_get_url is not failed
   retries: 2
   delay: 30
-
+  become: true
 
 - name: Install heartbeat tar package
   unarchive:
     src: '{{ heartbeat_package }}'
     dest: '{{ heartbeat_install_dir }}'
-    remote_src: True
-  tags: install_heartbeat
+    remote_src: true
   become: true
