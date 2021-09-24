@@ -6,7 +6,7 @@
 ---
 
 - name: Stop metricbeat process
-  shell: set -o pipefail && "ps -efw | grep metricbeat | grep -v grep | awk '{print $2}' | xargs kill -SIGTERM"
+  shell: set -o pipefail && ps -efw | grep metricbeat | grep -v grep | awk '{print $2}' | xargs kill -SIGTERM
   args:
     executable: /bin/bash
   become: true

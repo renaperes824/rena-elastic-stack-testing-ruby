@@ -9,6 +9,7 @@
   shell: set -o pipefail && ps -efw | grep filebeat | grep -v grep | awk '{print $2}' | xargs kill -SIGTERM
   args:
     executable: /bin/bash
+  become: true
   failed_when: false
   changed_when: false
   tags: stop_filebeat

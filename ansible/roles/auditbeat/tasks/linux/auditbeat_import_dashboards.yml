@@ -6,7 +6,7 @@
 ---
 
 - name: Grab protocol from auditbeat yaml file
-  shell: set -o pipefail && >
+  shell: set -o pipefail &&
     awk '/BEGIN ANSIBLE MANAGED BLOCK/,/END ANSIBLE MANAGED BLOCK/' {{ auditbeat_config_file }} | grep protocol | head -n 1 | awk '{print $2}'
   args:
     executable: /bin/bash
