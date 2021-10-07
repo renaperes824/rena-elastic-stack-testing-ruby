@@ -7,7 +7,6 @@ basicGrp1="bundles
          management
          saved_objects_management
          status_page
-         timelion
         "
 
 basicGrp2="visualize
@@ -37,7 +36,6 @@ xpackGrp2="canvas
            lens
            logstash
            status_page
-           timelion
            upgrade_assistant
            uptime
            watcher
