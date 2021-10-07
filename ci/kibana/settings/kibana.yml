@@ -10,7 +10,6 @@ status.allowAnonymous: true
 telemetry.banner: false
 telemetry.optIn: true
 telemetry.sendUsageTo: staging
-timelion.ui.enabled: true
 usageCollection.maximumWaitTimeForAllCollectorsInS: 1
 xpack.actions.allowedHosts: ["localhost","some.non.existent.com"]
 xpack.actions.enabledActionTypes: [".email",".index",".pagerduty",".swimlane",".server-log",".servicenow",".slack",".webhook","test.authorization","test.failing","test.index-record","test.noop","test.rate-limit"]
