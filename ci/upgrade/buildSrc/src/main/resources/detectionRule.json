@@ -6,9 +6,9 @@
   "name": "Custom query rule for upgrade",
   "severity": "low",
   "type": "query",
-  "from": "now-17520h",
+  "from": "now-50000h",
   "index": [
-    "auditbeat-upgrade-*"
+    "auditbeat-*"
   ],
   "query": "*:*",
   "language": "kuery",

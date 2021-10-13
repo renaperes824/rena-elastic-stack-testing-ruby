@@ -66,7 +66,9 @@ public class UploadSecuritySolutionData extends DefaultTask {
         if (majorVersion > 6) {
             createsSiemSignalsIndex();
             createsDetectionRule();
-            createsDocumentIndex();
+            createsAuditbeatIndex();
+            increasesNumberOfFieldsLimitForMapping();
+            createsAuditbeatMapping();
             createsDocumentToGenerateAlert();
         }
     }
@@ -131,7 +133,7 @@ public class UploadSecuritySolutionData extends DefaultTask {
         }
     }
 
-    public void createsDocumentIndex() throws IOException, InterruptedException {
+    public void createsAuditbeatIndex() throws IOException, InterruptedException {
         String creds = username + ":" + password;
         String basicAuthPayload = "Basic " + Base64.getEncoder().encodeToString(creds.getBytes());
         for (int retries = 0; ; retries++) {
@@ -153,12 +155,67 @@ public class UploadSecuritySolutionData extends DefaultTask {
         }
     }
 
+    public void increasesNumberOfFieldsLimitForMapping() throws IOException, InterruptedException {
+        String creds = username + ":" + password;
+        String basicAuthPayload = "Basic " + Base64.getEncoder().encodeToString(creds.getBytes());
+        for (int retries = 0; ; retries++) {
+            String jsonstr = "{\"index.mapping.total_fields.limit\":2000}";
+            StringEntity entity = new StringEntity(jsonstr);
+            entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            HttpPut putRequest = new HttpPut(esBaseUrl + "/auditbeat-upgrade-1/_settings");
+            putRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+            putRequest.setEntity(entity);
+            HttpClient client = HttpClientBuilder.create().build();
+            HttpResponse response = client.execute(putRequest);
+            int statusCode = response.getStatusLine().getStatusCode();
+            System.out.println(statusCode);
+            if (statusCode == 200) {
+                break;
+            }
+            if (retries < MAX_RETRIES) {
+                System.out.println("** Retrying to increate the number of fields limit in mapping **");
+                Thread.sleep(5000);
+            } else {
+                throw new IOException("Failed to increate the number of fields limit in mapping");
+            }
+        }
+    }
+
+    public void createsAuditbeatMapping() throws IOException, InterruptedException {
+        String creds = username + ":" + password;
+        String basicAuthPayload = "Basic " + Base64.getEncoder().encodeToString(creds.getBytes());
+        for (int retries = 0; ; retries++) {
+            String file = "buildSrc/src/main/resources/auditbeatMapping.json";
+            String jsonStr = new String(Files.readAllBytes(Paths.get(file)));
+            StringEntity entity = new StringEntity(jsonStr);
+            entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            HttpPut putRequest = new HttpPut(esBaseUrl + "/auditbeat-upgrade-1/_mapping");
+            putRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+            putRequest.setEntity(entity);
+            HttpClient client = HttpClientBuilder.create().build();
+            HttpResponse response = client.execute(putRequest);
+            int statusCode = response.getStatusLine().getStatusCode();
+            System.out.println(statusCode);
+            if (statusCode == 200) {
+                break;
+            }
+            if (retries < MAX_RETRIES) {
+                System.out.println("** Retrying to create mapping **");
+                Thread.sleep(5000);
+            } else {
+                throw new IOException("Failed to create mapping index");
+            }
+        }
+    }
+
+
     public void createsDocumentToGenerateAlert() throws IOException, InterruptedException {
         String creds = username + ":" + password;
         String basicAuthPayload = "Basic " + Base64.getEncoder().encodeToString(creds.getBytes());
         for (int retries = 0;; retries++) {
-            String jsonstr = "{\"@timestamp\":\"2021-07-01T13:12:00\", \"host\":{\"name\":\"test\"}}";
-            StringEntity entity = new StringEntity(jsonstr);
+            String file = "buildSrc/src/main/resources/auditbeatDoc.json";
+            String jsonStr = new String(Files.readAllBytes(Paths.get(file)));
+            StringEntity entity = new StringEntity(jsonStr);
             entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
             HttpPost postRequest = new HttpPost(esBaseUrl + "/auditbeat-upgrade-1/_doc");
             postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
