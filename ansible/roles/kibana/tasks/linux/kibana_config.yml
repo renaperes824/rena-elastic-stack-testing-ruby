@@ -53,8 +53,11 @@
       set_fact:
         internal_kibana_config_params: |
           server.host:  {{ current_host_ip }}
-          logging.dest: {{ kibana_log_file | trim }}
           elasticsearch.hosts: http://{{ current_host_ip }}:{{ elasticsearch_port }}
+          logging.appenders.default:
+            type: file
+            fileName: {{ kibana_log_file | trim }}
+            layout.type: pattern
     - name: Add kibana configuration parameters
       blockinfile:
         path: '{{ kibana_config_file }}'

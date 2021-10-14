@@ -63,7 +63,10 @@
     insertafter: EOF
     content: |
       server.host:  {{ current_host_ip }}
-      logging.dest: {{ kibana_log_file | trim }}
+      logging.appenders.default:
+            type: file
+            fileName: {{ kibana_log_file | trim }}
+            layout.type: pattern
       elasticsearch.hosts: "https://{{ current_host_ip }}:{{ elasticsearch_port }}"
       elasticsearch.username: {{ kibana_username }}
       elasticsearch.password: {{ kibana_password }}
