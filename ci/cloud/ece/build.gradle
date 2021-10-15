@@ -59,6 +59,10 @@ task getenv_var {
     if (cloud_ver.contains("-SNAPSHOT")) {
       ext.build_hash = ""
     }
+    ext.estf_ver = kibana_ver
+    if (kibana_ver == "master") {
+      ext.estf_ver = "main"
+    }
     ext.homedir = System.env.HOME
     ext.ver_whole = "$cloud_ver-$build_hash"
     ext.datadir = "$homedir/data"
@@ -107,7 +111,7 @@ def updatePlan(type, filename) {
   def builder = new JsonBuilder(slurped)
   if ( type == "kibana") {
     def kbnSettingsUrl = "https://raw.githubusercontent.com/elastic/elastic-stack-testing/" +
-                         "${getenv_var['kibana_ver']}" + "/ci/cloud/product/settings/kibana.yml"
+                         "${getenv_var['estf_ver']}" + "/ci/cloud/product/settings/kibana.yml"
     Map map = new Yaml().load(new URL(kbnSettingsUrl).getText('UTF-8'))
     slurped.resources.kibana.get(0).plan.kibana.user_settings_override_json = map
   }

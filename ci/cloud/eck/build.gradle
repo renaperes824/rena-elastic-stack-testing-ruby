@@ -68,6 +68,10 @@ task getenv_var {
     ext.cloud_ver =  System.env.ESTF_CLOUD_VERSION
     ext.build_hash = System.env.ESTF_BUILD_HASH
     ext.region = System.env.ESTF_CLOUD_REGION ?: "us-central1-a"
+    ext.estf_ver = kibana_ver
+    if (kibana_ver == "master") {
+      ext.estf_ver = "main"
+    }
     ext.homedir = System.env.HOME
     ext.gc_project = "elastic-automation"
     ext.whole_ver = "$cloud_ver-$build_hash"
@@ -211,7 +215,7 @@ def updateSpec(type, filename, image) {
   map["spec"]["image"] =  image.toString()
   if ( type == "kibana") {
     def kbnSettingsUrl = "https://raw.githubusercontent.com/elastic/elastic-stack-testing/" +
-                         "${getenv_var['kibana_ver']}" + "/ci/cloud/product/settings/kibana.yml"
+                         "${getenv_var['estf_ver']}" + "/ci/cloud/product/settings/kibana.yml"
     map["spec"]["config"] = new URL(kbnSettingsUrl).getText('UTF-8')
   }
   file.write(yaml.dump(map).toString().replaceAll("config: \\|", "config:"))

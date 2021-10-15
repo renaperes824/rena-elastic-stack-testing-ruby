@@ -22,12 +22,16 @@ def genSetupTask(testname) {
         stackVersion = System.env.ESTF_CLOUD_VERSION ?: _cloud_version
         esUserSettings = System.env.ESTF_ES_USER_SETTINGS
         kibanaUserSettings = System.env.ESTF_KIBANA_USER_SETTINGS
+        def estf_version = version
+        if (version == "master") {
+            estf_version = "main"
+        }
         try {
             URL defaultCfgUrl =  new URL("https://raw.githubusercontent.com/elastic/elastic-stack-testing/" +
-                                         version + "/ci/cloud/product/settings/kibana.yml")
+                                         estf_version + "/ci/cloud/product/settings/kibana.yml")
 
             URL jobCfgUrl = new URL("https://raw.githubusercontent.com/elastic/elastic-stack-testing/" +
-                                    version + "/ci/cloud/product/settings/" + System.env.JOB.trim() + ".yml")
+                                    estf_version + "/ci/cloud/product/settings/" + System.env.JOB.trim() + ".yml")
 
             HttpURLConnection jobCfgHttp = (HttpURLConnection)jobCfgUrl.openConnection()
             if (jobCfgHttp.getResponseCode() == 200) {

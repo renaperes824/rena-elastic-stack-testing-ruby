@@ -255,7 +255,11 @@ function get_branch() {
                       tr -d ",\"\ +" | \
                       xargs)"
 
-  readonly Glb_Kibana_Branch
+  Glb_Estf_Branch=${Glb_Kibana_Branch}
+  if [[ $Glb_Kibana_Branch == "master" ]]; then
+    Glb_Estf_Branch="main"
+  fi
+  readonly Glb_Kibana_Branch Glb_Estf_Branch
 }
 
 # ----------------------------------------------------------------------------
@@ -2049,8 +2053,8 @@ function docker_load {
   fi
 
   if [ "$type" == "basic" ]; then
-    curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/settings/basic/kibana.yml --output kibana.yml
-    curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/docker/basic/docker-compose.yml --output docker-compose.yml
+    curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Estf_Branch}/ci/kibana/settings/basic/kibana.yml --output kibana.yml
+    curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Estf_Branch}/ci/kibana/docker/basic/docker-compose.yml --output docker-compose.yml
 
     echo_info "Run docker compose up..."
     docker-compose up -d
@@ -2064,17 +2068,17 @@ function docker_load {
     export TEST_ES_PORT=9200
 
   else
-    defaultCfgUrl=https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/settings/kibana.yml
-    jobCfgUrl=https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/settings/${JOB}.yml
+    defaultCfgUrl=https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Estf_Branch}/ci/kibana/settings/kibana.yml
+    jobCfgUrl=https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Estf_Branch}/ci/kibana/settings/${JOB}.yml
     curl --output /dev/null --silent --head --fail "$jobCfgUrl"
     if [[ $? -eq 0 ]]; then
       curl -s  $jobCfgUrl --output kibana.yml
     else
       curl -s $defaultCfgUrl --output kibana.yml
     fi
-    curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/docker/default/create-certs.yml --output create-certs.yml
-    curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/docker/default/elastic-docker-tls.yml --output elastic-docker-tls.yml
-    curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/docker/default/instances.yml --output instances.yml
+    curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Estf_Branch}/ci/kibana/docker/default/create-certs.yml --output create-certs.yml
+    curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Estf_Branch}/ci/kibana/docker/default/elastic-docker-tls.yml --output elastic-docker-tls.yml
+    curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Estf_Branch}/ci/kibana/docker/default/instances.yml --output instances.yml
 
     export COMPOSE_PROJECT_NAME=es
     export CERTS_DIR=/usr/share/elasticsearch/config/certificates
@@ -2833,10 +2837,10 @@ function update_kibana_settings() {
 
   echo_info "Update Kibana settings"
   if [ "$type" == "basic" ]; then
-    curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/settings/basic/kibana.yml --output kibana.yml
+    curl -s https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Estf_Branch}/ci/kibana/settings/basic/kibana.yml --output kibana.yml
   else
-    defaultCfgUrl=https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/settings/kibana.yml
-    jobCfgUrl=https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Kibana_Branch}/ci/kibana/settings/${JOB}.yml
+    defaultCfgUrl=https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Estf_Branch}/ci/kibana/settings/kibana.yml
+    jobCfgUrl=https://raw.githubusercontent.com/elastic/elastic-stack-testing/${Glb_Estf_Branch}/ci/kibana/settings/${JOB}.yml
     curl --output /dev/null --silent --head --fail "$jobCfgUrl"
     if [[ $? -eq 0 ]]; then
       curl -s  $jobCfgUrl --output kibana.yml
