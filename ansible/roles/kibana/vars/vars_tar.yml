@@ -16,7 +16,8 @@ kibana_install_dir: '{{ install_dir }}'
 kibana_package: '{{ kibana_install_dir }}/{{ kibana_package_url | basename }}'
 
 # Kibana root directory
-kibana_rootdir: "{{ kibana_install_dir }}/{{ kibana_package | regex_search('(kibana-[0-9.]+(-SNAPSHOT){0,1})', '\\1') | first }}"
+kibana_root: "{{ kibana_package | regex_search('(kibana-[0-9.]+(-SNAPSHOT){0,1}(-alpha[0-9]+){0,1}(-beta[0-9]+){0,1})', '\\1') | first }}"
+kibana_rootdir: "{{ kibana_install_dir }}/{{ kibana_root }}"
 
 # Kibana bin
 kibana_bin_dir: '{{ kibana_rootdir | trim }}/bin'

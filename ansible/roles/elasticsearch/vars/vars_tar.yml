@@ -16,7 +16,8 @@ elasticsearch_install_dir: "{{ install_dir }}"
 elasticsearch_package: '{{ elasticsearch_install_dir }}/{{ elasticsearch_package_url | basename }}'
 
 # Elasticsearch root directory
-elasticsearch_rootdir: "{{ elasticsearch_install_dir }}/{{ elasticsearch_package | regex_search('(elasticsearch-[0-9.]+(-SNAPSHOT){0,1})', '\\1') | first }}"
+elasticsearch_root: "{{ elasticsearch_package | regex_search('(elasticsearch-[0-9.]+(-SNAPSHOT){0,1}(-alpha[0-9]+){0,1}(-beta[0-9]+){0,1})', '\\1') | first }}"
+elasticsearch_rootdir: "{{ elasticsearch_install_dir }}/{{ elasticsearch_root }}"
 
 # Elasticsearch bin
 elasticsearch_bin_dir: '{{ elasticsearch_rootdir | trim }}/bin'
