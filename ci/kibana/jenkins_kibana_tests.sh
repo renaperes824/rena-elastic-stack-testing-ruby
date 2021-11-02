@@ -634,12 +634,11 @@ function set_java_home() {
 
   if [ ! -z $JENKINS_HOME ]; then
     if [[ "$Glb_OS" == "windows" ]]; then
-      export JAVA_HOME="c:\Users\jenkins\.java\java11"
+      export JAVA_HOME="c:\Users\jenkins\.java\openjdk17"
     elif [[ "$Glb_Arch" == "aarch64" ]]; then
-      #export JAVA_HOME="/var/lib/jenkins/.java/adoptopenjdk11"
-      export JAVA_HOME="/var/lib/jenkins/.java/jdk15"
+      export JAVA_HOME="/var/lib/jenkins/.java/jdk17"
     elif [[ "$Glb_Arch" == "x86_64" ]]; then
-      export JAVA_HOME="/var/lib/jenkins/.java/java11"
+      export JAVA_HOME="/var/lib/jenkins/.java/openjdk17"
     fi
   else
     if [[ "$Glb_OS" == "windows" ]]; then
