@@ -1,6 +1,5 @@
 data.search.aggs.shardDelay.enabled: true
 home.disableWelcomeScreen: true
-map.proxyElasticMapsServiceInMaps: true
 server.publicBaseUrl: "http://myhost.com"
 server.uuid: 5b2de169-2785-441b-ae8c-186a1936b17d
 telemetry.banner: false
