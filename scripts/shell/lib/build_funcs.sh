@@ -442,6 +442,12 @@ run_cloud_tests() {
   fi
   cd ${AIT_CI_CLOUD_DIR}
   if [ $TASK == "kibana_upgrade_tests" ]; then
+    # If running in Jenkins, set java version
+    running_in_jenkins
+    RC=$?
+    if [ $RC == 1 ]; then
+      export JAVA_HOME="/var/lib/jenkins/.java/openjdk12"
+    fi
     cd ${AIT_CI_CLOUD_UPGRADE_DIR}
   fi
   ./gradlew $TASK
