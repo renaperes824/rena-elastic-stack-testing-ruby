@@ -67,6 +67,6 @@
 - name: Enable default prospector
   replace:
     path: '{{ filebeat_config_file }}'
-    regexp: '(^- type: log\n)(\n)*(^\s*#.*\n)*(\s)*(enabled: false)'
+    regexp: '(^- type: filestream\n)(\n)*(^\s*#.*\n)*(\s)*(enabled: false)'
     replace: '\1\2\3\4 enabled: true'
   become: true
