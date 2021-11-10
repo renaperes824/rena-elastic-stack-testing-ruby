@@ -4,10 +4,10 @@
 
 To contribute to ESS automated upgrades, there are two steps:
 
-1. Create API setup: The API setup is done in [this repo](git@github.com:elastic/elastic-stack-testing), follow example:
+1. Create API setup: The API setup is done in [this repo](https://github.com/elastic/elastic-stack-testing.git), follow example:
 `buildSrc/src/main/java/org/estf/gradle/UploadData.java`
 
-2. Create UI or API verification: The verification can be in this repo or another. Currently the main tests reside in [kibana repo](git@github.com:elastic/kibana.git) under `x-pack/test/upgrade`
+2. Create UI or API verification: The verification can be in this repo or another. Currently the main tests reside in [kibana repo](https://github.com/elastic/kibana.git) under `x-pack/test/upgrade`
 
 If you have another workflow or are unsure how your test plan can be automated, please create an [issue](https://github.com/elastic/elastic-stack-testing/issues/new) to evaluate your requirements.
 
