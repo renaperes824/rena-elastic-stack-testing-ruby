@@ -8,7 +8,7 @@
   "type": "query",
   "from": "now-50000h",
   "index": [
-    "auditbeat-*"
+    "auditbeat-custom*"
   ],
   "query": "*:*",
   "language": "kuery",

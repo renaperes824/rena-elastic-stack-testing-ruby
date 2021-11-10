@@ -1,0 +1,22 @@
+{
+  "rule_id": "threshold",
+  "risk_score": 17,
+  "description": "Threshold rule for testing upgrade",
+  "interval": "60s",
+  "name": "Threshold rule",
+  "severity": "medium",
+  "type": "threshold",
+  "from": "now-50000h",
+  "index": [
+    "auditbeat-threshold*"
+  ],
+  "query": "*:*",
+  "language": "kuery",
+  "enabled": true,
+  "threshold":{
+    "field":[
+      "host.name"
+    ],
+    "value":1
+  }
+}
