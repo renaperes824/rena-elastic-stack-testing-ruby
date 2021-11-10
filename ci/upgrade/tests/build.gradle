@@ -1,0 +1,54 @@
+import org.estf.gradle.UploadData
+import org.estf.gradle.UploadSecuritySolutionData
+
+/**
+ * build.gradle for testing uploading data
+ *
+ * @author: Liza Mae Dayoub
+ *
+ */
+
+group 'org.estf.cloud'
+
+version '1.0'
+
+apply plugin: 'groovy'
+
+repositories {
+    mavenCentral()
+}
+
+task deployment {
+    doFirst {
+        ext.esBaseUrl = ""
+        ext.kbnBaseUrl = ""
+        ext.username = ""
+        ext.password = ""
+        ext.version = ""
+        ext.upgradeVersion = ""
+    }
+}
+
+task testSampleData(type: UploadData, dependsOn: deployment) {
+    doFirst {
+        esBaseUrl = deployment.esBaseUrl
+        kbnBaseUrl = deployment.kbnBaseUrl
+        username = deployment.username
+        password = deployment.password
+        version = deployment.version
+        upgradeVersion = deployment.upgradeVersion
+    }
+}
+
+task testSecuritySolutionsData(type: UploadSecuritySolutionData, dependsOn: deployment) {
+   doFirst {
+        esBaseUrl = deployment.esBaseUrl
+        kbnBaseUrl = deployment.kbnBaseUrl
+        username = deployment.username
+        password = deployment.password
+        version = deployment.version
+        upgradeVersion = deployment.upgradeVersion
+    }
+}
+
+
