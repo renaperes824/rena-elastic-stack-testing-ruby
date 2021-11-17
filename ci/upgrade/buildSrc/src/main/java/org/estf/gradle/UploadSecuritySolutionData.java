@@ -70,7 +70,7 @@ public class UploadSecuritySolutionData extends DefaultTask {
     }
 
     public void createsCustomQueryDetectionRule(Instance instance) throws IOException {
-        DetectionRuleCreation endpoint = new DetectionRuleCreation(instance, "buildSrc/src/main/resources/detectionRule.json");
+        DetectionRuleCreation endpoint = new DetectionRuleCreation(instance, "buildSrc/src/main/resources/customQueryRule.json");
         endpoint.sendPostRequest();
     }
 
