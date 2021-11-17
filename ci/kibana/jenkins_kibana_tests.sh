@@ -295,7 +295,8 @@ function get_os() {
 
   # Even though node is now supported Kibana 7.14+, looks like chromium is not, segfaults
   # Going to only enable API tests for now
-  if [[ "$Glb_Arch" == "aarch64" ]] && [[ "$Glb_Distr" == "CentOS" ]]; then
+  # Recent breakage with Chrome on Ubuntu - failure while creating webdriver instance
+  if [[ "$Glb_Arch" == "aarch64" ]]; then
     if [[ "$_grp" != *"xpackExt"* ]]; then
       Glb_SkipTests="yes"
     else
