@@ -307,6 +307,10 @@ function get_os() {
     Glb_SkipTests="yes"
   fi
 
+  if [[ "$Glb_Distr" == "Amazon" ]] && [[ "$Glb_Distr_Ver" == "2" ]]; then
+    Glb_SkipTests="yes"
+  fi
+
   if [[ "$Glb_Arch" == "aarch64" ]]; then
     if [[ "$Glb_SkipTests" == "no" ]]; then
       install_pkg "jq"
