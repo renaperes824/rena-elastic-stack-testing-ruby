@@ -783,6 +783,11 @@ function yarn_kbn_bootstrap() {
     echo "network-timeout 600000" >> .yarnrc
   fi
 
+  # Workaround this for windows: https://github.com/elastic/kibana/issues/118572
+  if [[ "$Glb_OS" = "windows" ]]; then
+    sed -i '/only: transpileKbnPaths,/d' packages/kbn-test/src/functional_tests/lib/babel_register_for_test_plugins.js
+  fi
+
   if [[ "$Glb_Arch" == "aarch64" ]]; then
     local _filename=test/functional/services/remote/webdriver.ts
     sed -i 's/new chrome.ServiceBuilder(chromeDriver.path)/new chrome.ServiceBuilder(chromeDriverPath)/g' $_filename
@@ -865,6 +870,12 @@ function check_git_changes() {
   if [ $Glb_YarnNetworkTimeout -eq 0 ]; then
     echo_warning "Modified network timeout in .yarnrc"
     _exclude+="|.yarnrc"
+  fi
+
+  # Workaround this for windows: https://github.com/elastic/kibana/issues/118572
+  if [[ "$Glb_OS" = "windows" ]]; then
+    echo_warning "Modified babel_register_for_test_plugins"
+    _exclude+="|packages/kbn-test/src/functional_tests/lib/babel_register_for_test_plugins.js"
   fi
 
   _git_changes="$(git ls-files --modified | grep -Ev $_exclude)"
