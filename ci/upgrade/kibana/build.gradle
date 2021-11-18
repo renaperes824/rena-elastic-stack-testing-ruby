@@ -131,6 +131,7 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
             test_failures.add(kibanaTests.getRc())
         }
 
+        /* Disabling until https://github.com/elastic/elastic-stack-testing/issues/1083 is fixed
         if ('security-solutions' in test_suites || 'all' in test_suites) {
             def envList2 = []
             envList2.addAll(envList)
@@ -146,6 +147,7 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
             securitySolnTests.waitFor()
             test_failures.add(securitySolnTests.getRc())
         }
+        */
 
         def test_failure_list = test_failures.stream().distinct().collect(Collectors.toList())
         if (test_failure_list.size() > 1 ||
