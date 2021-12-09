@@ -13,6 +13,7 @@ JOB:
   - upgradeTest1j
   - upgradeTest1k
   - upgradeTest1l
+  - upgradeTest1m
   - upgradeTest2a
 
 exclude: ~
