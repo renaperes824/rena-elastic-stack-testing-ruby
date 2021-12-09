@@ -2795,9 +2795,9 @@ function install_elasticsearch_pkg() {
 
   echo_info "Install Elasticsearch Package: $_esPkgName"
   if [ "$ESTF_TEST_PACKAGE" = "rpm" ]; then
-    sudo rpm --install $_esPkgName
+    sudo rpm --install $_esPkgName | tee es_install_log.txt
   else
-    sudo dpkg -i $_esPkgName
+    sudo dpkg -i $_esPkgName | tee es_install_log.txt
   fi
   if [ $? -ne 0 ]; then
     echo_error_exit "Install Elasticsearch failed"
@@ -2843,6 +2843,7 @@ function install_kibana_pkg() {
 function update_kibana_settings() {
   local _kbnHome="/etc/kibana"
   local type=${TEST_KIBANA_BUILD:-basic}
+  local _isSecurityOnByDefault=$(vge $_version "8.0")
 
   local _sudo="sudo -s"
   if [ "$ESTF_TEST_PACKAGE" == "tar.gz" ] || [ "$ESTF_TEST_PACKAGE" == "zip" ]; then
@@ -2975,6 +2976,7 @@ function elasticsearch_setup_passwords() {
   local _esBin="/usr/share/elasticsearch"
   local _kbnHome="/etc/kibana"
   local _ip=$(get_hostname)
+  local _isSecurityOnByDefault=$(vge $_version "8.0")
 
   local _sudo="sudo -s"
   if [ "$ESTF_TEST_PACKAGE" == "tar.gz" ] || [ "$ESTF_TEST_PACKAGE" == "zip" ]; then
@@ -2989,20 +2991,25 @@ function elasticsearch_setup_passwords() {
     _ip=$(ipconfig | grep IPv4 | cut -d: -f2 | awk '{print $1}')
   fi
 
-  echo_info "Setup passwords"
-  echo "y" | $_sudo $_esBin/bin/elasticsearch-setup-passwords${_ext} auto  | tee passwords.txt
-  if [ $? -ne 0 ]; then
-    echo_error_exit "Elastisearch setup passwords failed!"
-  fi
+  if [[ $_isSecurityOnByDefault == 0 ]]; then
+    echo_info "Setup passwords"
+    echo "y" | $_sudo $_esBin/bin/elasticsearch-setup-passwords${_ext} auto  | tee passwords.txt
+    if [ $? -ne 0 ]; then
+      echo_error_exit "Elastisearch setup passwords failed!"
+    fi
 
-  espw=$(cat passwords.txt | grep "PASSWORD elastic = " | awk '{print $4}')
-  kbnpw=$(cat passwords.txt | grep "PASSWORD kibana = " | awk '{print $4}')
+    espw=$(cat passwords.txt | grep "PASSWORD elastic = " | awk '{print $4}')
+    kbnpw=$(cat passwords.txt | grep "PASSWORD kibana = " | awk '{print $4}')
+  else
+    espw=$(cat es_install_log.txt | grep "elastic built-in superuser is" | awk -F "superuser is : " '{print $2}')
+  fi
 
   _dir=$_kbnHome
   if [[ "$Glb_OS" == "windows" ]]; then
       _dir=${_dir#/c}
   fi
 
+  if [[ $_isSecurityOnByDefault == 0 ]]; then
 ${_sudo} tee -a $_kbnHome/kibana.yml <<- EOM
 server.host: $_ip
 elasticsearch.hosts: "https://${_ip##*( )}:9200"
@@ -3014,13 +3021,21 @@ server.ssl.key: $_dir/escluster/escluster.key
 elasticsearch.ssl.certificateAuthorities: [ '$_dir/ca/ca.crt' ]
 elasticsearch.ssl.verificationMode: none
 EOM
+  else
+${_sudo} tee -a $_kbnHome/kibana.yml <<- EOM
+server.host: $_ip
+EOM
+  fi
 
   export TEST_KIBANA_HOSTNAME=$_ip
-  export TEST_KIBANA_PROTOCOL=https
+  if [[ $_isSecurityOnByDefault == 0 ]]; then
+    export TEST_KIBANA_PROTOCOL=https
+  else
+     export TEST_KIBANA_PROTOCOL=http
+  fi
   export TEST_KIBANA_PORT=5601
   export TEST_KIBANA_USER=elastic
   export TEST_KIBANA_PASS=$espw
-
   export TEST_ES_HOSTNAME=$_ip
   export TEST_ES_PROTOCOL=https
   export TEST_ES_PORT=9200
@@ -3065,7 +3080,16 @@ function start_elasticsearch_service() {
 # -----------------------------------------------------------------------------
 function start_kibana_service() {
   local syssvc=$(ps -p 1)
+  local _esBin="/usr/share/elasticsearch"
+  local _kbnBin="/usr/share/kibana"
+  local _isSecurityOnByDefault=$(vge $_version "8.0")
 
+  if [[ $_isSecurityOnByDefault == 1 ]]; then
+    echo_info "Create elasticsearch enrollment token"
+    enrollment_token=$(sudo $_esBin/bin/elasticsearch-create-enrollment-token -s kibana)
+    echo_info "Setup Kibana with enrollment token"
+    echo $enrollment_token | sudo $_kbnBin/bin/kibana-setup
+  fi
   echo_info "Start Kibana service"
   if [[ "$syssvc" = *"systemd"* ]]; then
     sudo /bin/systemctl daemon-reload
@@ -3096,7 +3120,7 @@ function start_elasticsearch() {
 
   set_elasticsearch_jvm_options "$Glb_Es_Dir/config"
 
-  $Glb_Es_Dir/bin/elasticsearch${_ext} &
+  $Glb_Es_Dir/bin/elasticsearch${_ext} -d -p pid | tee es_install_log.txt
 
   if [ $? -ne 0 ]; then
     echo_error_exit "Starting elasticsearch failed"
@@ -3110,8 +3134,16 @@ function start_elasticsearch() {
 # -----------------------------------------------------------------------------
 function start_kibana() {
   local url=$1
-
   local _ext=""
+  local _isSecurityOnByDefault=$(vge $_version "8.0")
+
+  if [[ $_isSecurityOnByDefault == 1 ]]; then
+    echo_info "Create elasticsearch enrollment token"
+    enrollment_token=$(sudo $Glb_Es_Dir/bin/elasticsearch-create-enrollment-token -s kibana)
+    echo_info "Setup Kibana with enrollment token"
+    echo $enrollment_token | sudo $Glb_Kibana_Dir/bin/kibana-setup
+  fi
+
   if [[ "$Glb_OS" == "windows" ]]; then
     _ext=".bat"
   fi
@@ -3123,6 +3155,7 @@ function start_kibana() {
   if [ $? -ne 0 ]; then
     echo_error_exit "Starting kibana failed"
   fi
+
   echo_info "Wait for kibana to be ready"
   wait_for_http_ready $url
 }
@@ -3148,6 +3181,8 @@ function install_packages() {
   local type=${TEST_KIBANA_BUILD:-basic}
   local _esHome="/etc/elasticsearch"
   local _sudo="sudo -s"
+  local _esHome="/etc/elasticsearch"
+  local _isSecurityOnByDefault=$(vge $_version "8.0")
 
   if [ "$ESTF_TEST_PACKAGE" != "rpm" ] && [ "$ESTF_TEST_PACKAGE" != "deb" ]; then
     echo_error_exit "Invalid pkg: $ESTF_TEST_PACKAGE"
@@ -3170,12 +3205,20 @@ function install_packages() {
   download_kibana_pkg
   install_kibana_pkg
 
-  if [ "$type" != "basic" ]; then
-    elasticsearch_generate_certs
-  else
+  if [[ $_isSecurityOnByDefault == 0 ]]; then
+    if [ "$type" != "basic" ]; then
+      elasticsearch_generate_certs
+    else
 ${_sudo} tee -a $_esHome/elasticsearch.yml <<- EOM
 xpack.security.enabled: false
 EOM
+    fi
+  else
+    if [ "$type" != "basic" ]; then
+${_sudo} tee -a $_esHome/elasticsearch.yml <<- EOM
+xpack.license.self_generated.type: trial
+EOM
+    fi
   fi
 
   start_elasticsearch_service
@@ -3186,7 +3229,7 @@ EOM
 
   update_kibana_settings
 
-  if [ "$type" == "basic" ]; then
+  if [ "$type" == "basic" ] && [[ $_isSecurityOnByDefault == 0 ]]; then
     export TEST_KIBANA_PROTOCOL=http
     export TEST_KIBANA_PORT=5601
     export TEST_ES_PROTOCOL=http
@@ -3248,6 +3291,8 @@ function uninstall_packages() {
 # -----------------------------------------------------------------------------
 function install_compressed_packages() {
   local type=${TEST_KIBANA_BUILD:-basic}
+  local _esHome="/etc/elasticsearch"
+  local _isSecurityOnByDefault=$(vge $_version "8.0")
 
   create_install_dir
   get_build_server
@@ -3262,12 +3307,20 @@ function install_compressed_packages() {
 
   protocol="http"
   host="localhost"
-  if [ "$type" != "basic" ]; then
-    elasticsearch_generate_certs
-    protocol="https"
-    host=$(get_hostname)
-    if [[ "$Glb_OS" == "windows" ]]; then
-      host=$(ipconfig | grep IPv4 | cut -d: -f2 | awk '{print $1}')
+  if [[ $_isSecurityOnByDefault == 0 ]]; then
+    if [ "$type" != "basic" ]; then
+      elasticsearch_generate_certs
+      protocol="https"
+      host=$(get_hostname)
+      if [[ "$Glb_OS" == "windows" ]]; then
+        host=$(ipconfig | grep IPv4 | cut -d: -f2 | awk '{print $1}')
+      fi
+    fi
+  else
+    if [ "$type" != "basic" ]; then
+${_sudo} tee -a $_esHome/elasticsearch.yml <<- EOM
+xpack.license.self_generated.type: trial
+EOM
     fi
   fi
 
