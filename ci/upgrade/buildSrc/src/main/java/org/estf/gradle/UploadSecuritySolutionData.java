@@ -39,28 +39,29 @@ public class UploadSecuritySolutionData extends DefaultTask {
     public void run() throws IOException, InterruptedException {
         RestApi api = new RestApi(username, password, version, upgradeVersion);
         Instance instance = new Instance(username, password, esBaseUrl, kbnBaseUrl);
+        Version versionThresholdExist = new Version("7.10");
+        Version instanceVersion = new Version(version);
 
         int majorVersion = api.setMajorVersion();
         if (majorVersion > 6) {
-
             //General setup
             createsSiemSignalsIndex(instance);
 
             //Custom query detection rule setup
-            createsCustomQueryDetectionRule(instance);
             createsAuditbeatCustomIndex(instance);
             increasesNumberOfFieldsLimitForAuditbeatCustomMapping(instance);
             createsAuditbeatCustomMapping(instance);
             createsDocumentToGenerateAlertForCustomQueryDetectionRule(instance);
+            createsCustomQueryDetectionRule(instance);
 
-
-            //Threshold detection rule setup
-            createsAuditbeatThresholdIndex(instance);
-            increasesNumberOfFieldsLimitForAuditbeatThresholdMapping(instance);
-            createsAuditbeatThresholdMapping(instance);
-            createsDocumentsToGenerateAlertForThresholdDetectionRule(instance);
-            createsThresholdDetectionRule(instance);
-
+            if(instanceVersion.newestOrEqualThan(versionThresholdExist)) {
+                //Threshold detection rule setup
+                createsAuditbeatThresholdIndex(instance);
+                increasesNumberOfFieldsLimitForAuditbeatThresholdMapping(instance);
+                createsAuditbeatThresholdMapping(instance);
+                createsDocumentsToGenerateAlertForThresholdDetectionRule(instance);
+                createsThresholdDetectionRule(instance);
+            }
         }
     }
 
@@ -75,8 +76,19 @@ public class UploadSecuritySolutionData extends DefaultTask {
     }
 
     public void createsThresholdDetectionRule(Instance instance) throws IOException {
-        DetectionRuleCreation endpoint = new DetectionRuleCreation(instance, "buildSrc/src/main/resources/thresholdRule.json");
-        endpoint.sendPostRequest();
+        String rulePath;
+
+        Version instanceVersion = new Version(version);
+        Version newThresholdRuleVersion = new Version("7.12");
+
+       if(instanceVersion.newestOrEqualThan(newThresholdRuleVersion)) {
+            rulePath = "buildSrc/src/main/resources/thresholdRule.json";
+        } else {
+            rulePath = "buildSrc/src/main/resources/oldThresholdRule.json";
+        }
+
+       DetectionRuleCreation endpoint = new DetectionRuleCreation(instance, rulePath);
+       endpoint.sendPostRequest();
     }
 
     public void createsAuditbeatCustomIndex(Instance instance) throws IOException {

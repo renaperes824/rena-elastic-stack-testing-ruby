@@ -2,7 +2,7 @@
   "rule_id": "123",
   "risk_score": 7,
   "description": "My description",
-  "interval": "10s",
+  "interval": "24h",
   "name": "Custom query rule for upgrade",
   "severity": "low",
   "type": "query",

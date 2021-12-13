@@ -14,9 +14,7 @@
   "language": "kuery",
   "enabled": true,
   "threshold":{
-    "field":[
-      "host.name"
-    ],
+    "field": "host.name",
     "value":1
   }
 }
