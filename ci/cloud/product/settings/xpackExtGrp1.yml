@@ -10,6 +10,6 @@ xpack.data_enhanced.search.sessions.trackingInterval: 5s
 xpack.discoverEnhanced.actions.exploreDataInContextMenu.enabled: true
 xpack.maps.preserveDrawingBuffer: true
 xpack.maps.showMapsInspectorAdapter: true
-xpack.reporting.capture.networkPolicy.rules: [ { "allow": true,"protocol": "http:" },{ "allow": false,"host": "via.placeholder.com" },{ "allow": true,"protocol": "https:" },{ "allow": true,"protocol": "data:" },{ "allow": false } ]
 xpack.reporting.csv.maxSizeBytes: 6000
 xpack.reporting.roles.enabled: false
+xpack.screenshotting.networkPolicy.rules: [ { "allow": true,"protocol": "http:" },{ "allow": false,"host": "via.placeholder.com" },{ "allow": true,"protocol": "https:" },{ "allow": true,"protocol": "data:" },{ "allow": false } ]
