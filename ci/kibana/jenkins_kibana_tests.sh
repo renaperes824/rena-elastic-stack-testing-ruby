@@ -297,11 +297,13 @@ function get_os() {
   # Going to only enable API tests for now
   # Recent breakage with Chrome on Ubuntu - failure while creating webdriver instance
   if [[ "$Glb_Arch" == "aarch64" ]]; then
-    if [[ "$_grp" != *"xpackExt"* ]]; then
-      Glb_SkipTests="yes"
-    else
-      Glb_ApiOnly="yes"
-    fi
+    Glb_SkipTests="yes"
+    # There is a problem glibc and kbn bootstrap
+    #if [[ "$_grp" != *"xpackExt"* ]]; then
+    #  Glb_SkipTests="yes"
+    #else
+    #  Glb_ApiOnly="yes"
+    #fi
   fi
 
   if [[ "$Glb_Distr" == "SLES" ]] && [[ "$Glb_Distr_Ver" == "12-SP5" ]]; then
