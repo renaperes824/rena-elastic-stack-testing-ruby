@@ -2447,12 +2447,17 @@ function update_report_name() {
 # -----------------------------------------------------------------------------
 function disable_security_user() {
   local configFile="test/functional/config.js"
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
+  local _isSecurityOnByDefault=$(vge $_version "8.0")
 
-  file_modified=$(grep -c "disableTestUser" $configFile)
-  echo "$configFile already modified: $file_modified"
-  if [[ $file_modified == 0 ]]; then
-    gawk '/\s+security:.*/{print;print "      disableTestUser: true,";next}1' $configFile > config.js.tmp && mv -f config.js.tmp $configFile
-    echo $?
+  if [[ $_isSecurityOnByDefault == 0 ]]; then
+    file_modified=$(grep -c "disableTestUser" $configFile)
+    echo "$configFile already modified: $file_modified"
+    if [[ $file_modified == 0 ]]; then
+      gawk '/\s+security:.*/{print;print "      disableTestUser: true,";next}1' $configFile > config.js.tmp && mv -f config.js.tmp $configFile
+      echo $?
+    fi
   fi
 
 }
@@ -3235,7 +3240,7 @@ EOM
 
   start_elasticsearch_service
 
-  if [ "$type" != "basic" ]; then
+  if [ "$type" != "basic" ] || [[ $_isSecurityOnByDefault == 1 ]]; then
     elasticsearch_setup_passwords
   fi
 
