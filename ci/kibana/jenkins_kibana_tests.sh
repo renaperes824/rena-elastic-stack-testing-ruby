@@ -2843,6 +2843,8 @@ function install_kibana_pkg() {
 function update_kibana_settings() {
   local _kbnHome="/etc/kibana"
   local type=${TEST_KIBANA_BUILD:-basic}
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
   local _isSecurityOnByDefault=$(vge $_version "8.0")
 
   local _sudo="sudo -s"
@@ -2976,6 +2978,8 @@ function elasticsearch_setup_passwords() {
   local _esBin="/usr/share/elasticsearch"
   local _kbnHome="/etc/kibana"
   local _ip=$(get_hostname)
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
   local _isSecurityOnByDefault=$(vge $_version "8.0")
 
   local _sudo="sudo -s"
@@ -3082,6 +3086,8 @@ function start_kibana_service() {
   local syssvc=$(ps -p 1)
   local _esBin="/usr/share/elasticsearch"
   local _kbnBin="/usr/share/kibana"
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
   local _isSecurityOnByDefault=$(vge $_version "8.0")
 
   if [[ $_isSecurityOnByDefault == 1 ]]; then
@@ -3135,6 +3141,8 @@ function start_elasticsearch() {
 function start_kibana() {
   local url=$1
   local _ext=""
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
   local _isSecurityOnByDefault=$(vge $_version "8.0")
 
   if [[ $_isSecurityOnByDefault == 1 ]]; then
@@ -3182,6 +3190,8 @@ function install_packages() {
   local _esHome="/etc/elasticsearch"
   local _sudo="sudo -s"
   local _esHome="/etc/elasticsearch"
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
   local _isSecurityOnByDefault=$(vge $_version "8.0")
 
   if [ "$ESTF_TEST_PACKAGE" != "rpm" ] && [ "$ESTF_TEST_PACKAGE" != "deb" ]; then
@@ -3292,6 +3302,8 @@ function uninstall_packages() {
 function install_compressed_packages() {
   local type=${TEST_KIBANA_BUILD:-basic}
   local _esHome="/etc/elasticsearch"
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
   local _isSecurityOnByDefault=$(vge $_version "8.0")
 
   create_install_dir
