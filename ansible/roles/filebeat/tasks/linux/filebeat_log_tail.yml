@@ -33,6 +33,19 @@
                     {{ filebeat_log_find[ait_log_searchstr] }}
                  {%- endif -%}"
 
+- name: Get date no time
+  command: date +"%Y%m%d" --date "{{ filebeat_date.stdout }}"
+  register: filebeat_date_no_time
+  changed_when: false
+
+- name: Set filebeat logfile name
+  set_fact:
+    filebeat_log_file: "{{ filebeat_log_dir }}/filebeat-{{ filebeat_date_no_time.stdout }}.ndjson"
+
+- name: Print filebeat logfile name
+  debug:
+    msg: "{{ filebeat_log_file }}"
+
 - name: Wait for log file and search string to be present
   wait_for:
     path: '{{ filebeat_log_file }}'

@@ -33,6 +33,19 @@
                     {{ heartbeat_log_find[ait_log_searchstr] }}
                  {%- endif -%}"
 
+- name: Get date no time
+  command: date +"%Y%m%d" --date "{{ heartbeat_date.stdout }}"
+  register: heartbeat_date_no_time
+  changed_when: false
+
+- name: Set heartbeat logfile name
+  set_fact:
+    heartbeat_log_file: "{{ heartbeat_log_dir }}/heartbeat-{{ heartbeat_date_no_time.stdout }}.ndjson"
+
+- name: Print heartbeat logfile name
+  debug:
+    msg: "{{ heartbeat_log_file }}"
+
 - name: Wait for log file and search string to be present
   wait_for:
     path: '{{ heartbeat_log_file }}'

@@ -33,6 +33,19 @@
                     {{ metricbeat_log_find[ait_log_searchstr] }}
                  {%- endif -%}"
 
+- name: Get date no time
+  command: date +"%Y%m%d" --date "{{ metricbeat_date.stdout }}"
+  register: metricbeat_date_no_time
+  changed_when: false
+
+- name: Set metricbeat logfile name
+  set_fact:
+    metricbeat_log_file: "{{ metricbeat_log_dir }}/metricbeat-{{ metricbeat_date_no_time.stdout }}.ndjson"
+
+- name: Print metricbeat logfile name
+  debug:
+    msg: "{{ metricbeat_log_file }}"
+
 - name: Wait for log file and search string to be present
   wait_for:
     path: '{{ metricbeat_log_file }}'

@@ -33,6 +33,19 @@
                     {{ packetbeat_log_find[ait_log_searchstr] }}
                  {%- endif -%}"
 
+- name: Get date no time
+  command: date +"%Y%m%d" --date "{{ packetbeat_date.stdout }}"
+  register: packetbeat_date_no_time
+  changed_when: false
+
+- name: Set packetbeat logfile name
+  set_fact:
+    packetbeat_log_file: "{{ packetbeat_log_dir }}/packetbeat-{{ packetbeat_date_no_time.stdout }}.ndjson"
+
+- name: Print packetbeat logfile name
+  debug:
+    msg: "{{ packetbeat_log_file }}"
+
 - name: Wait for log file and search string to be present
   wait_for:
     path: '{{ packetbeat_log_file }}'

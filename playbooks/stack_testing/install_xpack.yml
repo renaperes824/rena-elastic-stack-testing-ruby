@@ -20,7 +20,6 @@
     - { role: xpack_auditbeat, ait_role: xpack_auditbeat_install_config_start_verify }
 
   tasks:
-
     - name: Import filebeat dashboard
       include_role:
         name: filebeat
@@ -61,6 +60,6 @@
         - "packetbeat"
         - "heartbeat"
         - "auditbeat"
-        - "logstash"
+        - "ecs-logstash"
       loop_control:
         loop_var: index_item
