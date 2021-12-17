@@ -2667,7 +2667,7 @@ function _wait_for_http_ready() {
 
   cmd="curl --output /dev/null --write-out %{http_code} --silent --max-time 10 --insecure --head --fail $url"
   status_code=$(${cmd})
-  until [ $status_code -eq 200 ] || [ $status_code -eq 401 ]; do
+  until [ $status_code -eq 200 ] || [ $status_code -eq 401 ] || [ $status_code -eq 302 ]; do
       status_code=$(${cmd})
       if [ $? -eq 0 ]; then
         break
@@ -2885,7 +2885,10 @@ function update_kibana_settings() {
     if [[ "$Glb_OS" == "windows" ]]; then
       _dir=${_dir#/c}
     fi
-    echo "logging.dest: $_dir/logs/kibana.log" >> $_kbnHome/kibana.yml
+    echo "logging.appenders.default:" >> $_kbnHome/kibana.yml
+    echo "    type: file" >> $_kbnHome/kibana.yml
+    echo "    fileName: $_dir/logs/kibana.log" >> $_kbnHome/kibana.yml
+    echo "    layout.type: pattern" >> $_kbnHome/kibana.yml
   fi
 
 }
@@ -3122,7 +3125,11 @@ function start_kibana_service() {
 # start_elasticsearch
 # -----------------------------------------------------------------------------
 function start_elasticsearch() {
+  local label=""
   local url=$1
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
+  local _isSecurityOnByDefault=$(vge $_version "8.0")
 
   local _ext=""
   if [[ "$Glb_OS" == "windows" ]]; then
@@ -3133,7 +3140,14 @@ function start_elasticsearch() {
 
   set_elasticsearch_jvm_options "$Glb_Es_Dir/config"
 
-  $Glb_Es_Dir/bin/elasticsearch${_ext} -d -p pid | tee es_install_log.txt
+  $Glb_Es_Dir/bin/elasticsearch${_ext} -d -p pid
+
+  if [[ $_isSecurityOnByDefault == 1 ]]; then
+    echo_info "Reset Elasticsearch Password"
+    sleep 20
+    $Glb_Es_Dir/bin/elasticsearch-reset-password -a -b -u elastic > es_install_log.txt
+    sed -i $label 's/New value: /elastic built-in superuser is : /g' es_install_log.txt
+  fi
 
   if [ $? -ne 0 ]; then
     echo_error_exit "Starting elasticsearch failed"
@@ -3308,6 +3322,7 @@ function uninstall_packages() {
 # -----------------------------------------------------------------------------
 function install_compressed_packages() {
   local type=${TEST_KIBANA_BUILD:-basic}
+  local _ip=$(get_hostname)
   local _esHome="/etc/elasticsearch"
   local _splitStr=(${Glb_Kibana_Version//./ })
   local _version=${_splitStr[0]}.${_splitStr[1]}
@@ -3345,17 +3360,22 @@ EOM
 
   es_url="${protocol}://${host}:9200"
   kbn_url="${protocol}://${host}:5601"
+  if [[ $_isSecurityOnByDefault == 1 ]]; then
+    es_url="https://${host}:9200"
+    kbn_url="http://${_ip}:5601"
+  fi
+
 
   start_elasticsearch $es_url
 
-  if [ "$type" != "basic" ]; then
+  if [ "$type" != "basic" ] || [[ $_isSecurityOnByDefault == 1 ]]; then
     elasticsearch_setup_passwords
   fi
 
   update_kibana_settings
 
 
-  if [ "$type" == "basic" ]; then
+  if [ "$type" == "basic" ] && [[ $_isSecurityOnByDefault == 0 ]]; then
     export TEST_KIBANA_PROTOCOL=http
     export TEST_KIBANA_PORT=5601
     export TEST_ES_PROTOCOL=http
