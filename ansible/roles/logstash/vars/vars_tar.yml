@@ -16,7 +16,7 @@ logstash_install_dir: '{{ install_dir }}'
 logstash_package: '{{ logstash_install_dir }}/{{ logstash_package_url | basename }}'
 
 # logstash root directory
-logstash_root: "{{ logstash_package | regex_search('(logstash-[0-9.]+(-SNAPSHOT){0,1}(-alpha[0-9]+){0,1}(-beta[0-9]+){0,1})', '\\1') | first }}"
+logstash_root: "{{ logstash_package | regex_search('(logstash-[0-9.]+(-SNAPSHOT){0,1}(-(alpha|beta|rc)[0-9]+){0,1})', '\\1') | first }}"
 logstash_rootdir: "{{ logstash_install_dir }}/{{ logstash_root }}"
 
 # logstash bin
