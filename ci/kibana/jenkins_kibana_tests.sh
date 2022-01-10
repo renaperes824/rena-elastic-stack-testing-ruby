@@ -315,8 +315,8 @@ function get_os() {
   fi
 
   if [[ "$Glb_Arch" == "aarch64" ]]; then
+    install_pkg "jq"
     if [[ "$Glb_SkipTests" == "no" ]]; then
-      install_pkg "jq"
       if [[ $Glb_ApiOnly == "no" ]]; then
         if [[ "$Glb_Distr" == "CentOS" ]]; then
           install_pkg "chromium"
@@ -357,10 +357,12 @@ function get_os() {
 # ----------------------------------------------------------------------------
 function install_pkg() {
   local pkg=$1
+  echo_info "Check for package: $pkg"
   pkgInstalled=$(which $pkg)
   if [[ ! -z $pkgInstalled ]]; then
     return
   fi
+  echo_info "Install package: $pkg"
   if command -v apt-get >/dev/null; then
     sudo apt-get update
     sudo apt-get install -y $pkg
