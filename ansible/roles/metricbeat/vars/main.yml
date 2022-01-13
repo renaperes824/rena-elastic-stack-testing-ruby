@@ -44,7 +44,6 @@ metricbeat_roles:
     - {action: 'metricbeat_uninstall', args: {}}
     - {action: 'metricbeat_is_not_running', args: {}}
 
-# Task files for group use, keep in sync with tasks/main.yml
 metricbeat_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '{{ ansible_system | lower }}/{{ item.action }}_{{ ait_metricbeat_pkg_ext }}.yml'

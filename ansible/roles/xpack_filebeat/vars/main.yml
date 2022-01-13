@@ -51,8 +51,6 @@ xpack_filebeat_roles:
     - {action: 'filebeat_log_tail', parent: 'filebeat', args: {ait_log_searchstr: started}}
     - {action: 'filebeat_is_running', parent: 'filebeat', args: {}}
 
-
-# Task files for group use, keep in sync with tasks/main.yml except for parent tasks
 xpack_filebeat_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '../{{ item.parent }}/tasks/{{ ansible_system | lower }}/{{ item.action }}.yml'

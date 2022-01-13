@@ -54,7 +54,6 @@ xpack_elasticsearch_roles:
     - {action: 'xpack_elasticsearch_uninstall', parent: '', args: {}}
     - {action: 'elasticsearch_is_not_running', parent: 'elasticsearch', args: {}}
 
-# Task files for ait_role, keep in sync with tasks/main.yml except for parent tasks
 xpack_elasticsearch_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '../{{ item.parent }}/tasks/{{ ansible_system | lower }}/{{ item.action }}.yml'

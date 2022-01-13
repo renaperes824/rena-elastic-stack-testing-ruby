@@ -49,7 +49,6 @@ elasticsearch_roles:
     - {action: 'elasticsearch_uninstall', args: {}}
     - {action: 'elasticsearch_is_not_running', args: {}}
 
-# Task files for ait_role, keep in sync with tasks/main.yml
 elasticsearch_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '{{ ansible_system | lower }}/{{ item.action }}_{{ ait_elasticsearch_pkg_ext }}.yml'

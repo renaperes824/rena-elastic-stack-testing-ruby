@@ -38,7 +38,6 @@ auditbeat_roles:
     - {action: 'auditbeat_uninstall', args: {}}
     - {action: 'auditbeat_is_not_running', args: {}}
 
-# Task files for group use, keep in sync with tasks/main.yml
 auditbeat_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '{{ ansible_system | lower }}/{{ item.action }}_{{ ait_auditbeat_pkg_ext }}.yml'

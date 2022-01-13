@@ -49,7 +49,6 @@ xpack_apm_server_roles:
     - {action: 'apm_server_restart', parent: 'apm_server', args: {}}
     - {action: 'apm_server_is_running', parent: 'apm_server', args: {}}
 
-# Task files for group use, keep in sync with tasks/main.yml except for parent tasks
 xpack_apm_server_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '../{{ item.parent }}/tasks/{{ ansible_system | lower }}/{{ item.action }}.yml'

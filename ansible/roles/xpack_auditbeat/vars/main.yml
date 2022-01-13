@@ -51,8 +51,6 @@ xpack_auditbeat_roles:
     - {action: 'auditbeat_log_tail', parent: 'auditbeat', args: {ait_log_searchstr: started}}
     - {action: 'auditbeat_is_running', parent: 'auditbeat', args: {}}
 
-
-# Task files for group use, keep in sync with tasks/main.yml except for parent tasks
 xpack_auditbeat_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '../{{ item.parent }}/tasks/{{ ansible_system | lower }}/{{ item.action }}.yml'

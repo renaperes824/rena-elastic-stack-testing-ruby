@@ -44,7 +44,6 @@ heartbeat_roles:
     - {action: 'heartbeat_uninstall', args: {}}
     - {action: 'heartbeat_is_not_running', args: {}}
 
-# Task files for group use, keep in sync with tasks/main.yml
 heartbeat_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '{{ ansible_system | lower }}/{{ item.action }}_{{ ait_heartbeat_pkg_ext }}.yml'

@@ -47,7 +47,6 @@ apm_server_roles:
     - {action: 'apm_server_uninstall', args: {}}
     - {action: 'apm_server_is_not_running', args: {}}
 
-# Task files for group use, keep in sync with tasks/main.yml
 apm_server_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '{{ ansible_system | lower }}/{{ item.action }}_{{ ait_apm_server_pkg_ext }}.yml'

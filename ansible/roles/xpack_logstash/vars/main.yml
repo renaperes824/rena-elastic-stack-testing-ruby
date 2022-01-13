@@ -60,7 +60,6 @@ xpack_logstash_roles:
     - {action: 'logstash_log_tail', parent: 'logstash', args: {ait_log_searchstr: started}}
     - {action: 'logstash_is_running', parent: 'logstash', args: {}}
 
-# Task files for ait_role, keep in sync with tasks/main.yml except for parent tasks
 xpack_logstash_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '../{{ item.parent }}/tasks/{{ ansible_system | lower }}/{{ item.action }}.yml'

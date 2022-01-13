@@ -44,7 +44,6 @@ filebeat_roles:
     - {action: 'filebeat_uninstall', args: {}}
     - {action: 'filebeat_is_not_running', args: {}}
 
-# Task files for group use, keep in sync with tasks/main.yml
 filebeat_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '{{ ansible_system | lower }}/{{ item.action }}_{{ ait_filebeat_pkg_ext }}.yml'

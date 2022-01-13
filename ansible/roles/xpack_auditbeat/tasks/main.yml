@@ -11,11 +11,11 @@
   with_items: '{{ xpack_auditbeat_roles[ait_role] }}'
   when: ait_role is defined and xpack_auditbeat_roles[ait_role] is defined
 
-# Include task files for individual use, keep in sync with vars/main.yml
-- name: Include ait_action task files
-  include: '{{ item }}'
-  with_first_found:
-    - files:
-        - '{{ ansible_system | lower }}/{{ ait_action }}.yml'
-  ignore_errors: true
+# Include task files for individual use
+- name: Include ait_action task file
+  include: '{{ lookup("first_found", xpack_auditbeat_task_files) }}'
+  vars:
+    item:
+      action: '{{ ait_action }}'
+      parent: ''
   when: ait_action is defined

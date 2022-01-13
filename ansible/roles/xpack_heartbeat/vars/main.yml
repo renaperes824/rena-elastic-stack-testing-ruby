@@ -51,8 +51,6 @@ xpack_heartbeat_roles:
     - {action: 'heartbeat_log_tail', parent: 'heartbeat', args: {ait_log_searchstr: started}}
     - {action: 'heartbeat_is_running', parent: 'heartbeat', args: {}}
 
-
-# Task files for group use, keep in sync with tasks/main.yml except for parent tasks
 xpack_heartbeat_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '../{{ item.parent }}/tasks/{{ ansible_system | lower }}/{{ item.action }}.yml'

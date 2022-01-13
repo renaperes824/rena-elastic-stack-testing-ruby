@@ -33,15 +33,10 @@
   with_items: '{{ elasticsearch_roles[ait_role] }}'
   when: ait_role is defined and elasticsearch_roles[ait_role] is defined
 
-# ansible facts should not be disabled
-# Keep in sync with vars/main.yml
+# Include task files for individual use
 - name: Include ait_action task file
-  include: '{{ item }}'
-  with_first_found:
-    - files:
-        - '{{ ansible_system | lower }}/{{ ait_action }}.yml'
-        - '{{ ansible_system | lower }}/{{ ait_action }}_{{ ait_elasticsearch_pkg_ext }}.yml'
-        - '{{ ansible_system | lower }}/{{ ait_action }}_{{ ait_elasticsearch_pkg_mgr | trim }}.yml'
-        - '{{ ansible_system | lower }}/{{ ait_action }}_{{ ait_elasticsearch_srv_mgr | trim }}.yml'
-  ignore_errors: true
+  include: '{{ lookup("first_found", elasticsearch_task_files) }}'
+  vars:
+    item:
+      action: '{{ ait_action }}'
   when: ait_action is defined

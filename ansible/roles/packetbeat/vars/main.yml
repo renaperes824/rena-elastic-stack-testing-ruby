@@ -44,7 +44,6 @@ packetbeat_roles:
     - {action: 'packetbeat_uninstall', args: {}}
     - {action: 'packetbeat_is_not_running', args: {}}
 
-# Task files for group use, keep in sync with tasks/main.yml
 packetbeat_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '{{ ansible_system | lower }}/{{ item.action }}_{{ ait_packetbeat_pkg_ext }}.yml'

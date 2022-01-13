@@ -38,7 +38,6 @@ kibana_roles:
     - {action: 'kibana_uninstall', args: {}}
     - {action: 'kibana_is_not_running', args: {}}
 
-# Task files for ait_role, keep in sync with tasks/main.yml
 kibana_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '{{ ansible_system | lower }}/{{ item.action }}_{{ ait_kibana_pkg_ext }}.yml'

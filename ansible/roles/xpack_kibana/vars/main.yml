@@ -34,7 +34,6 @@ xpack_kibana_roles:
     - {action: 'xpack_kibana_uninstall', parent: '', args: {}}
     - {action: 'kibana_is_not_running', parent: 'kibana', args: {}}
 
-# Task files for ait_role, keep in sync with tasks/main.yml except for parent tasks
 xpack_kibana_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '../{{ item.parent }}/tasks/{{ ansible_system | lower }}/{{ item.action }}.yml'

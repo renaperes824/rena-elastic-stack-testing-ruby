@@ -34,7 +34,6 @@ logstash_roles:
     - {action: 'logstash_uninstall', args: {}}
     - {action: 'logstash_is_not_running', args: {}}
 
-# Task files for group use, keep in sync with tasks/main.yml
 logstash_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '{{ ansible_system | lower }}/{{ item.action }}_{{ ait_logstash_pkg_ext }}.yml'

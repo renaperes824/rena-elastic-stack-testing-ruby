@@ -33,15 +33,10 @@
   with_items: '{{ auditbeat_roles[ait_role] }}'
   when: ait_role is defined and auditbeat_roles[ait_role] is defined
 
-# Include task files for individual use, keep in sync with vars/main.yml
-# ansible facts should not be disabled
+# Include task files for individual use
 - name: Include ait_action task file
-  include: '{{ item }}'
-  with_first_found:
-    - files:
-        - '{{ ansible_system | lower }}/{{ ait_action }}.yml'
-        - '{{ ansible_system | lower }}/{{ ait_action }}_{{ ait_auditbeat_pkg_ext }}.yml'
-        - '{{ ansible_system | lower }}/{{ ait_action }}_{{ ait_auditbeat_pkg_mgr | trim }}.yml'
-        - '{{ ansible_system | lower }}/{{ ait_action }}_{{ ait_auditbeat_srv_mgr | trim }}.yml'
-  ignore_errors: true
+  include: '{{ lookup("first_found", auditbeat_task_files) }}'
+  vars:
+    item:
+      action: '{{ ait_action }}'
   when: ait_action is defined

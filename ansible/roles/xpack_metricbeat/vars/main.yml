@@ -51,7 +51,6 @@ xpack_metricbeat_roles:
     - {action: 'metricbeat_log_tail', parent: 'metricbeat', args: {ait_log_searchstr: started}}
     - {action: 'metricbeat_is_running', parent: 'metricbeat', args: {}}
 
-# Task files for group use, keep in sync with tasks/main.yml except for parent tasks
 xpack_metricbeat_task_files:
   - '{{ ansible_system | lower }}/{{ item.action }}.yml'
   - '../{{ item.parent }}/tasks/{{ ansible_system | lower }}/{{ item.action }}.yml'
