@@ -19,7 +19,7 @@ vagrant_create_directory() {
   fi
   dirname=${build}_${os}
   vagrant_dir=${WORKSPACE}/${dirname}
-  mkdir ${vagrant_dir}
+  mkdir -p ${vagrant_dir}
   cp ${AIT_VAGRANT_FILE} ${vagrant_dir}
   if [ $? -ne 0 ]; then
     echo_error "Error copying vagrantfile!"
