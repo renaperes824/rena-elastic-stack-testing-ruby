@@ -37,7 +37,9 @@
       include_role:
         name: xpack_elasticsearch
       vars:
-        elasticsearch_config_params: {"xpack.monitoring.collection.enabled: true"}
+        elasticsearch_config_params:
+          - "xpack.monitoring.collection.enabled: true"
+          - "action.destructive_requires_name: false"
         ait_role: xpack_elasticsearch_install_gencert_config_start_verify
 
     - name: Start logstash
