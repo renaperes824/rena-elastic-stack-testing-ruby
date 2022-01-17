@@ -6,7 +6,7 @@
 export AIT_RUN_LOCAL=true
 
 # Build URL
-export ES_BUILD_URL=
+export ES_BUILD_URL=${ES_BUILD_URL:-}
 
 # Build Type 
 export ES_BUILD_OSS=false

@@ -22,21 +22,21 @@ More details can be found:
 
 ## Environment Setup
 
- * Install Python 3*
+ * Install Python 3
 
-   *In this repo see version file: <b>[.python-version](https://github.com/elastic/elastic-stack-testing/blob/master/.python-version)</b>
+   In this repo see version file: [**.python-version**](https://github.com/elastic/elastic-stack-testing/blob/master/.python-version)
 
    https://www.python.org/downloads/
 
- * Install Vagrant*
+ * Install Vagrant
 
-   *In this repo see version: <b>[.vagrant-version](https://github.com/elastic/elastic-stack-testing/blob/master/.vagrant-version)</b>
+   In this repo see version: [**.vagrant-version**](https://github.com/elastic/elastic-stack-testing/blob/master/.vagrant-version)
 
    https://www.vagrantup.com/downloads.html
 
- * Install Virtualbox*
+ * Install Virtualbox
 
-   *In this repo see version file: <b>[.virtualbox-version](https://github.com/elastic/elastic-stack-testing/blob/master/.virtualbox-version)</b>
+   In this repo see version file: [**.virtualbox-version**](https://github.com/elastic/elastic-stack-testing/blob/master/.virtualbox-version)
 
    https://www.virtualbox.org/wiki/Downloads
 
@@ -45,15 +45,12 @@ Running a playbook for provisioning
 
 1. Clone repository: `git clone https://github.com/elastic/elastic-stack-testing.git` 
 2. `cd elastic-stack-testing`
-3. Edit file: `buildenv.sh`  
-4. Fill in information
-    - export AIT_RUN_LOCAL=true
-    - export ES_BUILD_URL=artifacts.elastic.co/[version] ex: 6.2.3
-    - export ES_BUILD_PKG_EXT=tar
-    - export AIT_ANSIBLE_PLAYBOOK=install_xpack
-    - export AIT_VM=vagrant_vm
-    - export AIT_SKIP_VM_CLEANUP=true
-5. Execute file: `./buildenv.sh`
+3. Select a build URL and switch to the appropriate branch, for example:
+   ```
+   git checkout 7.16
+   export ES_BUILD_URL=artifacts.elastic.co/7.16.3
+   ```
+4. Run the build: `./buildenv.sh`
 
 For more options see file: `CONTRIBUTING.md`
 
@@ -62,7 +59,7 @@ For more options see file: `CONTRIBUTING.md`
   - Machine: `Vagrant, Virtualbox`
   - Machine OS: `Ubuntu-16.04-x86_64`
   - Node: `Single`
-  - Product Versions: `5.6.x, 6.x, 7.x`
+  - Product Versions: `5.6.x, 6.x, 7.x, 8.x`
   - Product Packages: `tar.gz`
   - Product Types: `Regular and OSS`  
 
