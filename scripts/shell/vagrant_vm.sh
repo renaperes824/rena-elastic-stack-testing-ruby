@@ -8,9 +8,11 @@ source ${AIT_SCRIPTS}/shell/lib/vagrant_funcs.sh
 vagrant_create_directory
 if [ "$1" == "cleanup" ] && [ -z $AIT_SKIP_VM_CLEANUP ]; then
   vagrant_destroy
-elif [ "$1" == "save_snapshot_cleanup" ] && [ -z $AIT_SKIP_VM_CLEANUP ]; then
+elif [ "$1" == "save_snapshot_cleanup" ]; then
   # TODO: add vagrant_save_snapshot
-  vagrant_destroy
+  if [ -z $AIT_SKIP_VM_CLEANUP ]; then
+    vagrant_destroy
+  fi
 elif [ "$1" == "halt" ]; then
   vagrant_halt
 elif [ "$1" == "provision" ]; then
