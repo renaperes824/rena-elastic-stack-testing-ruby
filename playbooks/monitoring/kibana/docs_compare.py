@@ -4,7 +4,6 @@ Usage:
 '''
 
 from docs_compare_util import check_parity
-import sys
 
 allowed_deletions_from_metricbeat_docs_extra = [
   # 'path.to.field'

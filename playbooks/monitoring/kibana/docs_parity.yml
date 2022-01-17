@@ -11,7 +11,7 @@
     - role: metricbeat
 
   vars:
-    monitoring_docs_dir: "{{ lookup('env', 'WORKSPACE') }}/monitoring/"
+    monitoring_docs_dir: "{{ lookup('env', 'WORKSPACE') }}/monitoring"
 
   vars_files:
     - "{{ es_var_file | default(lookup('env','ANSIBLE_GROUP_VARS')) }}"
@@ -153,7 +153,7 @@
         user: "{{ elasticsearch_username }}"
         password: "{{ elasticsearch_password }}"
         method: POST
-        body: '{ "collapse": { "field": "type" }, "sort": { "timestamp": "asc" } }'
+        body: '{ "collapse": { "field": "metricset.name" }, "sort": { "timestamp": "asc" } }'
         body_format: json
         status_code: 200
       until: xpack_elasticsearch_monitoring_sample_docs.json.hits.total.value > 0
@@ -164,7 +164,7 @@
     - name: Write sample docs to temp files
       copy:
         content: "{{ item._source }}"
-        dest: "{{ monitoring_docs_dir }}/kibana/metricbeat/{{ item._source.type }}.json"
+        dest: "{{ monitoring_docs_dir }}/kibana/metricbeat/{{ item._source.metricset.name }}.json"
       with_items: "{{ xpack_elasticsearch_monitoring_sample_docs.json.hits.hits }}"
       delegate_to: localhost
     

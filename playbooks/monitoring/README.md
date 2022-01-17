@@ -153,6 +153,17 @@ Depending on what you find here, you'll need to file issues in the `elastic/$PRO
 in the `$PRODUCT`'s legacy collection code or, in the case of Beats, the internal collection code) or the `elastic/beats` 
 repository (requiring changes in the `$PRODUCT`'s Metricbeat module code).
 
+Note that to run the comparison directly, you'll need to include `common` in the your python path and run using the provided venv, for example:
+
+```
+PYTHONPATH=playbooks/monitoring/common \
+  ait_workspace/es-venv/bin/python \
+  playbooks/monitoring/kibana/docs_compare.py \
+  ait_workspace/monitoring/kibana/{legacy,metricbeat}
+```
+
+This can be done after the playbook completes since the captured documents are stored until the next run.
+
 ##### Setup failures
 
 Sometimes the tests fail to configure or start a product such as Metricbeat, Elasticsearch, etc. To determine why 
