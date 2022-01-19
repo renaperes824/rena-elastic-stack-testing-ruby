@@ -7,39 +7,29 @@
  */
 
 import groovy.json.JsonSlurper
-import org.estf.gradle.CreateCloudCluster
-import org.estf.gradle.DeleteCloudCluster
-import org.estf.gradle.EditCloudCluster
-import org.estf.gradle.UpgradeCloudCluster
-import org.estf.gradle.UploadData
-import org.estf.gradle.UpgradeAssistantApi
+import org.estf.gradle.CreateCloudDeployment
+import org.estf.gradle.ShutdownCloudDeployment
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Generate setup cloud cluster task
-def genSetupTask(testname) {
-    def version = (System.env.ESTF_KIBANA_VERSION ?: _kibana_version).minus('origin/')
-    return tasks.create("setup_" + testname, CreateCloudCluster) {
-        stackVersion = System.env.ESTF_CLOUD_VERSION ?: _cloud_version
-        esUserSettings = System.env.ESTF_ES_USER_SETTINGS
-        kibanaUserSettings = System.env.ESTF_KIBANA_USER_SETTINGS
-        def estf_version = version
-        if (version == "master") {
-            estf_version = "main"
-        }
+task saas_setup(type: CreateCloudDeployment) {
+    doFirst {
+        stackVersion = System.env.ESTF_CLOUD_VERSION
+        String version = (System.env.ESTF_KIBANA_VERSION).minus('origin/')
+        String jobName = System.env.JOB.trim()
         try {
-            URL defaultCfgUrl =  new URL("https://raw.githubusercontent.com/elastic/elastic-stack-testing/" +
-                                         estf_version + "/ci/cloud/product/settings/kibana.yml")
+            URL defaultCfgUrl = new URL("https://raw.githubusercontent.com/elastic/elastic-stack-testing/" +
+                    version + "/ci/cloud/product/settings/kibana.yml")
 
             URL jobCfgUrl = new URL("https://raw.githubusercontent.com/elastic/elastic-stack-testing/" +
-                                    estf_version + "/ci/cloud/product/settings/" + System.env.JOB.trim() + ".yml")
+                    version + "/ci/cloud/product/settings/" + jobName + ".yml")
 
-            HttpURLConnection jobCfgHttp = (HttpURLConnection)jobCfgUrl.openConnection()
+            HttpURLConnection jobCfgHttp = (HttpURLConnection) jobCfgUrl.openConnection()
             if (jobCfgHttp.getResponseCode() == 200) {
                 kibanaUserSettingsOverride = jobCfgUrl.getText('UTF-8')
             } else {
                 kibanaUserSettingsOverride = defaultCfgUrl.getText('UTF-8')
             }
-        } catch(Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         if (System.env.JOB == "xpackGrp3") {
             mlTesting = true
@@ -63,39 +53,8 @@ def genSetupTask(testname) {
             kbnReportsTesting = true
         }
     }
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Generate cleanup cloud cluster task
-def genCleanupTask(testname, cluster_id) {
-    return tasks.create("cleanup_" + testname, DeleteCloudCluster) {
-        clusterId = cluster_id
-    }
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Generate edit cloud cluster task
-def genEditTask(testname, cluster_id, kibana_cluster_id, disable_scripts) {
-    return tasks.create("edit_" + testname, EditCloudCluster) {
-        clusterId = cluster_id
-        kibanaClusterId = kibana_cluster_id
-        esScriptSettings = disable_scripts
-        upgradeStackVersion = System.env.ESTF_UPGRADE_CLOUD_VERSION
-        esUserSettings = System.env.ESTF_ES_USER_SETTINGS
-        kibanaUserSettings = System.env.ESTF_KIBANA_USER_SETTINGS
-    }
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-task saas_setup {
-    doFirst {
-        println("---------- SECTION: SETUP CLUSTER ----------")
-        // Setup cloud cluster
-        def _setup_task = genSetupTask(rootProject.test_task)
-        _setup_task.execute()
-
-        // Load properties file
-        def propFile = _setup_task.getPropertiesFile()
+    doLast {
+        def propFile = getPropertiesFile()
         Properties properties = new Properties()
         File propertiesFile = new File(propFile.trim())
         propertiesFile.withInputStream {
@@ -103,155 +62,51 @@ task saas_setup {
         }
 
         rootProject.ext.props = properties
-        rootProject.ext.cluster_id = _setup_task.getClusterId()
-        rootProject.ext.kibana_cluster_id = _setup_task.getKibanaClusterId()
+        rootProject.ext.deployment_id = getDeploymentId()
+        rootProject.ext.cluster_id = getElasticsearchClusterId()
+        rootProject.ext.kibana_cluster_id = getKibanaClusterId()
 
         // Print information about elasticsearch and kibana
-        def kbn_url = new URL(properties.kibana_url + "/api/status").openConnection();
-        def es_url =  new URL(properties.elasticsearch_url).openConnection();
-        String userpass = properties.es_username + ":" + properties.es_password;
-        String basicAuth = "Basic " + new String(Base64.getEncoder().encode(userpass.getBytes()));
+        URLConnection kbnUrl = new URL(properties.kibana_url.toString() + "/api/status").openConnection()
+        URLConnection esUrl =  new URL(properties.elasticsearch_url.toString()).openConnection()
+        String userPassword = properties.es_username + ":" + properties.es_password
+        String basicAuth = "Basic " + new String(Base64.getEncoder().encode(userPassword.getBytes()))
         println("---------- KIBANA INFO ----------")
-        kbn_url.setRequestProperty ("Authorization", basicAuth);
-        def kbnGetRC = kbn_url.getResponseCode();
-        println(kbnGetRC);
-        if(kbnGetRC.equals(200)) {
-            def kibana_info = kbn_url.getInputStream().getText();
-            println(kibana_info)
-            def jsonSlurper = new JsonSlurper()
-            def data = jsonSlurper.parseText(kibana_info)
+        kbnUrl.setRequestProperty ("Authorization", basicAuth)
+        int kbnGetRC = kbnUrl.getResponseCode()
+        println(kbnGetRC)
+        if(kbnGetRC == 200) {
+            String kibanaInfo = kbnUrl.getInputStream().getText()
+            println(kibanaInfo)
+            JsonSlurper jsonSlurp = new JsonSlurper()
+            def data = jsonSlurp.parseText(kibanaInfo)
             rootProject.ext.kibana_hash = data["version"]["build_hash"]
         }
         println("---------- ELASTICSEARCH INFO --------")
-        es_url.setRequestProperty ("Authorization", basicAuth);
-        def esGetRC = es_url.getResponseCode();
-        println(esGetRC);
-        if(esGetRC.equals(200)) {
-            println(es_url.getInputStream().getText());
+        esUrl.setRequestProperty ("Authorization", basicAuth)
+        int esGetRC = esUrl.getResponseCode()
+        println(esGetRC)
+        if(esGetRC == 200) {
+            println(esUrl.getInputStream().getText())
         }
     }
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-task saas_cleanup {
+task saas_cleanup(type: ShutdownCloudDeployment) {
     doFirst {
-        println("---------- SECTION: CLEANUP CLUSTER ----------")
-        if (rootProject.hasProperty('cluster_id')) {
-            def _cleanup_task = genCleanupTask(rootProject.test_task,
-                                               rootProject.cluster_id)
-            _cleanup_task.execute()
-        }
+        deploymentId =  rootProject.deployment_id
     }
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-task upload_bank_data(type: UploadData) {
-    doFirst {
-        println("---------- SECTION: UPLOAD BANK DATA ----------")
-        esBaseUrl = project.props.elasticsearch_url
-        kbnBaseUrl = project.props.kibana_url
-        username = project.props.es_username
-        password = project.props.es_password
-        version = project.version
-        upgradeVersion = project.upgrade_version
-    }
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-task upgrade_assistant(type: UpgradeAssistantApi) {
-    doFirst {
-        println("---------- SECTION: UPGRADE ASSISTANT ----------")
-        esBaseUrl = project.props.elasticsearch_url
-        kbnBaseUrl = project.props.kibana_url
-        username = project.props.es_username
-        password = project.props.es_password
-        version = project.version
-        upgradeVersion = project.upgrade_version
-    }
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-task upgrade_cloud_cluster(type: UpgradeCloudCluster) {
-    doFirst {
-        println("---------- SECTION: UPGRADE CLUSTER ----------")
-        clusterId = project.cluster_id
-        kibanaClusterId = project.kibana_cluster_id
-        upgradeStackVersion = project.upgrade_version
-    }
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-task saas_upgrade {
-    doFirst {
-        println "saas_upgrade"
-    }
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 task saas_run_kibana_tests {
-    rootProject.ext.test_task = "${name}"
     doFirst {
-        println("---------- SECTION: KIBANA TESTS ----------")
-        tasks.getByPath(':common:run_kibana_tests').execute()
+        println "Run tests"
     }
 }
-
-// ---------------------------------------------------------------------------------------------------------------------
-def job = System.env.JOB ?: ""
-def _upgrade_cloud_version = ""
-if (job) {
-    def jsonSlurper = new JsonSlurper()
-    def data = jsonSlurper.parseText(new File("$projectDir/upgrade_paths.json").text)
-    if (data["$job"]) {
-        def testpaths = data["$job"].split(',')
-        if (testpaths.size() < 3) {
-            throw new Exception("Test path is malformed!")
-        }
-        project.ext.set("_kibana_version", testpaths[0])
-        project.ext.set("_cloud_version", testpaths[1])
-        _upgrade_cloud_version = Arrays.copyOfRange(testpaths, 2, testpaths.length)
-    }
+task run_kibana_tests {
+    dependsOn tasks.getByPath(':common:run_kibana_tests')
 }
 
-def upgrade_versions = System.env.ESTF_UPGRADE_CLOUD_VERSION ?: _upgrade_cloud_version
-if (upgrade_versions) {
-    def versions = upgrade_versions
-    if(upgrade_versions instanceof String) {
-        versions = upgrade_versions.split(',')
-    }
-    versions.size().times {
-        def i = it
-        def value = versions[it]
-        def version = System.env.ESTF_CLOUD_VERSION ?: _cloud_version
-        if (i > 0) {
-            version = versions[it-1]
-        }
-        task "saas_upgrade${i}"(type: GradleBuild) {
-            doFirst {
-                if ( i == 0) {
-                    tasks = ['upload_bank_data', 'upgrade_assistant', 'upgrade_cloud_cluster']
-                    startParameter.projectProperties = ['version': version,
-                                                        'upgrade_version': value,
-                                                        'cluster_id': rootProject.cluster_id,
-                                                        'kibana_cluster_id': rootProject.kibana_cluster_id,
-                                                        'props': rootProject.props]
-                } else {
-                    tasks = ['upgrade_assistant', 'upgrade_cloud_cluster']
-                    startParameter.projectProperties = ['version': version,
-                                                        'upgrade_version': value,
-                                                        'cluster_id': rootProject.cluster_id,
-                                                        'kibana_cluster_id': rootProject.kibana_cluster_id,
-                                                        'props': rootProject.props]
-                }
-            }
-        }
-        saas_upgrade.dependsOn "saas_upgrade${i}"
-    }
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-saas_run_kibana_tests.dependsOn saas_setup
+saas_run_kibana_tests.dependsOn saas_setup, run_kibana_tests
+run_kibana_tests.mustRunAfter(saas_setup)
 saas_run_kibana_tests.finalizedBy saas_cleanup
-
-saas_upgrade.dependsOn saas_setup
-saas_upgrade.finalizedBy saas_cleanup

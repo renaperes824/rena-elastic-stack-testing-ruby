@@ -1,105 +1,138 @@
-/**
- * Elastic cloud client
- *
- *
- * @author  Liza Dayoub
- *
- */
-
 package org.estf.gradle;
 
-import co.elastic.cloud.api.builder.ApiClientBuilder;
-import co.elastic.cloud.api.builder.SaaSAuthenticationRequestBuilder;
-import co.elastic.cloud.api.client.ClusterClient;
-import co.elastic.cloud.api.client.SaaSAuthenticationApi;
-import co.elastic.cloud.api.model.generated.ElasticsearchClusterInfo;
-import co.elastic.cloud.api.model.generated.KibanaClusterInfo;
+import co.elastic.cloud.api.client.generated.DeploymentsApi;
+import co.elastic.cloud.api.model.generated.*;
+import co.elastic.cloud.api.util.Waiter;
+import com.bettercloud.vault.VaultException;
 import io.swagger.client.ApiClient;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 
+/**
+ * Cloud API
+ *
+ * @author  Liza Dayoub
+ *
+ */
 public class CloudApi {
 
-    private ClusterClient clusterClient;
-    private String host;
-    private String apiVer = "/api/v0.1";
-    private ApiClient authenticatedApiClient;
+    private String host = "public-api.staging.foundit.no";
+    final private ApiClient apiClient;
+    final private String esRefId = "main-elasticsearch";
+    final private String kbRefId = "main-kibana";
+    final private int MAX_RETRIES = 3;
 
-    public ClusterClient createClient() {
+    CloudApi() throws VaultException, IOException {
+        VaultCredentials credentials = new VaultCredentials();
 
-        // Get cloud credentials
-        CloudCredentials creds = new CloudCredentials();
-        creds.vaultAuth();
-
-        // Check host is set
-        host = System.getenv("ESTF_CLOUD_HOST");
-        if (host == null) {
-            throw new Error("Environment variable: ESTF_CLOUD_HOST is required");
+        String estf_host = System.getenv("ESTF_CLOUD_HOST");
+        if (estf_host != null) {
+            host = estf_host;
         }
         String url = getUrl();
 
-
-        System.out.println(" .. Setting up API client");
-        // Setup cloud API client
-        ApiClient authApiClient = new ApiClientBuilder()
-                .setBasePath(url)
-                .build();
-        SaaSAuthenticationApi saaSAuthenticationApi = new SaaSAuthenticationApi(authApiClient);
-        String token = saaSAuthenticationApi.login(new SaaSAuthenticationRequestBuilder()
-                .setUsername(creds.getUsername())
-                .setPassword(creds.getPassword())
-                .build()).getToken();
-        token = "Bearer " + token;
-        authenticatedApiClient = new ApiClientBuilder()
-                .setBasePath(url + getRegion())
-                .setApiKey(token).build();
-        authenticatedApiClient.setDebugging(true);
-        System.out.println(" .. Successfully setup API client");
-
-        // Setup cloud cluster client
-        System.out.println(" .. Setting up Cluster client");
-        clusterClient = new ClusterClient(authenticatedApiClient);
-        System.out.println(" .. Successfully setup cluster client");
-
-        return clusterClient;
-    }
-
-    public ClusterClient getClient() {
-        return clusterClient;
+        System.out.println("Debug: Setting up API client");
+        apiClient = new ApiClient();
+        apiClient.setApiKey(credentials.getApiKey());
+        apiClient.setApiKeyPrefix("ApiKey");
+        apiClient.setBasePath(url);
+        apiClient.setDebugging(true);
+        System.out.println("Debug: API URL: " + url);
     }
 
     public ApiClient getApiClient() {
-        return authenticatedApiClient;
+        return apiClient;
     }
 
-    public boolean isClusterRunning(ElasticsearchClusterInfo elasticsearchClusterInfo) {
+    public String getEsRefId() {
+        return esRefId;
+    }
+
+    public String getKbRefId() {
+        return kbRefId;
+    }
+
+    public boolean isElasticsearchClusterRunning(ElasticsearchClusterInfo elasticsearchClusterInfo) {
         return ElasticsearchClusterInfo.StatusEnum.STARTED.equals(elasticsearchClusterInfo.getStatus());
     }
 
-    public boolean isKibanaRunning(KibanaClusterInfo kibanaClusterInfo) {
+    public boolean isKibanaClusterRunning(KibanaClusterInfo kibanaClusterInfo) {
         return KibanaClusterInfo.StatusEnum.STARTED.equals(kibanaClusterInfo.getStatus());
     }
 
-    private String getHost() {
-        try {
-            if (host.contains("http")) {
-                URL url = new URL(host);
-                return url.getHost();
+    public ElasticsearchClusterInfo getEsClusterInfo(DeploymentsApi deploymentsApi, String deploymentId) {
+        for (int retries = 0;; retries++) {
+            try {
+                ElasticsearchResourceInfo esResourceInfo = deploymentsApi.getDeploymentEsResourceInfo(deploymentId,
+                        this.esRefId,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        0,
+                        false,
+                        false);
+                return esResourceInfo.getInfo();
+            } catch (Exception ex) {
+                if (retries < MAX_RETRIES) {
+                    System.out.println("** Retrying get elasticsearch cluster info **");
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    throw new Error(ex);
+                }
             }
-        } catch (MalformedURLException e) {
-            throw new Error(e.toString());
         }
-        return host;
     }
 
-    private String getUrl() {
-       return "https://" + getHost() + apiVer;
+    public KibanaClusterInfo getKbnClusterInfo(DeploymentsApi deploymentsApi, String deploymentId) {
+        for (int retries = 0;; retries++) {
+            try {
+                KibanaResourceInfo kbnResourceInfo =  deploymentsApi.getDeploymentKibResourceInfo(
+                        deploymentId,
+                        this.kbRefId,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false);
+                return kbnResourceInfo.getInfo();
+            } catch (Exception ex) {
+                if (retries < MAX_RETRIES) {
+                    System.out.println("** Retrying get kibana cluster info **");
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    throw new Error(ex);
+                }
+            }
+        }
     }
 
-    private String getRegion() {
-        String default_region_path = "/v1-regions/us-east-1";
+    public void waitForElasticsearch(DeploymentsApi deploymentsApi, String deploymentId) {
+        Waiter.waitFor(() -> this.isElasticsearchClusterRunning(this.getEsClusterInfo(deploymentsApi, deploymentId)));
+    }
+
+    public void waitForKibana(DeploymentsApi deploymentsApi, String deploymentId) {
+        Waiter.waitFor(() -> this.isKibanaClusterRunning(this.getKbnClusterInfo(deploymentsApi, deploymentId)));
+    }
+
+    public String getEnvRegion() {
+        String default_region = "us-east-1";
         ArrayList<String> regions = new ArrayList<>();
         regions.add("us-east-1");
         regions.add("us-west-1");
@@ -115,13 +148,28 @@ public class CloudApi {
 
         String data_region = System.getenv("ESTF_CLOUD_REGION");
         if (data_region == null) {
-            return default_region_path;
+            return default_region;
         }
 
         if (regions.contains(data_region)) {
-            return "/v1-regions/" + data_region;
+            return data_region;
         }
+        return default_region;
+    }
 
-        return default_region_path;
+    private String getHost() {
+        try {
+            if (host.contains("http")) {
+                URL url = new URL(host);
+                return url.getHost();
+            }
+        } catch (MalformedURLException e) {
+            throw new Error(e.toString());
+        }
+        return host;
+    }
+
+    private String getUrl() {
+        return "https://" + getHost() + "/api/v1";
     }
 }

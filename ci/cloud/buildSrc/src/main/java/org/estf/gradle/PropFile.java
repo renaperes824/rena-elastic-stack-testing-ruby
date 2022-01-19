@@ -1,14 +1,12 @@
-/*
-    File utils for cloud properties file
-
-    Author: Liza Dayoub
-
- */
-
 package org.estf.gradle;
 
 import java.io.File;
 
+/**
+ * Cloud properties file
+ *
+ * @author: Liza Dayoub
+ */
 public class PropFile {
     public static String getFilename(String clusterId) {
         String workspaceDir = System.getenv("WORKSPACE");

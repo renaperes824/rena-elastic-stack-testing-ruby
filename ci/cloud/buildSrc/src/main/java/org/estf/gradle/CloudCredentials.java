@@ -1,12 +1,4 @@
-/*
-    Elastic Cloud Credentials
-
-    Author: Liza Dayoub
-
- */
-
 package org.estf.gradle;
-
 
 import com.bettercloud.vault.Vault;
 import com.bettercloud.vault.VaultConfig;
@@ -14,7 +6,12 @@ import com.bettercloud.vault.VaultException;
 
 import java.util.Map;
 
-
+/**
+ * Cloud Credentials
+ *
+ * @author  Liza Dayoub
+ *
+ */
 public class CloudCredentials {
 
     private String username;
@@ -60,4 +57,3 @@ public class CloudCredentials {
         return password;
     }
 } 
-

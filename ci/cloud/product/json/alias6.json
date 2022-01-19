@@ -1,6 +1,0 @@
-{
-  "actions" : [
-    { "add":  { "index": ".kibana-6", "alias": ".kibana" } },
-    { "remove_index": { "index": ".kibana" } }
-  ]
-}

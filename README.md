@@ -72,9 +72,9 @@ For more options see file: `CONTRIBUTING.md`
 
   `GH_OWNER` should be set to `elastic` but can be overridden to your fork if necessary.
 
-  `chmod +x getJavaSdk.sh`
+  `chmod +x downloadLibs.sh`
 
-  `GH_OWNER=elastic GH_TOKEN=mytoken SDK_VERSION=1.2.0-SNAPSHOT ./getJavaSdk.sh`
+  `GH_OWNER=elastic GH_TOKEN=mytoken SDK_VERSION=1.2.0-SNAPSHOT ./downloadLibs.sh`
 
 ## Contributing
 

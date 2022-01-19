@@ -20,7 +20,7 @@ if not vault_client.is_authenticated():
 creds = vault_client.read(vault_path)
 os.chdir(str(Path(__file__).resolve().parent.parent.parent) + '/ci/cloud')
 print(os.getcwd())
-cmd = 'GH_OWNER=elastic GH_TOKEN=' + creds['data']['token'] + ' ./getJavaSdk.sh'
+cmd = 'GH_OWNER=elastic GH_TOKEN=' + creds['data']['token'] + ' ./downloadLibs.sh'
 p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
 (output, err) = p.communicate()
 p.wait()

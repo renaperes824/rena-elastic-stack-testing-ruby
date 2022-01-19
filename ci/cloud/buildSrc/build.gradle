@@ -5,10 +5,9 @@ repositories {
 }
 
 dependencies {
-    compile group: 'co.elastic.cloud', name: 'sdk-java', version: "1.2.0-SNAPSHOT"
-    compile group: 'com.bettercloud', name: 'vault-java-driver', version: '3.1.0'
-    compile group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.13'
-    compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
-    compile group: 'org.json', name: 'json', version: '20200518'
-    compile group: 'org.yaml', name: 'snakeyaml', version: '1.27'
+    api 'co.elastic.cloud:sdk-java:2.12.0-SNAPSHOT'
+    api 'com.bettercloud:vault-java-driver:5.1.0'
+    api 'org.apache.httpcomponents:httpcore:4.4.13'
+    api 'org.apache.httpcomponents:httpclient:4.5.13'
+    api 'org.json:json:20200518'
 }
