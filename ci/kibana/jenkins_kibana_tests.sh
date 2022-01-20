@@ -1620,6 +1620,7 @@ function run_cloud_basic_tests() {
   includeTags=$(update_config "test/functional/config.js" $testGrp)
   update_test_files
   remove_oss
+  cloud_basic_login
 
   export TEST_BROWSER_HEADLESS=1
   # To fix FTR ssl certificate issue: https://github.com/elastic/kibana/pull/73317
@@ -1629,8 +1630,6 @@ function run_cloud_basic_tests() {
     sed -i "s/PageObjects.login.login('test_user', 'changeme');/PageObjects.login.login('elastic', '$TEST_KIBANA_PASS');/g" test/functional/page_objects/common_page.ts
     sed -i "s/await this.loginPage.login('test_user', 'changeme');/await this.loginPage.login('elastic', '$TEST_KIBANA_PASS');/g" test/functional/page_objects/common_page.ts
   fi
-
-  cloud_basic_login
 
   nodeOpts=" "
   if [ ! -z $NODE_TLS_REJECT_UNAUTHORIZED ] && [[ $NODE_TLS_REJECT_UNAUTHORIZED -eq 0 ]]; then
@@ -1668,6 +1667,7 @@ function run_cloud_xpack_func_tests() {
   run_ci_setup
   includeTags=$(update_config "x-pack/test/functional/config.js" $testGrp)
   update_test_files
+  cloud_basic_login
 
   local _xpack_dir="$(cd x-pack; pwd)"
   echo_info "-> XPACK_DIR ${_xpack_dir}"
@@ -1676,8 +1676,6 @@ function run_cloud_xpack_func_tests() {
   export TEST_BROWSER_HEADLESS=1
   # To fix FTR ssl certificate issue: https://github.com/elastic/kibana/pull/73317
   export TEST_CLOUD=1
-
-  cloud_basic_login
 
   nodeOpts=" "
   if [ ! -z $NODE_TLS_REJECT_UNAUTHORIZED ] && [[ $NODE_TLS_REJECT_UNAUTHORIZED -eq 0 ]]; then
@@ -1717,13 +1715,12 @@ function run_cloud_xpack_ext_tests() {
 
   run_ci_setup
   update_test_files
+  cloud_basic_login
 
   export TEST_BROWSER_HEADLESS=1
 
   # To fix FTR ssl certificate issue: https://github.com/elastic/kibana/pull/73317
   export TEST_CLOUD=1
-
-  cloud_basic_login
 
   # Note: Only the following tests run on cloud at this time
   varcfg="Glb_${testGrp}Cfg"
