@@ -1027,6 +1027,34 @@ function check_percy_pkg() {
 # *****************************************************************************
 
 # -----------------------------------------------------------------------------
+# Method to add cloud basic login selector to FTR
+# -----------------------------------------------------------------------------
+function cloud_basic_login() {
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
+  local _isSamlEnabled=$(vge $_version "7.0")
+
+  if [[ ! $_isSamlEnabled ]]; then
+    return
+  fi
+
+  file="test/functional/page_objects/login_page.ts"
+
+  sed -i '$d' $file
+  echo "  private async cloudLoginBasic() {
+    const basicLogin = await this.testSubjects.exists('loginCard-basic/cloud-basic');
+    if (basicLogin) {
+        await this.testSubjects.click('loginCard-basic/cloud-basic');
+        this.sleep(500);
+    }
+  }
+}" > cbl.txt
+  cat $file cbl.txt > tmpfile.txt
+  mv tmpfile.txt $file
+  sed -i "s/await this.regularLogin(user, pwd);/await this.cloudLoginBasic();\n    await this.regularLogin(user, pwd);/g" $file
+}
+
+# -----------------------------------------------------------------------------
 # Method to set kibana version from build specifier for flaky test runner
 # -----------------------------------------------------------------------------
 function check_kibana_version() {
@@ -1599,7 +1627,10 @@ function run_cloud_basic_tests() {
 
   if [[ "$runWithSuperUser" == "yes" ]] && [[ ! -z $TEST_KIBANA_PASS ]]; then
     sed -i "s/PageObjects.login.login('test_user', 'changeme');/PageObjects.login.login('elastic', '$TEST_KIBANA_PASS');/g" test/functional/page_objects/common_page.ts
+    sed -i "s/await this.loginPage.login('test_user', 'changeme');/await this.loginPage.login('elastic', '$TEST_KIBANA_PASS');/g" test/functional/page_objects/common_page.ts
   fi
+
+  cloud_basic_login
 
   nodeOpts=" "
   if [ ! -z $NODE_TLS_REJECT_UNAUTHORIZED ] && [[ $NODE_TLS_REJECT_UNAUTHORIZED -eq 0 ]]; then
@@ -1645,7 +1676,9 @@ function run_cloud_xpack_func_tests() {
   export TEST_BROWSER_HEADLESS=1
   # To fix FTR ssl certificate issue: https://github.com/elastic/kibana/pull/73317
   export TEST_CLOUD=1
-q
+
+  cloud_basic_login
+
   nodeOpts=" "
   if [ ! -z $NODE_TLS_REJECT_UNAUTHORIZED ] && [[ $NODE_TLS_REJECT_UNAUTHORIZED -eq 0 ]]; then
     nodeOpts="--no-warnings "
@@ -1689,6 +1722,8 @@ function run_cloud_xpack_ext_tests() {
 
   # To fix FTR ssl certificate issue: https://github.com/elastic/kibana/pull/73317
   export TEST_CLOUD=1
+
+  cloud_basic_login
 
   # Note: Only the following tests run on cloud at this time
   varcfg="Glb_${testGrp}Cfg"
