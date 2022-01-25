@@ -1620,6 +1620,7 @@ function run_cloud_basic_tests() {
   includeTags=$(update_config "test/functional/config.js" $testGrp)
   update_test_files
   remove_oss
+  enable_security
   cloud_basic_login
 
   export TEST_BROWSER_HEADLESS=1
@@ -2494,6 +2495,13 @@ function disable_security_user() {
     fi
   fi
 
+}
+
+# -----------------------------------------------------------------------------
+# Method to enable_security
+# -----------------------------------------------------------------------------
+function enable_security() {
+  sed -i "s/xpack.security.enabled=false/xpack.security.enabled=true/g" test/functional/config.js
 }
 
 # -----------------------------------------------------------------------------
