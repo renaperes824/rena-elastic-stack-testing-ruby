@@ -2205,6 +2205,7 @@ function run_standalone_basic_tests() {
   local maxRuns="${ESTF_NUMBER_EXECUTIONS:-1}"
 
   TEST_KIBANA_BUILD=basic
+  export TEST_ES_SYSTEM_INDICES_USER=elastic
 
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
@@ -2254,6 +2255,8 @@ function run_standalone_xpack_func_tests() {
   local maxRuns="${ESTF_NUMBER_EXECUTIONS:-1}"
 
   TEST_KIBANA_BUILD=default
+  export TEST_ES_SYSTEM_INDICES_USER=elastic
+
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
     failures=$?
@@ -2314,6 +2317,8 @@ function run_standalone_xpack_ext_tests() {
   local funcTests="${1:- false}"
 
   TEST_KIBANA_BUILD=default
+  export TEST_ES_SYSTEM_INDICES_USER=elastic
+
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
     failures=$?
