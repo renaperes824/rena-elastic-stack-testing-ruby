@@ -1027,14 +1027,63 @@ function check_percy_pkg() {
 # *****************************************************************************
 
 # -----------------------------------------------------------------------------
+# Method to add es user/role
+# -----------------------------------------------------------------------------
+function add_user() {
+  local _esBaseUrl="${TEST_ES_PROTOCOL}://${TEST_ES_HOSTNAME}:${TEST_ES_PORT}"
+
+  # Add a full access role/user
+  curl -u "elastic:${TEST_ES_PASS}" -X PUT "${_esBaseUrl}/_security/role/estf_fa_role" -H 'Content-Type: application/json' -d'
+    {
+    "cluster": ["all"],
+    "indices": [
+      {
+          "names": ["*"],
+          "privileges": ["all"],
+          "allow_restricted_indices": true
+      }
+    ],
+    "applications": [
+      {
+        "application": "*",
+        "privileges": ["*"],
+        "resources": ["*"]
+      }
+    ],
+    "run_as": [ "*" ]
+    }
+  '
+
+  if [[ $? != 0 ]]; then
+    echo_error_exit "Failed to create es role!"
+  fi
+
+  curl -u "elastic:${TEST_ES_PASS}" -X POST "${_esBaseUrl}/_security/user/estf_fa_user" -H 'Content-Type: application/json' -d"
+    {
+      \"password\" : \"${TEST_ES_PASS}\",
+      \"roles\" : [ \"estf_fa_role\"],
+      \"full_name\" : \"ESTF User\",
+      \"email\" : \"estf_fa_user@estf.com\",
+      \"metadata\" : {
+        \"intelligence\" : 7
+      }
+    }
+  "
+
+  if [[ $? != 0 ]]; then
+    echo_error_exit "Failed to create es user!"
+  fi
+
+  export TEST_ES_SYSTEM_INDICES_USER=estf_fa_user
+}
+
+# -----------------------------------------------------------------------------
 # Method to add cloud basic login selector to FTR
 # -----------------------------------------------------------------------------
 function cloud_basic_login() {
   local _splitStr=(${Glb_Kibana_Version//./ })
   local _version=${_splitStr[0]}.${_splitStr[1]}
   local _isSamlEnabled=$(vge $_version "7.0")
-
-  export TEST_ES_SYSTEM_INDICES_USER=elastic
 
   if [[ ! $_isSamlEnabled ]]; then
     return
@@ -1624,6 +1673,7 @@ function run_cloud_basic_tests() {
   remove_oss
   enable_security
   cloud_basic_login
+  add_user
 
   export TEST_BROWSER_HEADLESS=1
   # To fix FTR ssl certificate issue: https://github.com/elastic/kibana/pull/73317
@@ -1671,6 +1721,7 @@ function run_cloud_xpack_func_tests() {
   includeTags=$(update_config "x-pack/test/functional/config.js" $testGrp)
   update_test_files
   cloud_basic_login
+  add_user
 
   local _xpack_dir="$(cd x-pack; pwd)"
   echo_info "-> XPACK_DIR ${_xpack_dir}"
@@ -1719,6 +1770,7 @@ function run_cloud_xpack_ext_tests() {
   run_ci_setup
   update_test_files
   cloud_basic_login
+  add_user
 
   export TEST_BROWSER_HEADLESS=1
 
@@ -2205,7 +2257,6 @@ function run_standalone_basic_tests() {
   local maxRuns="${ESTF_NUMBER_EXECUTIONS:-1}"
 
   TEST_KIBANA_BUILD=basic
-  export TEST_ES_SYSTEM_INDICES_USER=elastic
 
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
@@ -2255,7 +2306,7 @@ function run_standalone_xpack_func_tests() {
   local maxRuns="${ESTF_NUMBER_EXECUTIONS:-1}"
 
   TEST_KIBANA_BUILD=default
-  export TEST_ES_SYSTEM_INDICES_USER=elastic
+  add_user
 
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
@@ -2317,7 +2368,7 @@ function run_standalone_xpack_ext_tests() {
   local funcTests="${1:- false}"
 
   TEST_KIBANA_BUILD=default
-  export TEST_ES_SYSTEM_INDICES_USER=elastic
+  add_user
 
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
