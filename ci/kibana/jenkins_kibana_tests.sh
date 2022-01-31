@@ -1034,6 +1034,8 @@ function cloud_basic_login() {
   local _version=${_splitStr[0]}.${_splitStr[1]}
   local _isSamlEnabled=$(vge $_version "7.0")
 
+  export TEST_ES_SYSTEM_INDICES_USER=elastic
+
   if [[ ! $_isSamlEnabled ]]; then
     return
   fi
