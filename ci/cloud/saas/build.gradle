@@ -8,6 +8,7 @@
 
 import groovy.json.JsonSlurper
 import org.estf.gradle.CreateCloudDeployment
+import org.estf.gradle.EditCloudDeployment
 import org.estf.gradle.ShutdownCloudDeployment
 
 task saas_setup(type: CreateCloudDeployment) {
