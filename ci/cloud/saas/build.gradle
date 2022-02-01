@@ -92,6 +92,13 @@ task saas_setup(type: CreateCloudDeployment) {
     }
 }
 
+task saas_disable_saml_login(type: EditCloudDeployment) {
+    doFirst {
+        deploymentId = rootProject.deployment_id
+        disableSamlLogin = true
+    }
+}
+
 task saas_cleanup(type: ShutdownCloudDeployment) {
     doFirst {
         deploymentId =  rootProject.deployment_id
@@ -107,6 +114,7 @@ task run_kibana_tests {
     dependsOn tasks.getByPath(':common:run_kibana_tests')
 }
 
-saas_run_kibana_tests.dependsOn saas_setup, run_kibana_tests
-run_kibana_tests.mustRunAfter(saas_setup)
+saas_run_kibana_tests.dependsOn saas_setup, saas_disable_saml_login, run_kibana_tests
+saas_disable_saml_login.mustRunAfter(saas_setup)
+run_kibana_tests.mustRunAfter(saas_disable_saml_login)
 saas_run_kibana_tests.finalizedBy saas_cleanup

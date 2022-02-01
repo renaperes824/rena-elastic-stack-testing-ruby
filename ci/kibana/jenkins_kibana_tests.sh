@@ -1078,34 +1078,6 @@ function add_user() {
 }
 
 # -----------------------------------------------------------------------------
-# Method to add cloud basic login selector to FTR
-# -----------------------------------------------------------------------------
-function cloud_basic_login() {
-  local _splitStr=(${Glb_Kibana_Version//./ })
-  local _version=${_splitStr[0]}.${_splitStr[1]}
-  local _isSamlEnabled=$(vge $_version "7.0")
-
-  if [[ ! $_isSamlEnabled ]]; then
-    return
-  fi
-
-  file="test/functional/page_objects/login_page.ts"
-
-  sed -i '$d' $file
-  echo "  private async cloudLoginBasic() {
-    const basicLogin = await this.testSubjects.exists('loginCard-basic/cloud-basic');
-    if (basicLogin) {
-        await this.testSubjects.click('loginCard-basic/cloud-basic');
-        this.sleep(500);
-    }
-  }
-}" > cbl.txt
-  cat $file cbl.txt > tmpfile.txt
-  mv tmpfile.txt $file
-  sed -i "s/await this.regularLogin(user, pwd);/await this.cloudLoginBasic();\n    await this.regularLogin(user, pwd);/g" $file
-}
-
-# -----------------------------------------------------------------------------
 # Method to set kibana version from build specifier for flaky test runner
 # -----------------------------------------------------------------------------
 function check_kibana_version() {
@@ -1672,7 +1644,6 @@ function run_cloud_basic_tests() {
   update_test_files
   remove_oss
   enable_security
-  cloud_basic_login
   add_user
 
   export TEST_BROWSER_HEADLESS=1
@@ -1720,7 +1691,6 @@ function run_cloud_xpack_func_tests() {
   run_ci_setup
   includeTags=$(update_config "x-pack/test/functional/config.js" $testGrp)
   update_test_files
-  cloud_basic_login
   add_user
 
   local _xpack_dir="$(cd x-pack; pwd)"
@@ -1769,7 +1739,6 @@ function run_cloud_xpack_ext_tests() {
 
   run_ci_setup
   update_test_files
-  cloud_basic_login
   add_user
 
   export TEST_BROWSER_HEADLESS=1
