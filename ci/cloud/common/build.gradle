@@ -68,6 +68,15 @@ task get_kibana_repo {
         def dst = new File("$buildDir/kibana/jenkins_kibana_tests.sh")
         dst << src.text
         dst.setExecutable(true, false)
+
+        def src2 = new File(System.env.WORKSPACE.toString() + "/ci/kibana/group_defs.sh")
+        if (!src2.exists()) {
+          throw new GradleException("group_defs.sh does not exist")
+        }
+        def dst2 = new File("$buildDir/kibana/group_defs.sh")
+        dst2 << src2.text
+        dst2.setExecutable(true, false)
+
     }
 }
 
