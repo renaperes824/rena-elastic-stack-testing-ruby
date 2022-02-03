@@ -2229,9 +2229,6 @@ function run_standalone_basic_tests() {
   local _isSecurityOnByDefault=$(vge $_version "8.0")
 
   TEST_KIBANA_BUILD=basic
-  if [[ $_isSecurityOnByDefault == 1 ]]; then
-    add_user
-  fi
 
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
@@ -2253,6 +2250,9 @@ function run_standalone_basic_tests() {
   fi
 
   install_standalone_servers
+  if [[ $_isSecurityOnByDefault == 1 ]]; then
+    add_user
+  fi
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
@@ -2281,7 +2281,6 @@ function run_standalone_xpack_func_tests() {
   local maxRuns="${ESTF_NUMBER_EXECUTIONS:-1}"
 
   TEST_KIBANA_BUILD=default
-  add_user
 
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
@@ -2303,6 +2302,7 @@ function run_standalone_xpack_func_tests() {
   fi
 
   install_standalone_servers
+  add_user
 
   local _xpack_dir="$(cd x-pack; pwd)"
   echo_info "-> XPACK_DIR ${_xpack_dir}"
@@ -2343,7 +2343,6 @@ function run_standalone_xpack_ext_tests() {
   local funcTests="${1:- false}"
 
   TEST_KIBANA_BUILD=default
-  add_user
 
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
@@ -2364,6 +2363,7 @@ function run_standalone_xpack_ext_tests() {
   fi
 
   install_standalone_servers
+  add_user
 
   local _xpack_dir="$(cd x-pack; pwd)"
   echo_info "-> XPACK_DIR ${_xpack_dir}"
