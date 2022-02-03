@@ -1033,7 +1033,7 @@ function add_user() {
   local _esBaseUrl="${TEST_ES_PROTOCOL}://${TEST_ES_HOSTNAME}:${TEST_ES_PORT}"
 
   # Add a full access role/user
-  curl -u "elastic:${TEST_ES_PASS}" -X PUT "${_esBaseUrl}/_security/role/estf_fa_role" -H 'Content-Type: application/json' -d'
+  curl --insecure -u "elastic:${TEST_ES_PASS}" -X PUT "${_esBaseUrl}/_security/role/estf_fa_role" -H 'Content-Type: application/json' -d'
     {
     "cluster": ["all"],
     "indices": [
@@ -1058,7 +1058,7 @@ function add_user() {
     echo_error_exit "Failed to create es role!"
   fi
 
-  curl -u "elastic:${TEST_ES_PASS}" -X POST "${_esBaseUrl}/_security/user/estf_fa_user" -H 'Content-Type: application/json' -d"
+  curl --insecure -u "elastic:${TEST_ES_PASS}" -X POST "${_esBaseUrl}/_security/user/estf_fa_user" -H 'Content-Type: application/json' -d"
     {
       \"password\" : \"${TEST_ES_PASS}\",
       \"roles\" : [ \"estf_fa_role\"],
@@ -2224,8 +2224,14 @@ function run_standalone_basic_tests() {
   echo_info "In run_standalone_basic_tests"
   local testGrp=$1
   local maxRuns="${ESTF_NUMBER_EXECUTIONS:-1}"
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
+  local _isSecurityOnByDefault=$(vge $_version "8.0")
 
   TEST_KIBANA_BUILD=basic
+  if [[ $_isSecurityOnByDefault == 1 ]]; then
+    add_user
+  fi
 
   if [[ "$Glb_SkipTests" == "yes" ]]; then
     install_standalone_servers
