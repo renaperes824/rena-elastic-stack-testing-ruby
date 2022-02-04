@@ -1,17 +1,11 @@
 {
-  "upgradeTest1a": "7.17,5.6.16,6.8.20,7.17.0",
-  "upgradeTest1b": "7.17,6.8.20,7.17.0",
-  "upgradeTest1c": "7.17,7.8.1,7.17.0",
-  "upgradeTest1d": "7.17,7.9.3,7.17.0",
-  "upgradeTest1e": "7.17,7.10.2,7.17.0",
-  "upgradeTest1f": "7.17,7.11.2,7.17.0",
-  "upgradeTest1g": "7.17,7.12.1,7.17.0",
-  "upgradeTest1h": "7.17,7.13.4,7.17.0",
-  "upgradeTest1i": "7.17,7.14.0,7.17.0",
-  "upgradeTest1j": "7.17,7.14.2,7.17.0",
-  "upgradeTest1k": "7.17,7.15.0,7.17.0",
-  "upgradeTest1l": "7.17,7.15.1,7.17.0",
-  "upgradeTest1m": "7.17,7.16.0,7.17.0",
-  "upgradeTest1n": "7.17,7.16.1,7.17.0",
-  "upgradeTest2a": "7.17,6.8.21-SNAPSHOT,7.17.0-SNAPSHOT"
+  "upgradeTest1a": "7.17,6.8.24-SNAPSHOT,7.17.1-SNAPSHOT",
+  "upgradeTest1b": "7.17,7.9.4-SNAPSHOT,7.17.1-SNAPSHOT",
+  "upgradeTest1c": "7.17,7.10.3-SNAPSHOT,7.17.1-SNAPSHOT",
+  "upgradeTest1d": "7.17,7.11.3-SNAPSHOT,7.17.1-SNAPSHOT",
+  "upgradeTest1e": "7.17,7.12.2-SNAPSHOT,7.17.1-SNAPSHOT",
+  "upgradeTest1f": "7.17,7.13.5-SNAPSHOT,7.17.1-SNAPSHOT",
+  "upgradeTest1g": "7.17,7.14.3-SNAPSHOT,7.17.1-SNAPSHOT",
+  "upgradeTest1h": "7.17,7.15.3-SNAPSHOT,7.17.1-SNAPSHOT",
+  "upgradeTest1i": "7.17,7.16.4-SNAPSHOT,7.17.1-SNAPSHOT"
 }
