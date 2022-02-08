@@ -240,6 +240,9 @@ public class CreateCloudDeployment extends DefaultTask {
         masterNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.MASTER);
         masterNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.DATA_HOT);
         masterNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.DATA_CONTENT);
+        masterNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.TRANSFORM);
+        masterNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.INGEST);
+        masterNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.REMOTE_CLUSTER_CLIENT);
 
         List<ElasticsearchClusterTopologyElement.NodeRolesEnum> ingestNodeRoleList = new ArrayList<>();
         ingestNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.INGEST);

@@ -1995,8 +1995,8 @@ function wait_for_es_ready_docker {
   local _es_host=${TEST_ES_HOSTNAME:-localhost}
   local _es_port=${TEST_ES_PORT:-9200}
   local _creds=""
-  if [ ! -z $TEST_ES_USER ]; then
-    _creds="-u ${TEST_ES_USER}:${TEST_ES_PASS}"
+  if [ ! -z $TEST_ES_USERNAME ]; then
+    _creds="-u ${TEST_ES_USERNAME}:${TEST_ES_PASS}"
   fi
   run_with_timeout _wait_for_es_ready_docker $timeout
   if [ $? -ne 0 ]; then
@@ -2031,8 +2031,8 @@ function wait_for_kbn_ready_docker {
   local _kbn_host=${TEST_KIBANA_HOSTNAME:-localhost}
   local _kbn_port=${TEST_KIBANA_PORT:-5601}
   local _creds=""
-  if [ ! -z $TEST_KIBANA_USER ]; then
-    _creds="-u ${TEST_KIBANA_USER}:${TEST_KIBANA_PASS}"
+  if [ ! -z $TEST_KIBANA_USERNAME ]; then
+    _creds="-u ${TEST_KIBANA_USERNAME}:${TEST_KIBANA_PASS}"
   fi
   run_with_timeout _wait_for_kbn_ready_docker $timeout
   if [ $? -ne 0 ]; then
@@ -2141,11 +2141,11 @@ function docker_load {
 
     export TEST_KIBANA_PROTOCOL=https
     export TEST_KIBANA_PORT=5601
-    export TEST_KIBANA_USER=elastic
+    export TEST_KIBANA_USERNAME=elastic
     export TEST_KIBANA_PASS=$espw
     export TEST_ES_PROTOCOL=https
     export TEST_ES_PORT=9200
-    export TEST_ES_USER=elastic
+    export TEST_ES_USERNAME=elastic
     export TEST_ES_PASS=$espw
     export NODE_TLS_REJECT_UNAUTHORIZED=0
     export TEST_IGNORE_CERT_ERRORS=1
@@ -2572,8 +2572,8 @@ function _wait_for_kbn_api_status() {
   local _kbn_host=${TEST_KIBANA_HOSTNAME:-localhost}
   local _kbn_port=${TEST_KIBANA_PORT:-5601}
   local _creds=""
-  if [ ! -z $TEST_KIBANA_USER ]; then
-    _creds="-u ${TEST_KIBANA_USER}:${TEST_KIBANA_PASS}"
+  if [ ! -z $TEST_KIBANA_USERNAME ]; then
+    _creds="-u ${TEST_KIBANA_USERNAME}:${TEST_KIBANA_PASS}"
   fi
   set -o pipefail
   jq_script='if (.status.overall.state == "green") or (.status.overall.level == "available") then true else false end'
@@ -2616,8 +2616,8 @@ function wait_for_es_ready_logs() {
   local _es_host=${TEST_ES_HOSTNAME:-localhost}
   local _es_port=${TEST_ES_PORT:-9200}
   local _creds=""
-  if [ ! -z $TEST_ES_USER ]; then
-    _creds="-u ${TEST_ES_USER}:${TEST_ES_PASS}"
+  if [ ! -z $TEST_ES_USERNAME ]; then
+    _creds="-u ${TEST_ES_USERNAME}:${TEST_ES_PASS}"
   fi
   run_with_timeout _wait_for_es_ready_logs $timeout
   if [ $? -ne 0 ]; then
@@ -2661,8 +2661,8 @@ function wait_for_kbn_ready_logs() {
   local _kbn_host=${TEST_KIBANA_HOSTNAME:-localhost}
   local _kbn_port=${TEST_KIBANA_PORT:-5601}
   local _creds=""
-  if [ ! -z $TEST_KIBANA_USER ]; then
-    _creds="-u ${TEST_KIBANA_USER}:${TEST_KIBANA_PASS}"
+  if [ ! -z $TEST_KIBANA_USERNAME ]; then
+    _creds="-u ${TEST_KIBANA_USERNAME}:${TEST_KIBANA_PASS}"
   fi
   run_with_timeout _wait_for_kbn_ready_logs $timeout
   if [ $? -ne 0 ]; then
@@ -3064,12 +3064,12 @@ EOM
      export TEST_KIBANA_PROTOCOL=http
   fi
   export TEST_KIBANA_PORT=5601
-  export TEST_KIBANA_USER=elastic
+  export TEST_KIBANA_USERNAME=elastic
   export TEST_KIBANA_PASS=$espw
   export TEST_ES_HOSTNAME=$_ip
   export TEST_ES_PROTOCOL=https
   export TEST_ES_PORT=9200
-  export TEST_ES_USER=elastic
+  export TEST_ES_USERNAME=elastic
   export TEST_ES_PASS=$espw
 
   export NODE_TLS_REJECT_UNAUTHORIZED=0

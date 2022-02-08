@@ -106,7 +106,7 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
         envList.add("TEST_KIBANA_PROTOCOL=" + 'https')
         envList.add("TEST_KIBANA_PORT=" + kibanaUri?.getPort())
 
-        envList.add("TEST_ES_USER=" + rootProject.props.es_username)
+        envList.add("TEST_ES_USERNAME=" + rootProject.props.es_username)
         envList.add("TEST_ES_PASS=" + rootProject.props.es_password)
 
         if ('kibana' in test_suites || 'all' in test_suites) {
@@ -114,7 +114,7 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
             def envList1 = []
             envList1.addAll(envList)
 
-            envList1.add("TEST_KIBANA_USER=" + rootProject.props.es_username)
+            envList1.add("TEST_KIBANA_USERNAME=" + rootProject.props.es_username)
             envList1.add("TEST_KIBANA_PASS=" + rootProject.props.es_password)
 
             envList1.add("TEST_ES_HOSTNAME=" + elasticUri?.getHost())

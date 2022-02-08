@@ -105,13 +105,13 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
         envList.add("TEST_KIBANA_HOSTNAME=" + kibanaUri?.getHost())
         envList.add("TEST_KIBANA_PROTOCOL=" + 'https')
         envList.add("TEST_KIBANA_PORT=" + kibanaUri?.getPort())
-        envList.add("TEST_KIBANA_USER=" + rootProject.props.es_username.toString())
+        envList.add("TEST_KIBANA_USERNAME=" + rootProject.props.es_username.toString())
         envList.add("TEST_KIBANA_PASS=" + rootProject.props.es_password.toString())
 
         envList.add("TEST_ES_HOSTNAME=" + elasticUri?.getHost())
         envList.add("TEST_ES_PROTOCOL=" + 'https')
         envList.add("TEST_ES_PORT=" + elasticUri?.getPort())
-        envList.add("TEST_ES_USER=" + rootProject.props.es_username.toString())
+        envList.add("TEST_ES_USERNAME=" + rootProject.props.es_username.toString())
         envList.add("TEST_ES_PASS=" + rootProject.props.es_password.toString())
 
         if (rootProject.hasProperty('tls_reject')) {
