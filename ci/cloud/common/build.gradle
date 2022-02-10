@@ -36,7 +36,7 @@ task get_kibana_repo {
         println "In ${name}"
         def github_owner = System.env.ESTF_GITHUB_OWNER ?: "elastic"
         def repo = System.env.ESTF_GITHUB_REPO ?: "kibana.git"
-        def version = (System.env.ESTF_KIBANA_VERSION).minus('origin/')
+        def version = (System.env.ESTF_KIBANA_VERSION).minus('origin/').replaceAll('master', 'main')
         def branch = System.env.ESTF_GITHUB_BRANCH
         def commit = System.env.ESTF_GITHUB_COMMIT
 
