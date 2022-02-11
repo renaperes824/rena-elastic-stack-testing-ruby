@@ -641,6 +641,14 @@ function download_compressed_packages() {
 function set_java_home() {
   echo_info "Set JAVA_HOME"
 
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
+  local _isJavaBundled=$(vge $_version "7.0")
+
+  if [[ $_isJavaBundled == 1 ]]; then
+    return
+  fi
+
   if [ ! -z $JENKINS_HOME ]; then
     if [[ "$Glb_OS" == "windows" ]]; then
       export JAVA_HOME="c:\Users\jenkins\.java\openjdk17"
