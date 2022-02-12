@@ -40,7 +40,7 @@ public class UploadSecuritySolutionData extends DefaultTask {
         RestApi api = new RestApi(username, password, version, upgradeVersion);
         Instance instance = new Instance(username, password, esBaseUrl, kbnBaseUrl);
         Version versionThresholdExist = new Version("7.10");
-        Version alertsIndexVersion = new Version("8.0")
+        Version alertsIndexVersion = new Version("8.0");
         Version instanceVersion = new Version(version);
 
         int majorVersion = api.setMajorVersion();
