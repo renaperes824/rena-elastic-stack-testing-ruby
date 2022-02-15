@@ -75,12 +75,6 @@ task ess_create_deployment(type: CreateEssDeployment) {
         if (version_7_8_0_later < 0) {
             rootProject.ext.test_suites = 'kibana'
         }
-        get_kibana_info(properties.kibana_url as String,
-                        properties.es_username as String,
-                        properties.es_password as String)
-        get_elasticsearch_info(properties.elasticsearch_url as String,
-                               properties.es_username as String,
-                               properties.es_password as String)
     }
 }
 
@@ -126,50 +120,6 @@ task ess_upgrade {
 task kibana_upgrade_tests {
     rootProject.ext.test_task = "${name}"
     dependsOn tasks.getByPath(':kibana:run_kibana_tests')
-}
-
-static def get_kibana_info(String url, String username, String password) {
-    int max_retries = 50
-    for (int retries = 0; ; retries++) {
-        def kbn_url = new URL(url + "/api/status" as String).openConnection()
-        String userPassword = username + ":" + password
-        String basicAuth = "Basic " + new String(Base64.getEncoder().encode(userPassword.getBytes()))
-        println("*******SECTION: KIBANA INFO *******")
-        kbn_url.setRequestProperty ("Authorization", basicAuth)
-        int kbnGetRC = kbn_url.getResponseCode()
-        if(kbnGetRC == 200) {
-            println(kbn_url.getInputStream().getText())
-            break
-        }
-        if (retries < max_retries) {
-            println("** Retrying api status **");
-            sleep(2 * 1000)
-        } else {
-            throw new Error("Unable to reach Kibana server, got response code: " + kbnGetRC)
-        }
-    }
-}
-
-static def get_elasticsearch_info(String url, String username, String password) {
-    int max_retries = 10
-    for (int retries = 0; ; retries++) {
-        def es_url =  new URL(url).openConnection()
-        String userPassword = username + ":" + password
-        String basicAuth = "Basic " + new String(Base64.getEncoder().encode(userPassword.getBytes()))
-        println("******* SECTION: ELASTICSEARCH INFO *******")
-        es_url.setRequestProperty ("Authorization", basicAuth)
-        int esGetRC = es_url.getResponseCode()
-        if(esGetRC == 200) {
-            println(es_url.getInputStream().getText())
-            break
-        }
-        if (retries < max_retries) {
-            println("** Retrying cluster status **");
-            sleep(2 * 1000)
-        } else {
-            throw new Error("Unable to reach Elasticsearch server, got response code: " + esGetRC)
-        }
-    }
 }
 
 static def compareVersion(String version1, String version2) {

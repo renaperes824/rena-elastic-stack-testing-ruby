@@ -59,7 +59,7 @@ public class CreateEssDeployment extends DefaultTask {
     private String enterpriseSearchInstanceCfg;
 
     @TaskAction
-    public void run() throws IOException, VaultException {
+    public void run() throws IOException, VaultException, InterruptedException {
         if (stackVersion == null) {
             throw new Error(this.getClass().getSimpleName() + ": stackVersion is required input");
         }
@@ -70,6 +70,9 @@ public class CreateEssDeployment extends DefaultTask {
         DeploymentsApi deploymentsApi = new DeploymentsApi(apiClient);
         DeploymentCreateResponse response = createDeployment(cloudApi, deploymentsApi);
         generatePropertiesFile(response);
+        StackStatus stackStatus = new StackStatus(deploymentId);
+        stackStatus.isKibanaHealthy();
+        stackStatus.isElasticsearchHealthy();
     }
 
     public String getDeploymentId() {

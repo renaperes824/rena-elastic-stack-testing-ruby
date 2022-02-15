@@ -29,7 +29,7 @@ public class UpgradeEssDeployment extends DefaultTask {
     public String upgradeStackVersion = null;
 
     @TaskAction
-    public void run() throws IOException, VaultException {
+    public void run() throws IOException, VaultException, InterruptedException {
         if (deploymentId == null || deploymentId.trim().isEmpty()) {
             throw new Error(this.getClass().getSimpleName() + ": deploymentId is required input");
         }
@@ -42,6 +42,9 @@ public class UpgradeEssDeployment extends DefaultTask {
         ApiClient apiClient = cloudApi.getApiClient();
         DeploymentsApi deploymentsApi = new DeploymentsApi(apiClient);
         updateDeployment(cloudApi, deploymentsApi);
+        StackStatus stackStatus = new StackStatus(deploymentId);
+        stackStatus.isKibanaHealthy();
+        stackStatus.isElasticsearchHealthy();
     }
 
     private void updateDeployment(CloudApi cloudApi, DeploymentsApi deploymentsApi) {

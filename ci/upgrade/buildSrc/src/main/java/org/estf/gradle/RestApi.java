@@ -30,13 +30,22 @@ public class RestApi {
     private int majorVersion;
     private int majorUpgradeVersion;
 
-    final private int MAX_RETRIES = 5;
+    private int maxRetries = 5;
+    private int waitTime = 2000;
 
     public RestApi(String username, String password, String version, String upgradeVersion) {
         this.username = username;
         this.password = password;
         this.version = version;
         this.upgradeVersion = upgradeVersion;
+        setCredentials();
+    }
+
+    public RestApi(String username, String password) {
+        this.username = username;
+        this.password = password;
+        this.version = null;
+        this.upgradeVersion = null;
         setCredentials();
     }
 
@@ -61,9 +70,9 @@ public class RestApi {
             if (statusCode == 200) {
                 break;
             }
-            if (retries < MAX_RETRIES) {
+            if (retries < maxRetries) {
                 System.out.println("** Retrying post request **");
-                Thread.sleep(2000);
+                Thread.sleep(waitTime);
             } else {
                 throw new IOException("FAILED! POST: " + response.getStatusLine() + " " + path);
             }
@@ -92,9 +101,9 @@ public class RestApi {
             if (statusCode == 200) {
                 break;
             }
-            if (retries < MAX_RETRIES) {
+            if (retries < maxRetries) {
                 System.out.println("** Retrying put request **");
-                Thread.sleep(2000);
+                Thread.sleep(waitTime);
             } else {
                 throw new IOException("FAILED! PUT: " + response.getStatusLine() + " " + path);
             }
@@ -116,9 +125,9 @@ public class RestApi {
             if (statusCode == 200) {
                 break;
             }
-            if (retries < MAX_RETRIES) {
+            if (retries < maxRetries) {
                 System.out.println("** Retrying get request **");
-                Thread.sleep(2000);
+                Thread.sleep(waitTime);
             } else {
                 throw new IOException("FAILED! GET: " + response.getStatusLine() + " " + path);
             }
@@ -143,9 +152,9 @@ public class RestApi {
             if (statusCode == 200) {
                 break;
             }
-            if (retries < MAX_RETRIES) {
+            if (retries < maxRetries) {
                 System.out.println("** Retrying delete request **");
-                Thread.sleep(2000);
+                Thread.sleep(waitTime);
             } else {
                 throw new IOException("FAILED! DELETE: " + response.getStatusLine() + " " + path);
             }
@@ -181,6 +190,12 @@ public class RestApi {
     public int getUpgradeMajorVersion() {
         return majorUpgradeVersion;
     }
+
+    public int getMaxRetries() {return maxRetries;}
+    public void setMaxRetries(int retries) {maxRetries = retries;}
+
+    public int getWaitTime() {return waitTime;}
+    public void setWaitTime(int time) {waitTime = time;}
 
     private void setCredentials() {
         String credentials = username + ":" + password;
