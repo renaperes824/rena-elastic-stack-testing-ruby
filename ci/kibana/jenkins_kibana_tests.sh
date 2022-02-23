@@ -819,10 +819,16 @@ function yarn_kbn_bootstrap() {
 
   export BUILD_TS_REFS_CACHE_ENABLE=true
 
-  yarn kbn bootstrap --prefer-offline
-
+  yarn kbn bootstrap
   if [ $? -ne 0 ]; then
-    echo_error_exit "yarn kbn bootstrap failed!"
+    echo_info "Bootstrap failed, trying one more time in 15 seconds"
+    sleep 15
+    rm -rf node_modules
+
+    yarn kbn bootstrap
+    if [ $? -ne 0 ]; then
+      echo_error_exit "yarn kbn bootstrap failed!"
+    fi
   fi
 
   Glb_KbnBootStrapped="yes"
