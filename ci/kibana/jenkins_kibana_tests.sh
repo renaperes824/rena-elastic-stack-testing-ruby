@@ -945,7 +945,7 @@ function run_ci_setup_get_docker_images() {
 function run_ci_cleanup() {
   if [ $Glb_KbnClean == "yes" ]; then
     #cleanup_docker
-    uninstall_standalone_servers
+    #uninstall_standalone_servers
     uninstall_packages
     remove_node_modules_dir
     remove_install_dir
