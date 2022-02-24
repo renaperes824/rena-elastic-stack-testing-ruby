@@ -82,8 +82,7 @@ xpackExtGrp3="encrypted_saved_objects_api_integration
               upgrade_assistant_integration
              "
 
-xpackExtGrp4="detection_engine_api_integration
-              ingest_manager_api_integration
+xpackExtGrp4="ingest_manager_api_integration
               security_api_integration
               security_functional
               security_solution_endpoint

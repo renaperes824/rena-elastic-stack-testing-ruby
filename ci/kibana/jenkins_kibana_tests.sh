@@ -3527,7 +3527,6 @@ Glb_xpackExtGrp1Cfg="test/apm_api_integration/trial/config.ts
                     "
 Glb_xpackExtGrp2Cfg="test/api_integration/config.js
                      test/api_integration/config.ts
-                     test/detection_engine_api_integration/security_and_spaces/config.ts
                      test/ingest_manager_api_integration/config.ts
                      test/security_solution_endpoint/config.ts
                      test/security_solution_endpoint_api_int/config.ts
