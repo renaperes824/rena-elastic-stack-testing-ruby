@@ -38,9 +38,17 @@ public class StackStatus {
         JSONObject json = new JSONObject(content);
         System.out.println("*******SECTION: KIBANA INFO *******");
         System.out.println("\n" + json + "\n");
-        String status = json.getJSONObject("status").getJSONObject("overall").getString("state");
-        if (!status.equals("green")) {
-            throw new Error("Kibana is not in green state!");
+        JSONObject status_overall = json.getJSONObject("status").getJSONObject("overall");
+        if (status_overall.has("state")) {
+            String state = status_overall.getString("state");
+            if (!state.equals("green") && ! state.equals("yellow")) {
+                throw new Error("Kibana is not in green or yellow state!");
+            }
+        } else if (status_overall.has("level")) {
+            String level = status_overall.getString("level");
+            if (!level.equals("available")) {
+                throw new Error("Kibana is not available!");
+            }
         }
     }
 
