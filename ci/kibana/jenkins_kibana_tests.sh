@@ -2201,7 +2201,16 @@ function run_standalone_basic_tests() {
   run_ci_setup
   includeTags=$(update_config "test/functional/config.js" $testGrp)
   update_test_files
-  disable_security_user
+
+  nodeOpts=" "
+  if [[ $_isSecurityOnByDefault == 1 ]]; then
+    enable_security
+    if [ ! -z $NODE_TLS_REJECT_UNAUTHORIZED ] && [[ $NODE_TLS_REJECT_UNAUTHORIZED -eq 0 ]]; then
+      nodeOpts="--no-warnings "
+    fi
+  else
+    disable_security_user
+  fi
 
   export TEST_BROWSER_HEADLESS=1
   if [[ "$Glb_Arch" == "aarch64" ]]; then
@@ -2217,7 +2226,7 @@ function run_standalone_basic_tests() {
     update_report_name "test/functional/config.js"
 
     echo_info " -> Running standalone basic functional tests, run $i of $maxRuns"
-    eval node scripts/functional_test_runner --config test/functional/config.js " $includeTags"
+    eval node $nodeOpts scripts/functional_test_runner --config test/functional/config.js " $includeTags"
 
     if [ $? -ne 0 ]; then
       failures=1
