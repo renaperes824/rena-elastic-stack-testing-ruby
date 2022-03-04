@@ -36,3 +36,8 @@ gradle-app.setting
 .cache/
 /ait_workspace/
 .idea/
+/es-venv/
+
+# Cloud test artifacts
+/*.properties
+/ci/cloud/buildSrc/libs/
