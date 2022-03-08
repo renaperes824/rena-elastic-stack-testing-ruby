@@ -1862,6 +1862,7 @@ function run_upgrade_tests() {
   run_ci_setup
   includeTags=$(update_config "x-pack/test/upgrade/config.ts" $testGrp)
   update_test_files
+  add_superuser
 
   local _xpack_dir="$(cd x-pack; pwd)"
   echo_info "-> XPACK_DIR ${_xpack_dir}"
@@ -2472,6 +2473,64 @@ function update_report_name() {
       sed -i $label '/reportName:.*/ s/,/ + process.env.ESTF_RUN_NUMBER,/' $configFile
     fi
   fi
+}
+
+# -----------------------------------------------------------------------------
+# Method to add es user/role
+# -----------------------------------------------------------------------------
+function add_superuser() {
+  local _esBaseUrl="${TEST_ES_PROTOCOL}://${TEST_ES_HOSTNAME}:${TEST_ES_PORT}"
+
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
+
+  if [[ "$_version" != *"7.17"* ]]; then
+    return
+  fi
+
+  # Add a full access role/user
+  curl -u "elastic:${TEST_ES_PASS}" -X PUT "${_esBaseUrl}/_security/role/estf_fa_role" -H 'Content-Type: application/json' -d'
+    {
+    "cluster": ["all"],
+    "indices": [
+      {
+          "names": ["*"],
+          "privileges": ["all"],
+          "allow_restricted_indices": true
+      }
+    ],
+    "applications": [
+      {
+        "application": "*",
+        "privileges": ["*"],
+        "resources": ["*"]
+      }
+    ],
+    "run_as": [ "*" ]
+    }
+  '
+
+  if [[ $? != 0 ]]; then
+    echo_error_exit "Failed to create es role!"
+  fi
+
+  curl -u "elastic:${TEST_ES_PASS}" -X POST "${_esBaseUrl}/_security/user/estf_fa_user" -H 'Content-Type: application/json' -d"
+    {
+      \"password\" : \"${TEST_ES_PASS}\",
+      \"roles\" : [ \"estf_fa_role\"],
+      \"full_name\" : \"ESTF User\",
+      \"email\" : \"estf_fa_user@estf.com\",
+      \"metadata\" : {
+        \"intelligence\" : 7
+      }
+    }
+  "
+
+  if [[ $? != 0 ]]; then
+    echo_error_exit "Failed to create es user!"
+  fi
+
+  export TEST_ES_SYSTEM_INDICES_USER=estf_fa_user
 }
 
 # -----------------------------------------------------------------------------
