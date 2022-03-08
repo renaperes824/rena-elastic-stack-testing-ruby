@@ -110,7 +110,7 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
         if ('kibana' in test_suites || 'all' in test_suites) {
             def envList1 = []
             envList1.addAll(envList)
-            envList.add("TEST_ES_USERNAME=" + rootProject.props.es_username)
+            envList1.add("TEST_ES_USERNAME=" + rootProject.props.es_username)
             envList1.add("TEST_KIBANA_USERNAME=" + rootProject.props.es_username)
             envList1.add("TEST_KIBANA_PASS=" + rootProject.props.es_password)
 
@@ -130,7 +130,7 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
         if ('security-solutions' in test_suites || 'all' in test_suites) {
             def envList2 = []
             envList2.addAll(envList)
-            envList.add("TEST_ES_USER=" + rootProject.props.es_username)
+            envList2.add("TEST_ES_USER=" + rootProject.props.es_username)
             envList2.add("TEST_KIBANA_URL=" + kibanaUri)
             envList2.add("TEST_ES_URL=" + elasticUri)
             envList2.add("ORIGINAL_VERSION=" + rootProject.createVersion )
