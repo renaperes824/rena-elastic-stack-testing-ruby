@@ -1862,7 +1862,6 @@ function run_upgrade_tests() {
   run_ci_setup
   includeTags=$(update_config "x-pack/test/upgrade/config.ts" $testGrp)
   update_test_files
-  add_superuser
 
   local _xpack_dir="$(cd x-pack; pwd)"
   echo_info "-> XPACK_DIR ${_xpack_dir}"
