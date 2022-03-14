@@ -1875,13 +1875,18 @@ function run_upgrade_tests() {
     nodeOpts="--no-warnings "
   fi
 
+  esVersion=""
+  if [ ! -z $ESTF_FTR_ES_VERSION ]; then
+    esVersion=" --es-version $ESTF_FTR_ES_VERSION "
+  fi
+
   failures=0
   for i in $(seq 1 1 $maxRuns); do
     export ESTF_RUN_NUMBER=$i
     update_report_name "test/upgrade/config.ts"
 
     echo_info " -> Running upgrade tests, run $i of $maxRuns"
-    eval xvfb-run node $nodeOpts ../scripts/functional_test_runner \
+    eval xvfb-run node $nodeOpts ../scripts/functional_test_runner $esVersion \
           --config test/upgrade/config.ts \
           --exclude-tag skipCloud " $includeTags"
 

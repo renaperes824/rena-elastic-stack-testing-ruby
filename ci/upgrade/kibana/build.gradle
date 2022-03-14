@@ -106,6 +106,7 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
         envList.add("TEST_KIBANA_PROTOCOL=" + 'https')
         envList.add("TEST_KIBANA_PORT=" + kibanaUri?.getPort())
         envList.add("TEST_ES_PASS=" + rootProject.props.es_password)
+        envList.add("ESTF_FTR_ES_VERSION=" + rootProject.finalVersion)
 
         if ('kibana' in test_suites || 'all' in test_suites) {
             def envList1 = []
