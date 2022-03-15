@@ -9,12 +9,6 @@ import org.gradle.api.tasks.TaskAction;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
-import java.io.IOException;
-import java.util.Iterator;
-
 /**
  *
  * UpgradeAssistantApi
@@ -43,9 +37,10 @@ public class ScriptedFieldsApi extends DefaultTask {
     public String upgradeVersion;
 
     @TaskAction
-    public void run() throws IOException, InterruptedException {
+    public void run() {
         RestApi api = new RestApi(username, password, version, upgradeVersion);
         updateScriptedField(api);
+        System.out.println("Update scripted fields completed successfully");
     }
 
     public String getIndexPatternId(RestApi api, String name, String space) {

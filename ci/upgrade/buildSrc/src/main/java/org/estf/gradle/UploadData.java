@@ -64,6 +64,7 @@ public class UploadData extends DefaultTask {
         if (majorVersion > 5) {
             loadSampleData();
         }
+        System.out.println("Upload sample data completed successfully");
     }
 
     public void uploadBankAccountData() throws IOException, InterruptedException {
@@ -79,7 +80,6 @@ public class UploadData extends DefaultTask {
             HttpClient client = HttpClientBuilder.create().build();
             HttpResponse response = client.execute(postRequest);
             int statusCode = response.getStatusLine().getStatusCode();
-            System.out.println(statusCode);
             if (statusCode == 200) {
                 break;
             }
@@ -166,7 +166,6 @@ public class UploadData extends DefaultTask {
             HttpClient client = HttpClientBuilder.create().build();
             HttpResponse response = client.execute(postRequest);
             int statusCode = response.getStatusLine().getStatusCode();
-            System.out.println(statusCode);
             if (statusCode != 200) {
                 if (retries < MAX_RETRIES) {
                     System.out.println("** Retrying create bank index pattern  **");
@@ -190,7 +189,6 @@ public class UploadData extends DefaultTask {
             client = HttpClientBuilder.create().build();
             response = client.execute(postRequest);
             statusCode = response.getStatusLine().getStatusCode();
-            System.out.println(statusCode);
             if (statusCode == 200) {
                 break;
             }
@@ -218,7 +216,6 @@ public class UploadData extends DefaultTask {
             HttpClient client = HttpClientBuilder.create().build();
             HttpResponse response = client.execute(postRequest);
             int statusCode = response.getStatusLine().getStatusCode();
-            System.out.println(statusCode);
             if (statusCode == 200) {
                 break;
             }
@@ -251,7 +248,6 @@ public class UploadData extends DefaultTask {
                 HttpClient client = HttpClientBuilder.create().build();
                 HttpResponse response = client.execute(postRequest);
                 int statusCode = response.getStatusLine().getStatusCode();
-                System.out.println(statusCode);
                 if (statusCode == 200) {
                     break;
                 }

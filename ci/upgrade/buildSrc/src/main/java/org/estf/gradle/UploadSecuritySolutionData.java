@@ -36,7 +36,7 @@ public class UploadSecuritySolutionData extends DefaultTask {
     public String upgradeVersion;
 
     @TaskAction
-    public void run() throws IOException, InterruptedException {
+    public void run() throws IOException {
         RestApi api = new RestApi(username, password, version, upgradeVersion);
         Instance instance = new Instance(username, password, esBaseUrl, kbnBaseUrl);
         Version versionThresholdExist = new Version("7.10");
@@ -66,6 +66,7 @@ public class UploadSecuritySolutionData extends DefaultTask {
                 createsThresholdDetectionRule(instance);
             }
         }
+        System.out.println("Upload security solutions data completed successfully");
     }
 
     public void createsSiemSignalsIndex(Instance instance) throws IOException {
@@ -74,7 +75,8 @@ public class UploadSecuritySolutionData extends DefaultTask {
     }
 
     public void createsCustomQueryDetectionRule(Instance instance) throws IOException {
-        DetectionRuleCreation endpoint = new DetectionRuleCreation(instance, "buildSrc/src/main/resources/customQueryRule.json");
+        DetectionRuleCreation endpoint = new DetectionRuleCreation(instance,
+                "buildSrc/src/main/resources/customQueryRule.json");
         endpoint.sendPostRequest();
     }
 
@@ -115,23 +117,27 @@ public class UploadSecuritySolutionData extends DefaultTask {
     }
 
     public void createsAuditbeatCustomMapping(Instance instance) throws IOException {
-        MappingCreation endpoint = new MappingCreation(instance, "auditbeat-custom-1", "buildSrc/src/main/resources/auditbeatMapping.json");
+        MappingCreation endpoint = new MappingCreation(instance, "auditbeat-custom-1",
+                "buildSrc/src/main/resources/auditbeatMapping.json");
         endpoint.sendPutRequest();
     }
 
     public void createsAuditbeatThresholdMapping(Instance instance) throws IOException {
-        MappingCreation endpoint = new MappingCreation(instance, "auditbeat-threshold-1", "buildSrc/src/main/resources/auditbeatMapping.json");
+        MappingCreation endpoint = new MappingCreation(instance, "auditbeat-threshold-1",
+                "buildSrc/src/main/resources/auditbeatMapping.json");
         endpoint.sendPutRequest();
     }
 
 
     public void createsDocumentToGenerateAlertForCustomQueryDetectionRule(Instance instance) throws IOException {
-        DocumentCreation endpoint = new DocumentCreation(instance, "auditbeat-custom-1", "buildSrc/src/main/resources/auditbeatDoc.json");
+        DocumentCreation endpoint = new DocumentCreation(instance, "auditbeat-custom-1",
+                "buildSrc/src/main/resources/auditbeatDoc.json");
         endpoint.sendPostRequest();
     }
 
     public void createsDocumentsToGenerateAlertForThresholdDetectionRule(Instance instance) throws IOException {
-        DocumentCreation endpoint = new DocumentCreation(instance, "auditbeat-threshold-1", "buildSrc/src/main/resources/auditbeatDoc.json");
+        DocumentCreation endpoint = new DocumentCreation(instance, "auditbeat-threshold-1",
+                "buildSrc/src/main/resources/auditbeatDoc.json");
         for (int i = 0; i < 2; i++) {
             endpoint.sendPostRequest();
         }

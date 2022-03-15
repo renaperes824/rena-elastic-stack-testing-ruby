@@ -6,13 +6,7 @@
  */
 
 import org.estf.gradle.ShellCommand
-import org.ajoberstar.grgit.Grgit
 import java.util.stream.Collectors
-
-
-plugins {
-  id 'org.ajoberstar.grgit' version '4.1.0' apply false
-}
 
 group 'org.estf.cloud'
 version '1.0'
@@ -23,52 +17,85 @@ repositories {
     mavenCentral()
 }
 
-// *********************************************************************************
-task clone_kibana_repo {
-  doFirst {
-    println "In ${name}"
-    def github_owner = System.env.ESTF_GITHUB_OWNER ?: "elastic"
-    def repo = System.env.ESTF_GITHUB_REPO ?: "kibana.git"
-    def version = System.env.ESTF_KIBANA_VERSION ?: rootProject.kibana_version
-    def branch = System.env.ESTF_GITHUB_BRANCH
-    def commit = System.env.ESTF_GITHUB_COMMIT
-
-    def checkout_ver = version
-
-    if (!checkout_ver) {
-        throw new GradleException("Kibana version can't be empty")
+static def runcmd(String c, File dir) {
+    println(c)
+    Process p
+    if (dir == null)
+        p = c.execute()
+    else
+        p = c.execute([], dir)
+    p.waitFor()
+    println(p.text)
+    println(p.exitValue())
+    if (p.exitValue() != 0) {
+        throw new GradleException('Error ' + c)
     }
-    if (github_owner != "elastic" && !branch) {
-        throw new GradleException("ESTF_GITHUB_BRANCH must be specified")
-    }
-    if (branch) {
-        checkout_ver = branch
-    }
-    def grgit = Grgit.clone(dir: "$buildDir/kibana",
-                            uri: 'git@github.com:' + github_owner + '/' + repo,
-                            refToCheckout: checkout_ver)
-    if (commit) {
-        grgit.checkout(branch: commit)
-    } else if (rootProject.hasProperty('kibana_hash') && ! System.env.ESTF_FLAKY_TEST_SUITE && ! System.env.ESTF_KIBANA_CHECKOUT_LATEST) {
-        println("Checking out: " + rootProject.kibana_hash)
-        grgit.checkout(branch: rootProject.kibana_hash)
-    }
-    println grgit.describe()
-
-    def src = new File(System.env.WORKSPACE + "/ci/kibana/jenkins_kibana_tests.sh")
-    if (!src.exists()) {
-        throw new GradleException("jenkins_kibana_tests.sh does not exist")
-    }
-    def dst = new File("$buildDir/kibana/jenkins_kibana_tests.sh")
-    dst << src.text
-    dst.setExecutable(true, false)
-  }
 }
 
-task get_kibana_commit(type:Exec, dependsOn: clone_kibana_repo) {
+task get_kibana_repo {
     doFirst {
+        println("******* SECTION: GET KIBANA REPO *******")
+        println "In ${name}"
+        def github_owner = System.env.ESTF_GITHUB_OWNER ?: "elastic"
+        def repo = System.env.ESTF_GITHUB_REPO ?: "kibana.git"
+        def version = (System.env.ESTF_KIBANA_VERSION) ?: rootProject.kibana_version
+        def branch = System.env.ESTF_GITHUB_BRANCH
+        def commit = System.env.ESTF_GITHUB_COMMIT
+        def kibanaRefRepo = System.env.ESTF_KIBANA_REF_REPO ?: "/var/lib/jenkins/.git-references/kibana.git"
+
+        String checkout_ver = version
+
+        if (github_owner != "elastic" && !branch) {
+            throw new GradleException("ESTF_GITHUB_BRANCH must be specified")
+        }
+        if (branch) {
+            checkout_ver = branch
+        }
+
+        def cloneOpts = ""
+        if (kibanaRefRepo) {
+            File kibanaRefRepoDir = new File(kibanaRefRepo)
+            if (kibanaRefRepoDir.exists()) {
+                cloneOpts = '--reference ' + kibanaRefRepo
+            }
+        }
+
+        String kibanaRepo = 'git@github.com:' + github_owner + '/' + repo
+        String cloneCmd = 'git clone ' + cloneOpts + ' ' + kibanaRepo + ' ' + "$buildDir/kibana"
+        File dir = new File("$buildDir/kibana")
+        runcmd(cloneCmd, null)
+        runcmd('git checkout ' + checkout_ver, dir)
+
+        if (commit) {
+            runcmd('git checkout ' + commit.toString(), dir)
+        } else if (rootProject.hasProperty('kibana_hash') &&
+                   !System.env.ESTF_FLAKY_TEST_SUITE &&
+                   !System.env.ESTF_KIBANA_CHECKOUT_LATEST) {
+            runcmd('git checkout ' + rootProject.kibana_hash.toString(), dir)
+        }
+
+        def src = new File(System.env.WORKSPACE.toString() + "/ci/kibana/jenkins_kibana_tests.sh")
+        if (!src.exists()) {
+            throw new GradleException("jenkins_kibana_tests.sh does not exist")
+        }
+        def dst = new File("$buildDir/kibana/jenkins_kibana_tests.sh")
+        dst << src.text
+        dst.setExecutable(true, false)
+
+        def src2 = new File(System.env.WORKSPACE.toString() + "/ci/kibana/group_defs.sh")
+        if (!src2.exists()) {
+            throw new GradleException("group_defs.sh does not exist")
+        }
+        def dst2 = new File("$buildDir/kibana/group_defs.sh")
+        dst2 << src2.text
+        dst2.setExecutable(true, false)
+    }
+}
+
+task get_kibana_commit(type:Exec, dependsOn: get_kibana_repo) {
+    doFirst {
+        println("******* SECTION: GET KIBANA COMMIT *******")
         print "In ${name}"
-        println("---------- KIBANA REPO COMMIT INFO ----------")
         workingDir "$buildDir/kibana"
         commandLine '/usr/bin/git', 'log', '--pretty=oneline', '--abbrev-commit', '-n', '1'
     }
@@ -77,11 +104,11 @@ task get_kibana_commit(type:Exec, dependsOn: clone_kibana_repo) {
 task run_kibana_tests(dependsOn: get_kibana_commit) {
     doFirst {
 
-        def sel_test_suites = rootProject.ext.test_suites
+        println("******* SECTION: RUN KIBANA TESTS *******")
+
+        def sel_test_suites = (String) rootProject.ext.test_suites
         def test_suites = sel_test_suites.split(',')
         def test_failures = []
-
-        println("******* SECTION: RUN KIBANA TESTS *******")
 
         // Add system environment variables
         def envList = []
@@ -99,21 +126,21 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
             envList.add("TEST_IGNORE_CERT_ERRORS=1")
         }
 
-        def kibanaUri = new URI(rootProject.props.kibana_url)
-        def elasticUri = new URI(rootProject.props.elasticsearch_url)
+        URI kibanaUri = new URI((String) rootProject.props.kibana_url)
+        URI elasticUri = new URI((String) rootProject.props.elasticsearch_url)
 
         envList.add("TEST_KIBANA_HOSTNAME=" + kibanaUri?.getHost())
         envList.add("TEST_KIBANA_PROTOCOL=" + 'https')
         envList.add("TEST_KIBANA_PORT=" + kibanaUri?.getPort())
-        envList.add("TEST_ES_PASS=" + rootProject.props.es_password)
-        envList.add("ESTF_FTR_ES_VERSION=" + rootProject.finalVersion)
+        envList.add("TEST_ES_PASS=" + (String) rootProject.props.es_password)
+        envList.add("ESTF_FTR_ES_VERSION=" + (String) rootProject.finalVersion)
 
         if ('kibana' in test_suites || 'all' in test_suites) {
             def envList1 = []
             envList1.addAll(envList)
-            envList1.add("TEST_ES_USERNAME=" + rootProject.props.es_username)
-            envList1.add("TEST_KIBANA_USERNAME=" + rootProject.props.es_username)
-            envList1.add("TEST_KIBANA_PASS=" + rootProject.props.es_password)
+            envList1.add("TEST_ES_USERNAME=" + (String) rootProject.props.es_username)
+            envList1.add("TEST_KIBANA_USERNAME=" + (String) rootProject.props.es_username)
+            envList1.add("TEST_KIBANA_PASS=" + (String) rootProject.props.es_password)
 
             envList1.add("TEST_ES_HOSTNAME=" + elasticUri?.getHost())
             envList1.add("TEST_ES_PROTOCOL=" + 'https')
@@ -124,24 +151,28 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
             println "******************************************************"
 
             println "Running Kibana Tests...."
-            ShellCommand kibanaTests = new ShellCommand("./jenkins_kibana_tests.sh upgrade", "$buildDir/kibana", envList1)
+            ShellCommand kibanaTests = new ShellCommand("./jenkins_kibana_tests.sh upgrade",
+                                                        "$buildDir/kibana",
+                                                        envList1)
             kibanaTests.waitFor()
             test_failures.add(kibanaTests.getRc())
         }
         if ('security-solutions' in test_suites || 'all' in test_suites) {
             def envList2 = []
             envList2.addAll(envList)
-            envList2.add("TEST_ES_USER=" + rootProject.props.es_username)
+            envList2.add("TEST_ES_USER=" + (String) rootProject.props.es_username)
             envList2.add("TEST_KIBANA_URL=" + kibanaUri)
             envList2.add("TEST_ES_URL=" + elasticUri)
-            envList2.add("ORIGINAL_VERSION=" + rootProject.createVersion )
+            envList2.add("ORIGINAL_VERSION=" + (String) rootProject.createVersion )
 
             println "************ KIBANA TEST ENVIRONMENT VARS ************"
             println envList2
             println "******************************************************"
 
             println "Running Security Solution Tests...."
-            ShellCommand securitySolnTests = new ShellCommand("./jenkins_kibana_tests.sh upgrade_security_solution", "$buildDir/kibana", envList2)
+            ShellCommand securitySolnTests = new ShellCommand("./jenkins_kibana_tests.sh upgrade_security_solution",
+                                                              "$buildDir/kibana",
+                                                              envList2)
             securitySolnTests.waitFor()
             test_failures.add(securitySolnTests.getRc())
         }

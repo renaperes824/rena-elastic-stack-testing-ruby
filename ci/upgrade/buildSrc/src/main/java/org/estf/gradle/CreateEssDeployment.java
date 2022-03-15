@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 
+import org.apache.maven.artifact.versioning.ComparableVersion;
+
 /**
  * CreateEssDeployment
  *
@@ -58,10 +60,21 @@ public class CreateEssDeployment extends DefaultTask {
     private String apmInstanceCfg;
     private String enterpriseSearchInstanceCfg;
 
+    private String deploymentTemplate;
+
+    private boolean isPre7_10 = false;
+
     @TaskAction
     public void run() throws IOException, VaultException, InterruptedException {
         if (stackVersion == null) {
             throw new Error(this.getClass().getSimpleName() + ": stackVersion is required input");
+        }
+
+        ComparableVersion currentVersion = new ComparableVersion(stackVersion);
+        ComparableVersion version7_11 = new ComparableVersion("7.11.0");
+
+        if (currentVersion.compareTo(version7_11) < 0) {
+            isPre7_10 = true;
         }
 
         CloudApi cloudApi = new CloudApi();
@@ -69,10 +82,11 @@ public class CreateEssDeployment extends DefaultTask {
         setInstanceConfiguration(cloudApi);
         DeploymentsApi deploymentsApi = new DeploymentsApi(apiClient);
         DeploymentCreateResponse response = createDeployment(cloudApi, deploymentsApi);
-        generatePropertiesFile(response);
+        generatePropertiesFile(response, deploymentsApi);
         StackStatus stackStatus = new StackStatus(deploymentId);
         stackStatus.isKibanaHealthy();
         stackStatus.isElasticsearchHealthy();
+        System.out.println("Create deployment " + getDeploymentId() + " completed successfully");
     }
 
     public String getDeploymentId() {
@@ -98,6 +112,7 @@ public class CreateEssDeployment extends DefaultTask {
         ingestInstanceCfg = "aws.coordinating.m5d";
         apmInstanceCfg = "aws.apm.r5d";
         enterpriseSearchInstanceCfg = "aws.enterprisesearch.m5d";
+        deploymentTemplate = "aws-compute-optimized-v2";
         dataRegion = cloudApi.getEnvRegion();
         if (dataRegion != null) {
             if (dataRegion.contains("gcp")) {
@@ -106,7 +121,8 @@ public class CreateEssDeployment extends DefaultTask {
                 mlInstanceCfg = "gcp.ml.1";
                 ingestInstanceCfg = "gcp.coordinating.1";
                 apmInstanceCfg = "gcp.apm.1";
-                enterpriseSearchInstanceCfg = "gcp.enterprisesearch.1d";
+                enterpriseSearchInstanceCfg = "gcp.enterprisesearch.1";
+                deploymentTemplate = "gcp-compute-optimized-v2";
             } else if (dataRegion.contains("azure")) {
                 esInstanceCfg = "azure.data.highcpu.d64sv3";
                 kbnInstanceCfg = "azure.kibana.e32sv3";
@@ -114,14 +130,16 @@ public class CreateEssDeployment extends DefaultTask {
                 ingestInstanceCfg = "azure.coordinating.d64sv3";
                 apmInstanceCfg = "azure.apm.e32sv3";
                 enterpriseSearchInstanceCfg = "azure.enterprisesearch.d64sv3";
+                deploymentTemplate = "azure-compute-optimized-v2";
             }
         }
     }
 
-    private void generatePropertiesFile(DeploymentCreateResponse response) {
-        String esUser = "";
-        String esPassword = "";
-        String region = "";
+    private void generatePropertiesFile(DeploymentCreateResponse response, DeploymentsApi deploymentsApi) {
+        String esUser = null;
+        String esPassword = null;
+        String elasticsearch_url = null;
+        String kibana_url = null;
 
         List<DeploymentResource> deploymentResourceList =  response.getResources();
         for (DeploymentResource resource : deploymentResourceList) {
@@ -130,31 +148,34 @@ public class CreateEssDeployment extends DefaultTask {
                 ClusterCredentials clusterCredentials = resource.getCredentials();
                 esUser = clusterCredentials.getUsername();
                 esPassword = clusterCredentials.getPassword();
-                region = resource.getRegion();
                 elasticsearchClusterId = resource.getId();
+                ElasticsearchResourceInfo esResourceInfo = deploymentsApi.getDeploymentEsResourceInfo(deploymentId,
+                        resource.getRefId(),
+                        false,
+                        true,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        0,
+                        false,
+                        false);
+                elasticsearch_url = esResourceInfo.getInfo().getMetadata().getServiceUrl();
             } else if (kind.equals("kibana")) {
                 kibanaClusterId = resource.getId();
+                KibanaResourceInfo kbnResourceInfo = deploymentsApi.getDeploymentKibResourceInfo(deploymentId,
+                        resource.getRefId(),
+                        true,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false);
+                kibana_url = kbnResourceInfo.getInfo().getMetadata().getServiceUrl();
             }
         }
-
-        String domain = "foundit.no";
-        String port = "9243";
-        String provider = "aws.staging";
-        if (region.contains("gcp")) {
-            provider = "gcp";
-            region = region.replace("gcp-","");
-        } else if (region.contains("azure")) {
-            provider = "staging.azure";
-            region = region.replace("azure-","");
-        } else if (region.contains("aws-eu-central-1")) {
-            provider = "aws";
-            region = "eu-central-1";
-        }
-
-        String elasticsearch_url = String.format("https://%s.%s.%s.%s:%s", elasticsearchClusterId,
-                region, provider, domain, port);
-        String kibana_url = String.format("https://%s.%s.%s.%s:%s", kibanaClusterId,
-                region, provider, domain, port);
 
         try {
             Properties properties = new Properties();
@@ -168,7 +189,7 @@ public class CreateEssDeployment extends DefaultTask {
             propertiesFile = DeploymentFile.getFilename(deploymentId);
             File file = new File(propertiesFile);
             FileOutputStream fileOut = new FileOutputStream(file);
-            properties.store(fileOut, "Cloud Cluster Info");
+            properties.store(fileOut, "Cloud Deployment Info");
             fileOut.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -186,29 +207,52 @@ public class CreateEssDeployment extends DefaultTask {
     }
 
     private ElasticsearchPayload getElasticsearchPayload(CloudApi api) {
-        final String deploymentTemplate = "aws-compute-optimized-v2";
 
         ElasticsearchNodeType esNodeType = new ElasticsearchNodeType().data(true).master(true);
         ElasticsearchNodeType ingestNodeType = new ElasticsearchNodeType().ingest(true);
         ElasticsearchNodeType mlNodeType = new ElasticsearchNodeType().ml(true);
 
+        List<ElasticsearchClusterTopologyElement.NodeRolesEnum> masterNodeRoleList = new ArrayList<>();
+        masterNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.MASTER);
+        masterNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.DATA_HOT);
+        masterNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.DATA_CONTENT);
+        masterNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.TRANSFORM);
+        masterNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.INGEST);
+        masterNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.REMOTE_CLUSTER_CLIENT);
+
+        List<ElasticsearchClusterTopologyElement.NodeRolesEnum> ingestNodeRoleList = new ArrayList<>();
+        ingestNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.INGEST);
+
+        List<ElasticsearchClusterTopologyElement.NodeRolesEnum> mlNodeRoleList = new ArrayList<>();
+        mlNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.ML);
+
         ElasticsearchClusterTopologyElement esTopology = new ElasticsearchClusterTopologyElement()
                 .instanceConfigurationId(esInstanceCfg)
-                .nodeType(esNodeType)
-                .zoneCount(1)
+                .zoneCount(2)
                 .size(getTopologySize(8192));
 
         ElasticsearchClusterTopologyElement ingestTopology = new ElasticsearchClusterTopologyElement()
                 .instanceConfigurationId(ingestInstanceCfg)
-                .nodeType(ingestNodeType)
                 .zoneCount(1)
                 .size(getTopologySize());
 
         ElasticsearchClusterTopologyElement mlTopology = new ElasticsearchClusterTopologyElement()
                 .instanceConfigurationId(mlInstanceCfg)
-                .nodeType(mlNodeType)
                 .zoneCount(1)
                 .size(getTopologySize());
+
+        if (isPre7_10) {
+            esTopology.nodeType(esNodeType);
+            ingestTopology.nodeType(ingestNodeType);
+            mlTopology.nodeType(mlNodeType);
+        } else {
+            esTopology.id("hot_content");
+            esTopology.nodeRoles(masterNodeRoleList);
+            ingestTopology.id("coordinating");
+            ingestTopology.nodeRoles(ingestNodeRoleList);
+            mlTopology.id("ml");
+            mlTopology.nodeRoles(mlNodeRoleList);
+        }
 
         ElasticsearchConfiguration esCfg = new ElasticsearchConfiguration()
                 .version(stackVersion);
@@ -270,7 +314,7 @@ public class CreateEssDeployment extends DefaultTask {
         ApmTopologyElement apmTopology = new ApmTopologyElement()
                 .instanceConfigurationId(apmInstanceCfg)
                 .zoneCount(1)
-                .size(getTopologySize(512));
+                .size(getTopologySize(1024));
 
         ApmConfiguration apmCfg = new ApmConfiguration()
                 .version(stackVersion);
@@ -329,9 +373,9 @@ public class CreateEssDeployment extends DefaultTask {
 
         DeploymentCreateResponse response = deploymentsApi.createDeployment(
                 new DeploymentCreateRequest()
-                        .name("ESTF_Deployment__" + UUID.randomUUID().toString())
+                        .name("ESTF_Deployment__" + UUID.randomUUID())
                         .resources(deploymentCreateResources),
-                "estf_request_id_" + UUID.randomUUID().toString(),
+                "estf_request_id_" + UUID.randomUUID(),
                 false);
 
         deploymentId = response.getId();

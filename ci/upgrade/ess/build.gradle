@@ -85,11 +85,12 @@ task ess_shutdown_deployment(type: ShutdownEssDeployment) {
     }
 }
 
-task ess_disable_saml_login(type: EditEssDeployment) {
+task ess_disable_options(type: EditEssDeployment) {
     doFirst {
-        println("******* SECTION: DISABLE SAML LOGIN *******")
+        println("******* SECTION: DISABLE OPTIONS *******")
         deploymentId = rootProject.deployment_id
         disableSamlLogin = true
+        disableCspStrict = true
     }
 }
 
@@ -176,7 +177,7 @@ int final_version_7_12_0_later = -1
 
 if (rootProject.createVersion && upgrade_versions ) {
 
-    int originating_version_6_5_0_later = compareVersion(rootProject.createVersion, "6.5.0")
+    int originating_version_6_5_0_later = compareVersion((String) rootProject.createVersion, "6.5.0")
     boolean upload_data_interm = false
     if (originating_version_6_5_0_later < 0) {
         upload_data_interm = true
@@ -188,7 +189,7 @@ if (rootProject.createVersion && upgrade_versions ) {
         versions = upgrade_versions.split(',')
     }
     rootProject.ext.finalVersion = versions[versions.length - 1]
-    final_version_7_12_0_later = compareVersion(rootProject.finalVersion, "7.12.0")
+    final_version_7_12_0_later = compareVersion((String) rootProject.finalVersion, "7.12.0")
     versions.size().times {
         int i = it
         String originating_version = rootProject.createVersion
@@ -274,8 +275,8 @@ ess_setup.dependsOn ess_create_deployment
 ess_setup.finalizedBy ess_shutdown_deployment
 
 ess_upgrade.dependsOn ess_create_deployment
-ess_disable_saml_login.dependsOn ess_upgrade
-update_scripted_fields.dependsOn ess_disable_saml_login
+ess_disable_options.dependsOn ess_upgrade
+update_scripted_fields.dependsOn ess_disable_options
 kibana_upgrade_tests.dependsOn update_scripted_fields
 tasks.getByPath(':kibana:run_kibana_tests').onlyIf {
     final_version_7_12_0_later >= 0

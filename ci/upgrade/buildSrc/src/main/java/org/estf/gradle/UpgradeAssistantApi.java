@@ -51,12 +51,10 @@ public class UpgradeAssistantApi extends DefaultTask {
     public void run() throws IOException, InterruptedException {
 
         System.out.println("----------------------------");
-        System.out.println(esBaseUrl);
-        System.out.println(kbnBaseUrl);
-        System.out.println(username);
-        System.out.println(password);
-        System.out.println(version);
-        System.out.println(upgradeVersion);
+        System.out.println("Elasticsearch URL: " + esBaseUrl);
+        System.out.println("Kibana URL: " + kbnBaseUrl);
+        System.out.println("Version: " + version);
+        System.out.println("Upgrade Version: " + upgradeVersion);
         System.out.println("----------------------------");
 
         RestApi api = new RestApi(username, password, version, upgradeVersion);
@@ -72,14 +70,23 @@ public class UpgradeAssistantApi extends DefaultTask {
                 runMigrationAssistant5(api);
             } else if (majorVersion == 6) {
                 runMigrationAssistant6(api);
+            } else if (majorVersion == 7) {
+                if (!readyForUpgrade(api)) {
+                    runMigrationAssistant7(api);
+                    runUpgradeAssistantSystemIndicesMigration(api);
+                    runEsDeprecations(api);
+                    runKbnDeprecations(api);
+                    if (!readyForUpgrade(api)) {
+                        throw new IOException("System is not ready for upgrade!");
+                    }
+                }
             } else {
-                System.out.println("Major upgrade from 7.x not yet supported");
-                // Ref: https://github.com/elastic/kibana/issues/76837
-                //runUpgradeAssistantStatus(api);
+                throw new IOException("Major upgrade from 8.x not yet supported");
             }
         } else {
             System.out.println("Performing minor upgrade...");
         }
+        System.out.println("Upgrade assistant completed successfully");
     }
 
     public void runMigrationAssistant5(RestApi api) throws IOException, InterruptedException {
@@ -96,7 +103,7 @@ public class UpgradeAssistantApi extends DefaultTask {
         entity = response.getEntity();
         content = EntityUtils.toString(entity);
         JSONObject json = new JSONObject(content);
-        System.out.println(json.toString());
+        System.out.println(json);
         JSONObject indices = json.getJSONObject("indices");
         Iterator<String> keys = indices.keys();
         while (keys.hasNext()) {
@@ -127,7 +134,7 @@ public class UpgradeAssistantApi extends DefaultTask {
         entity = response.getEntity();
         content = EntityUtils.toString(entity);
         JSONObject json = new JSONObject(content);
-        System.out.println(json.toString());
+        System.out.println(json);
         JSONObject indices = json.getJSONObject("indices");
         Iterator<String> keys = indices.keys();
         while (keys.hasNext()) {
@@ -140,25 +147,86 @@ public class UpgradeAssistantApi extends DefaultTask {
         }
     }
 
-    public void runUpgradeAssistantStatus(RestApi api) throws IOException, InterruptedException {
+    public void runMigrationAssistant7(RestApi api) throws IOException, InterruptedException {
+        HttpResponse response;
+        String path = "/_migration/system_features";
+        response = api.post(esBaseUrl + path, "", false);
+        HttpEntity entity = response.getEntity();
+        String content = EntityUtils.toString(entity);
+        JSONObject json = new JSONObject(content);
+        boolean isAccepted = json.getBoolean("accepted");
+        if (!isAccepted) {
+            throw new IOException("Migration failed!");
+        }
+    }
+
+    public void runEsDeprecations(RestApi api) throws IOException, InterruptedException {
         HttpResponse response;
         HttpEntity entity;
         String content;
-        String path = "/api/upgrade_assistant/status";
-        response = api.get(kbnBaseUrl + path);
+        String path = "/_migration/deprecations";
+        response = api.get(esBaseUrl + path);
         entity = response.getEntity();
         content = EntityUtils.toString(entity);
         JSONObject json = new JSONObject(content);
-        System.out.println("\n" + json.toString() + "\n");
-        JSONArray indices = json.getJSONArray("indices");
-        for (int i = 0; i < indices.length(); i++) {
-            JSONObject indicesElem = indices.getJSONObject(i);
-            boolean reindex = indicesElem.getBoolean("reindex");
-            String index = indicesElem.getString("index");
-            if (reindex) {
-                runUpgradeAssistantReindex(api, index);
+        System.out.println(json);
+        JSONArray cluster_settings = json.getJSONArray("cluster_settings");
+        JSONArray node_settings = json.getJSONArray("node_settings");
+        JSONObject index_settings = json.getJSONObject("index_settings");
+        if (! (cluster_settings.isEmpty() && node_settings.isEmpty()) ) {
+            System.out.println("Cluster settings: " + cluster_settings);
+            System.out.println("Node settings: " + node_settings.toString());
+            throw new IOException("There are deprecations in cluster and/or node settings");
+        }
+        Iterator<String> keys = index_settings.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            JSONArray index = index_settings.getJSONArray(key);
+            System.out.println(index);
+            for (int i = 0 ; i < index.length(); i++) {
+                JSONObject index_elem = index.getJSONObject(i);
+                String level = index_elem.getString("level");
+                String details = index_elem.getString("details");
+                if (level.equals("critical") && details.contains("Reindex")) {
+                    System.out.println("Reindex: " + key);
+                    runUpgradeAssistantReindex(api, key);
+                    break;
+                }
             }
         }
+    }
+
+    public void runKbnDeprecations(RestApi api) throws IOException, InterruptedException {
+        boolean deprecationsExist = false;
+        String path = "/api/deprecations/";
+        HttpResponse response = api.get(kbnBaseUrl + path);
+        HttpEntity entity = response.getEntity();
+        String content = EntityUtils.toString(entity);
+        JSONObject json = new JSONObject(content);
+        System.out.println("\n" + json + "\n");
+        JSONArray deprecations = json.getJSONArray("deprecations");
+        System.out.println(deprecations);
+        for (int i = 0; i < deprecations.length(); i++) {
+            JSONObject deprecations_elem = deprecations.getJSONObject(i);
+            String level = deprecations_elem.getString("level");
+            if (level.equals("critical")) {
+                deprecationsExist = true;
+                break;
+            }
+        }
+        if (deprecationsExist) {
+            throw new IOException("Kibana deprecations exist!");
+        }
+    }
+
+    public Boolean readyForUpgrade(RestApi api) throws IOException, InterruptedException {
+        String path = "/api/upgrade_assistant/status";
+        HttpResponse response = api.get(kbnBaseUrl + path);
+        HttpEntity entity = response.getEntity();
+        String content = EntityUtils.toString(entity);
+        JSONObject json = new JSONObject(content);
+        System.out.println("\n" + json + "\n");
+        return json.getBoolean("readyForUpgrade");
     }
 
     public void runUpgradeAssistantReindex(RestApi api, String key) throws IOException, InterruptedException {
@@ -168,8 +236,37 @@ public class UpgradeAssistantApi extends DefaultTask {
         HttpEntity entity = response.getEntity();
         String content = EntityUtils.toString(entity);
         JSONObject json = new JSONObject(content);
-        String newIndexName = json.getString("newIndexName");
+        System.out.println("\n" + json + "\n");
         checkUpgradeAssistantReindex(api, key);
+    }
+
+    public void runUpgradeAssistantSystemIndicesMigration(RestApi api) throws IOException, InterruptedException {
+        String path = "/api/upgrade_assistant/system_indices_migration";
+        api.post(kbnBaseUrl + path, "", true);
+        checkUpgradeAssistantSystemIndicesMigration(api);
+    }
+
+    public void checkUpgradeAssistantSystemIndicesMigration(RestApi api) throws IOException, InterruptedException {
+        String path = "/api/upgrade_assistant/system_indices_migration";
+        long finish = System.currentTimeMillis() + 30000;
+        HttpResponse response = api.get(kbnBaseUrl + path);
+        HttpEntity entity = response.getEntity();
+        String content = EntityUtils.toString(entity);
+        JSONObject json = new JSONObject(content);
+        System.out.println("\n" + json + "\n");
+        String migrationNeeded = json.getString("migration_status");
+        while (! migrationNeeded.contains("NO_MIGRATION_NEEDED") && System.currentTimeMillis() < finish) {
+            response = api.get(kbnBaseUrl + path);
+            entity = response.getEntity();
+            content = EntityUtils.toString(entity);
+            json = new JSONObject(content);
+            System.out.println("\n" + json + "\n");
+            migrationNeeded = json.getString("migration_status");
+            Thread.sleep(CHECK_INTERVAL);
+        }
+        if (!migrationNeeded.contains("NO_MIGRATION_NEEDED")) {
+            throw new IOException("Migrating system indices failed!");
+        }
     }
 
     public void checkUpgradeAssistantReindex(RestApi api, String key) throws IOException, InterruptedException {

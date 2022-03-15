@@ -21,7 +21,7 @@ function downloadCloudSdk() {
     echo ".. Download cloud java sdk"
     local ghOwner="${GH_OWNER:?GH_OWNER needs to be set!}"
     local ghToken="${GH_TOKEN:?GH_TOKEN needs to be set!}"
-    local sdkVersion="2.10.0-SNAPSHOT"
+    local sdkVersion="2.12.0-SNAPSHOT"
     local releaseByTagUrl="https://api.github.com/repos/${ghOwner}/cloud-sdk-java/releases/tags/${sdkVersion}"
     releaseByTagResponse=$(curl -H "Authorization: token ${ghToken}" -s ${releaseByTagUrl})
     if [ $? -ne 0 ]; then
@@ -80,6 +80,15 @@ function downloadJson() {
     fi
 }
 
+function downloadMavenArtifacts() {
+    echo ".. Download maven artifacts"
+    httpClient=$(wget "$mavenRepo/org/apache/maven/maven-artifact/3.8.4/maven-artifact-3.8.4.jar")
+    if [ $? -ne 0 ]; then
+        echo "Error! Unable to get maven artifacts"
+        exit 1
+    fi
+}
+
 export PYTHONIOENCODING=utf8
 mavenRepo="https://repo.maven.apache.org/maven2"
 libsDir="buildSrc/libs"
@@ -89,3 +98,4 @@ downloadCloudSdk
 downloadVaultDriver
 downloadApacheHttpClientCore
 downloadJson
+downloadMavenArtifacts

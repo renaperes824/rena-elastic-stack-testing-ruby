@@ -50,7 +50,7 @@ public class RestApi {
     }
 
     public HttpResponse post(String path, String jsonStr, Boolean postToKbn) throws IOException, InterruptedException {
-        HttpResponse response = null;
+        HttpResponse response;
         for (int retries = 0;; retries++) {
             HttpPost postRequest = new HttpPost(path);
             postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
@@ -81,7 +81,7 @@ public class RestApi {
     }
 
     public HttpResponse put(String path, String jsonStr, Boolean postToKbn) throws IOException, InterruptedException {
-        HttpResponse response = null;
+        HttpResponse response;
         for (int retries = 0;; retries++) {
             HttpPut putRequest = new HttpPut(path);
             putRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
@@ -112,7 +112,7 @@ public class RestApi {
     }
 
     public HttpResponse get(String path) throws IOException, InterruptedException {
-        HttpResponse response = null;
+        HttpResponse response;
         for (int retries = 0;; retries++) {
             HttpGet getRequest = new HttpGet(path);
             getRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
@@ -136,7 +136,7 @@ public class RestApi {
     }
 
     public HttpResponse delete(String path, Boolean postToKbn) throws IOException, InterruptedException {
-        HttpResponse response = null;
+        HttpResponse response;
         for (int retries = 0;; retries++) {
             HttpDelete deleteRequest = new HttpDelete(path);
             deleteRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);

@@ -38,5 +38,6 @@ public class ShutdownEssDeployment extends DefaultTask {
                 System.err.println("Warning unable to delete file: " + filename);
             }
         }
+        System.out.println("Shutdown deployment " + deploymentId + " completed successfully");
     }
 }

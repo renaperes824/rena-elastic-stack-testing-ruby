@@ -5,6 +5,7 @@ import co.elastic.cloud.api.model.generated.*;
 import co.elastic.cloud.api.util.Waiter;
 import com.bettercloud.vault.VaultException;
 import io.swagger.client.ApiClient;
+import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
@@ -30,7 +31,10 @@ public class EditEssDeployment extends DefaultTask {
     public String kibanaUserSettings = null;
 
     @Input
-    public Boolean disableSamlLogin = false;
+    public boolean disableSamlLogin = false;
+
+    @Input
+    public boolean disableCspStrict = false;
 
     @TaskAction
     public void run() throws IOException, VaultException {
@@ -39,16 +43,20 @@ public class EditEssDeployment extends DefaultTask {
             throw new Error(this.getClass().getSimpleName() + ": deploymentId is required input");
         }
 
-        if ( (esUserSettings == null || esUserSettings.trim().isEmpty()) &&
+        if ((esUserSettings == null || esUserSettings.trim().isEmpty()) &&
                 (kibanaUserSettings == null || kibanaUserSettings.trim().isEmpty()) &&
-                ! disableSamlLogin) {
+                !disableSamlLogin) {
             throw new Error("Must specify settings");
         }
 
         CloudApi cloudApi = new CloudApi();
         ApiClient apiClient = cloudApi.getApiClient();
         DeploymentsApi deploymentsApi = new DeploymentsApi(apiClient);
+        editDeployment(deploymentsApi, cloudApi);
+        System.out.println("Edit deployment " + deploymentId + " completed successfully");
+    }
 
+    public void editDeployment(DeploymentsApi deploymentsApi, CloudApi cloudApi) {
         DeploymentGetResponse deploymentGetResponse = deploymentsApi.getDeployment(deploymentId,
                 false,
                 true,
@@ -74,6 +82,33 @@ public class EditEssDeployment extends DefaultTask {
                 true,
                 false);
         ElasticsearchClusterPlan esClusterPlan =  esResourceInfo.getInfo().getPlanInfo().getCurrent().getPlan();
+
+        String esVersion = esClusterPlan.getElasticsearch().getVersion();
+        ComparableVersion currentVersion = new ComparableVersion(esVersion);
+        ComparableVersion version7_11 = new ComparableVersion("7.11.0");
+        ComparableVersion version8_0 = new ComparableVersion("8.0.0");
+        boolean isPre7_10 = false;
+        boolean is8_x = false;
+        if (currentVersion.compareTo(version7_11) < 0) {
+            isPre7_10 = true;
+        }
+        if (currentVersion.compareTo(version8_0) >= 0) {
+            is8_x = true;
+        }
+
+        ElasticsearchClusterPlan esPlan;
+        if (isPre7_10) {
+            esPlan = esResourceInfo.getInfo().getPlanInfo().getCurrent().getPlan();
+        } else {
+            esPlan = deploymentGetResponse
+                    .getResources()
+                    .getElasticsearch()
+                    .get(0)
+                    .getInfo()
+                    .getPlanInfo()
+                    .getCurrent()
+                    .getPlan();
+        }
 
         KibanaResourceInfo kbnResourceInfo = deploymentsApi.getDeploymentKibResourceInfo(deploymentId,
                 cloudApi.getKbRefId(),
@@ -104,18 +139,26 @@ public class EditEssDeployment extends DefaultTask {
 
         DeploymentUpdateResources deploymentUpdateResources = new DeploymentUpdateResources();
 
+
         if (disableSamlLogin) {
-            String kbnId =  kbnResourceInfo.getId();
-            esUserSettings = "xpack.security.authc.realms.saml.cloud-saml-kibana-" + kbnId + ".enabled: false";
-            if (ensResourceInfo != null) {
-                String ensId =  ensResourceInfo.getId();
-                esUserSettings = esUserSettings + "\n" +
-                        "xpack.security.authc.realms.saml.cloud-saml-enterprise_search-" + ensId + ".enabled: false";
+            esUserSettings = "xpack.security.authc.realms.saml.cloud-saml-kibana.enabled: false";
+            if (! is8_x && ensResourceInfo != null) {
+                esUserSettings = esUserSettings +
+                        "\nxpack.security.authc.realms.saml.cloud-saml-enterprise_search.enabled: false";
+            }
+            if (is8_x) {
+                esUserSettings = esUserSettings + "\nxpack.security.authc.realms.saml.cloud-saml-kibana.order: 100";
+            }
+        }
+
+        if (disableCspStrict) {
+            if (is8_x) {
+                kibanaUserSettings = "csp.strict: false";
             }
         }
 
         if (esUserSettings != null) {
-            esClusterPlan.getElasticsearch().setUserSettingsYaml(esUserSettings);
+            esPlan.getElasticsearch().setUserSettingsYaml(esUserSettings);
         }
 
         if (kibanaUserSettings != null) {
@@ -126,7 +169,7 @@ public class EditEssDeployment extends DefaultTask {
                 .addElasticsearchItem(new ElasticsearchPayload()
                     .region(esResourceInfo.getRegion())
                     .refId(esResourceInfo.getRefId())
-                    .plan(esClusterPlan))
+                    .plan(esPlan))
                 .addKibanaItem(new KibanaPayload()
                     .elasticsearchClusterRefId(kbnResourceInfo.getElasticsearchClusterRefId())
                     .region(kbnResourceInfo.getRegion())
@@ -160,5 +203,4 @@ public class EditEssDeployment extends DefaultTask {
             cloudApi.waitForEnterpriseSearch(deploymentsApi, deploymentId);
         }
     }
-
 }
