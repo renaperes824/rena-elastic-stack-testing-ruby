@@ -196,7 +196,7 @@ public class EditEssDeployment extends DefaultTask {
                 false,
                 null);
 
-        Waiter.setWait(Duration.ofMinutes(20));
+        Waiter.setWait(Duration.ofMinutes(30));
         cloudApi.waitForElasticsearch(deploymentsApi, deploymentId);
         cloudApi.waitForKibana(deploymentsApi, deploymentId);
         if (ensPlan != null) {
