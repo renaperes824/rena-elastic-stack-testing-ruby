@@ -1901,6 +1901,13 @@ function run_upgrade_tests() {
 }
 
 # -----------------------------------------------------------------------------
+# Method update_cloud_provider
+# -----------------------------------------------------------------------------
+function update_cloud_provider() {
+  sed -i s/"providerName: 'basic',"/"providerName: 'cloud-basic',"/g x-pack/plugins/security_solution/cypress/tasks/login.ts
+}
+
+# -----------------------------------------------------------------------------
 # Method to run security solution upgrade tests
 # -----------------------------------------------------------------------------
 function run_security_solution_upgrade_tests() {
@@ -1909,6 +1916,7 @@ function run_security_solution_upgrade_tests() {
 
   run_ci_setup
   update_test_files
+  update_cloud_provider
 
   local _xpack_dir="$(cd x-pack; pwd)"
   echo_info "-> XPACK_DIR ${_xpack_dir}"
