@@ -13,6 +13,7 @@
         executable: /bin/bash
       register: auditbeat_process_id
       become: true
+      changed_when: false
     - name: Fail if auditbeat process is not running
       fail:
         msg: 'auditbeat is not running'

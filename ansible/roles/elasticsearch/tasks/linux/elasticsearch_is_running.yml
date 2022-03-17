@@ -12,6 +12,7 @@
       args:
         executable: /bin/bash
       register: elasticsearch_process_id
+      changed_when: false
     - name: Fail if elasticsearch process is not running
       fail:
         msg: 'Elasticsearch is not running'

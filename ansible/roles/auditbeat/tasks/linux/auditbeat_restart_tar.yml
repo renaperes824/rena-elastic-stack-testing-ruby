@@ -7,18 +7,23 @@
 
 - name: Restart auditbeat
   block:
-    - name: Stop auditbeat process
-      shell: "ps -efw | grep auditbeat | grep -v grep | awk '{print $2}' | xargs kill -SIGTERM"
+    - name: Get auditbeat process
+      shell: "ps -efw | grep auditbeat | grep -v grep | awk '{print $2}'"
       args:
         executable: /bin/bash
-      become: true
+      register: auditbeat_stop_process_id
+      changed_when: false
+    - name: Stop auditbeat process
+      command: "kill -SIGTERM {{ auditbeat_stop_process_id.stdout }}"
+      when: auditbeat_stop_process_id.stdout | length > 0
     - name: Start auditbeat process
       shell: '{{ auditbeat_exe }} -c {{ auditbeat_config_file }} &'
       args:
         executable: /bin/bash
-      become: true
+      changed_when: false
       async: 5
       poll: 0
     - name: Pause for a few seconds
       pause:
         seconds: 5
+  become: true

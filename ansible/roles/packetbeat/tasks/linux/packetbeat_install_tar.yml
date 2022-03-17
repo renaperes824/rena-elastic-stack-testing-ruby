@@ -24,3 +24,9 @@
     remote_src: true
   tags: install_packetbeat
   become: true
+
+- name: Remove packetbeat tar package
+  ansible.builtin.file:
+    path: '{{ packetbeat_package }}'
+    state: absent
+  become: true

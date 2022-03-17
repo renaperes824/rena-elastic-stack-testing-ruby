@@ -5,10 +5,16 @@
 # ----------------------------------------------------------------------------
 ---
 
+
 - name: Stop auditbeat process
-  shell: set -o pipefail && ps -efw | grep auditbeat | grep -v grep | awk '{print $2}' | xargs kill -SIGTERM
-  args:
-    executable: /bin/bash
+  block:
+    - name: Get auditbeat process
+      shell: "ps -efw | grep auditbeat | grep -v grep | awk '{print $2}'"
+      args:
+        executable: /bin/bash
+      register: auditbeat_stop_process_id
+      changed_when: false
+    - name: Stop auditbeat process
+      command: "kill -SIGTERM {{ auditbeat_stop_process_id.stdout }}"
+      when: auditbeat_stop_process_id.stdout | length > 0
   become: true
-  changed_when: false
-  failed_when: false

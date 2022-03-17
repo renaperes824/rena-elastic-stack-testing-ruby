@@ -7,12 +7,16 @@
 
 - name: Restart elasticsearch
   block:
-    - name: Stop elasticsearch process
-      shell: set -o pipefail && ps -efw | grep elasticsearch | grep -v grep | awk '{print $2}' | xargs kill -SIGTERM
+    - name: Get elasticsearch process
+      shell: "ps -efw | grep elasticsearch | grep -v grep | awk '{print $2}'"
       args:
         executable: /bin/bash
       failed_when: false
       changed_when: false
+      register: elasticsearch_stop_process_id
+    - name: Stop elasticsearch process
+      command: "kill -SIGTERM {{ elasticsearch_stop_process_id.stdout }}"
+      when: elasticsearch_stop_process_id.stdout | length > 0
     - name: Start elasticsearch process
       command: '{{ elasticsearch_exe }} -d -p {{ elasticsearch_pid_file }}'
       async: 5

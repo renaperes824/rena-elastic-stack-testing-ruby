@@ -13,6 +13,7 @@
         executable: /bin/bash
       register: apm_server_process_id
       become: true
+      changed_when: false
     - name: Fail if apm_server process is not running
       fail:
         msg: 'apm_server is not running'

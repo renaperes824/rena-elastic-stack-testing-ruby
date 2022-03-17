@@ -23,3 +23,9 @@
     dest: '{{ auditbeat_install_dir }}'
     remote_src: true
   become: true
+
+- name: Remove auditbeat tar package
+  ansible.builtin.file:
+    path: '{{ auditbeat_package }}'
+    state: absent
+  become: true

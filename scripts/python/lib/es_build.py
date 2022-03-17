@@ -256,8 +256,7 @@ class ElasticStackBuild:
             if r.status_code == 200:
                 return True
             if 'x-pack' not in url:
-                print('Invalid URL: ' + url)
-                print('Status code: ' + str(r.status_code))
+                print('[Warning] Invalid URL: ' + url + ' Status code: ' + str(r.status_code))
         except:
             raise Exception('Error! Unreachable URL: ' + url)
         return False

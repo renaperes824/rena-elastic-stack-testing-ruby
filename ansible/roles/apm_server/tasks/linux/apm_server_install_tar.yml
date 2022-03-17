@@ -23,3 +23,9 @@
     dest: '{{ apm_server_install_dir }}'
     remote_src: true
   become: true
+
+- name: Remove apm server tar package
+  ansible.builtin.file:
+    path: '{{ apm_server_package }}'
+    state: absent
+  become: true

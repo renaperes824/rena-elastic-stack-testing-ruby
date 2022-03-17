@@ -21,12 +21,14 @@
     - name: Install kibana x-pack
       command: '{{ kibana_plugin_exe }} install file://{{ xpack_kibana_package }}'
       register: xpack_kibana_output
+      changed_when: false
     - name: Debug
       debug:
         msg: '{{ xpack_kibana_output }}'
     - name: List kibana plugins
       command: '{{ kibana_plugin_exe }} list'
       register: list_plugins_after
+      changed_when: false
     - name: Fail if kibana x-pack is not installed
       fail:
         msg: 'xpack is not installed'

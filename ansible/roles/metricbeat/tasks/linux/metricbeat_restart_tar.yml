@@ -7,15 +7,20 @@
 
 - name: Restart metricbeat
   block:
-    - name: Stop metricbeat process
-      shell: "ps -efw | grep metricbeat | grep -v grep | awk '{print $2}' | xargs kill -SIGTERM"
+    - name: Get metricbeat process
+      shell: "ps -efw | grep metricbeat | grep -v grep | awk '{print $2}'"
       args:
         executable: /bin/bash
-      become: true
+      register: metricbeat_stop_process_id
+      changed_when: false
+    - name: Stop metricbeat process
+      command: "kill -SIGTERM {{ metricbeat_stop_process_id.stdout }}"
+      when: metricbeat_stop_process_id.stdout | length > 0
     - name: Start metricbeat process
       shell: '{{ metricbeat_exe }} -c {{ metricbeat_config_file }} &'
       args:
         executable: /bin/bash
       async: 5
       poll: 0
-      become: true
+      changed_when: false
+  become: true

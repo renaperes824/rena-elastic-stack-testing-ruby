@@ -50,3 +50,11 @@
       xpack.security.http.ssl.certificate: {{ elasticsearch_xpack_config_dir }}/node/node.crt
       xpack.security.http.ssl.certificate_authorities: [ '{{ elasticsearch_xpack_config_dir }}/ca/ca.crt' ]
   become: '{{ elasticsearch_run_as_root | default(omit) }}'
+
+- name: Create jvm.options
+  copy:
+    mode: 0660
+    dest: '{{ elasticsearch_config_dir }}/jvm.options.d/jvm.options'
+    content: |
+      -Xms1g
+      -Xmx1g

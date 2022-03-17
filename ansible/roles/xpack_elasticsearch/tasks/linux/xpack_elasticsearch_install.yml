@@ -22,12 +22,14 @@
     - name: Install elasticsearch x-pack
       command: '{{ elasticsearch_plugin_exe }} install file://{{ xpack_elasticsearch_package }} --batch'
       register: xpack_elasticsearch_output
-    - name: Pring debug
+      changed_when: false
+    - name: Print debug
       debug:
         msg: '{{ xpack_elasticsearch_output }}'
     - name: List elasticsearch plugins
       command: '{{ elasticsearch_plugin_exe }} list'
       register: list_plugins_after
+      changed_when: false
     - name: Fail if elasticsearch x-pack is not installed
       fail:
       when: '"x-pack" not in list_plugins_after.stdout_lines'

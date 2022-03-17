@@ -16,9 +16,11 @@
     - name: Remove elasticsearch x-pack
       command: '{{ elasticsearch_plugin_exe }} remove x-pack'
       register: output
+      changed_when: false
     - name: List elasticsearch plugins
       command: "{{ elasticsearch_plugin_exe }} list"
       register: list_plugins_after
+      changed_when: false
     - name: Fail if elasticsearch x-pack is installed
       fail:
         msg: 'x-pack is installed'

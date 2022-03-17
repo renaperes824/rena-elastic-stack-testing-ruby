@@ -12,6 +12,7 @@
       args:
         executable: /bin/bash
       become: true
+      changed_when: false
       register: packetbeat_process_id
     - name: Fail if packetbeat process is not running
       fail:

@@ -23,3 +23,9 @@
     dest: '{{ filebeat_install_dir }}'
     remote_src: true
   become: true
+
+- name: Remove filebeat tar package
+  ansible.builtin.file:
+    path: '{{ filebeat_package }}'
+    state: absent
+  become: true

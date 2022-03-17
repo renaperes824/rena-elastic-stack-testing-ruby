@@ -21,3 +21,8 @@
     src: '{{ logstash_package }}'
     dest: '{{ logstash_install_dir }}'
     remote_src: true
+
+- name: Remove logstash tar package
+  ansible.builtin.file:
+    path: '{{ logstash_package }}'
+    state: absent

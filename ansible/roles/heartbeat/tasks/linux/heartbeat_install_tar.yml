@@ -23,3 +23,9 @@
     dest: '{{ heartbeat_install_dir }}'
     remote_src: true
   become: true
+
+- name: Remove heartbeat tar package
+  ansible.builtin.file:
+    path: '{{ heartbeat_package }}'
+    state: absent
+  become: true

@@ -21,3 +21,8 @@
     src: '{{ kibana_package }}'
     dest: '{{ kibana_install_dir }}'
     remote_src: true
+
+- name: Remove kibana tar package
+  ansible.builtin.file:
+    path: '{{ kibana_package }}'
+    state: absent

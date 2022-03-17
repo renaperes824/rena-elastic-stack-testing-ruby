@@ -22,12 +22,14 @@
     - name: Install logstash x-pack
       command: '{{ logstash_plugin_exe }} install file://{{ xpack_logstash_package }}'
       register: xpack_logstash_output
+      changed_when: false
     - name: Print debug
       debug:
         msg: '{{ xpack_logstash_output }}'
     - name: List logstash plugins
       command: '{{ logstash_plugin_exe }} list'
       register: list_plugins_after
+      changed_when: false
     - name: Fail if logstash x-pack is not installed
       fail:
       when: '"x-pack" not in list_plugins_after.stdout_lines'

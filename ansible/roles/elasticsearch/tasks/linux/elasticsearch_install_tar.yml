@@ -21,3 +21,8 @@
     src: '{{ elasticsearch_package }}'
     dest: '{{ elasticsearch_install_dir }}'
     remote_src: true
+
+- name: Remove elasticsearch tar package
+  ansible.builtin.file:
+    path: '{{ elasticsearch_package }}'
+    state: absent

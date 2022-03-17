@@ -12,6 +12,7 @@
       args:
         executable: /bin/bash
       register: logstash_process_id
+      changed_when: false
     - name: Fail if logstash process is not running
       fail:
         msg: 'logstash is not running'

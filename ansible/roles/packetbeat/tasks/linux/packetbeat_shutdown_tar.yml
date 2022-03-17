@@ -6,9 +6,15 @@
 ---
 
 - name: Stop packetbeat process
-  shell: set -o pipefail && ps -efw | grep packetbeat | grep -v grep | awk '{print $2}' | xargs kill -SIGTERM
-  args:
-    executable: /bin/bash
+  block:
+    - name: Get packetbeat process
+      shell: "ps -efw | grep packetbeat | grep -v grep | awk '{print $2}'"
+      args:
+        executable: /bin/bash
+      register: packetbeat_stop_process_id
+      changed_when: false
+      failed_when: false
+    - name: Stop packetbeat process
+      command: "kill -SIGTERM {{ packetbeat_stop_process_id.stdout }}"
+      when: packetbeat_stop_process_id.stdout | length > 0
   become: true
-  changed_when: false
-  failed_when: false

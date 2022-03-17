@@ -7,15 +7,20 @@
 
 - name: Restart packetbeat
   block:
-    - name: Stop packetbeat process
-      shell: "ps -efw | grep packetbeat | grep -v grep | awk '{print $2}' | xargs kill -SIGTERM"
+    - name: Get packetbeat process
+      shell: "ps -efw | grep packetbeat | grep -v grep | awk '{print $2}'"
       args:
         executable: /bin/bash
-      become: true
+      register: packetbeat_stop_process_id
+      changed_when: false
+    - name: Stop packetbeat process
+      command: "kill -SIGTERM {{ packetbeat_stop_process_id.stdout }}"
+      when: packetbeat_stop_process_id.stdout | length > 0
     - name: Start packetbeat process
       shell: '{{ packetbeat_exe }} -c {{ packetbeat_config_file }} &'
       args:
         executable: /bin/bash
       async: 5
       poll: 0
-      become: true
+      changed_when: false
+  become: true

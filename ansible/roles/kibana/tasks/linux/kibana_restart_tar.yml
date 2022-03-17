@@ -7,13 +7,19 @@
 
 - name: Restart kibana
   block:
-    - name: Stop kibana process
-      shell: "ps -efw | grep kibana | grep -v grep | awk '{print $2}' | xargs kill -SIGTERM"
+    - name: Get kibana process
+      shell: "ps -efw | grep kibana | grep -v grep | awk '{print $2}'"
       args:
         executable: /bin/bash
+      register: kibana_stop_process_id
+      changed_when: false
+    - name: Stop kibana process
+      command: "kill -SIGTERM {{ kibana_stop_process_id.stdout }}"
+      when: kibana_stop_process_id.stdout | length > 0
     - name: Start kibana process
       shell: '{{ kibana_exe }} &'
       args:
         executable: /bin/bash
       async: 5
       poll: 0
+      changed_when: false

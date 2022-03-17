@@ -23,3 +23,9 @@
     dest: '{{ metricbeat_install_dir }}'
     remote_src: true
   become: true
+
+- name: Remove metricbeat tar package
+  ansible.builtin.file:
+    path: '{{ metricbeat_package }}'
+    state: absent
+  become: true

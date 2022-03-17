@@ -6,9 +6,15 @@
 ---
 
 - name: Stop elasticsearch process
-  shell: set -o pipefail && ps -efw | grep elasticsearch | grep -v grep | awk '{print $2}' | xargs kill -SIGTERM
-  args:
-    executable: /bin/bash
-  failed_when: false
-  changed_when: false
+  block:
+    - name: Get elasticsearch process
+      shell: "ps -efw | grep elasticsearch | grep -v grep | awk '{print $2}'"
+      args:
+        executable: /bin/bash
+      register: elasticsearch_stop_process_id
+      failed_when: false
+      changed_when: false
+    - name: Stop elasticsearch process
+      command: "kill -SIGTERM {{ elasticsearch_stop_process_id.stdout }}"
+      when: elasticsearch_stop_process_id.stdout | length > 0
   tags: stop_elasticsearch

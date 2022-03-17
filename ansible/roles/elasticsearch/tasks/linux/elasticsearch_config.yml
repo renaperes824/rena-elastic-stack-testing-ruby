@@ -62,3 +62,11 @@
         content: '{{ internal_elasticsearch_config_params }}'
       become: '{{ elasticsearch_run_as_root | default(omit) }}'
   when: elasticsearch_config_params_strict is not defined or not elasticsearch_config_params_strict
+
+- name: Create jvm.options
+  copy:
+    mode: 0660
+    dest: '{{ elasticsearch_config_dir }}/jvm.options.d/jvm.options'
+    content: |
+      -Xms1g
+      -Xmx1g

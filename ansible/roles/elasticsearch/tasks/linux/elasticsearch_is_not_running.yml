@@ -12,6 +12,7 @@
       args:
         executable: /bin/bash
       register: elasticsearch_process_id
+      changed_when: false
       retries: 5
       delay: 3
       until: elasticsearch_process_id.stdout | length == 0
