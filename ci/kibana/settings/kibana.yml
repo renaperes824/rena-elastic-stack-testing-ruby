@@ -1,5 +1,4 @@
 data.search.aggs.shardDelay.enabled: true
-home.disableWelcomeScreen: true
 savedObjects.maxImportPayloadBytes: 10485760
 server.maxPayload: 1679958
 server.publicBaseUrl: "https://localhost:5601"
