@@ -329,7 +329,7 @@ run_vm() {
   check_env_vm
   check_env_ansible_playbook
   # If variable is empty, return
-  if [ -z $AIT_VM ]; then
+  if [ -z $AIT_VM ] || [ ! -z $AIT_HOST_INVENTORY_DIR ]; then
     return
   fi
   # If not a valid file, throw an error and exit
@@ -395,11 +395,10 @@ run_ansible_playbook() {
     on_fail="exit"
   fi
   check_env_ansible_playbook
-  # If running in Jenkins or AIT_VM is not empty or AIT_ANSIBLE_PLAYBOOK is empty, return
+  # If running in Jenkins or AIT_HOST_INVENTORY_DIR is empty or AIT_ANSIBLE_PLAYBOOK is empty, return
   running_in_jenkins
   RC=$?
-  if [ $RC == 1 ] ||
-     [ ! -z $AIT_VM ] || [ -z $AIT_ANSIBLE_PLAYBOOK ]; then
+  if [ $RC == 1 ] || [ -z $AIT_ANSIBLE_PLAYBOOK ] || [ -z $AIT_HOST_INVENTORY_DIR ]; then
     return
   fi
   # If AIT_ANSIBLE_PLAYBOOK is not a file, throw error and exit

@@ -115,6 +115,7 @@ Vagrant.configure("2") do |config|
   config.vm.provider "docker" do |d|
     d.image = DOCKER_IMAGE_NAME
     d.has_ssh = true
+    d.privileged = true
     d.create_args = ['--cpuset-cpus=' + VAGRANT_CPU]
     d.create_args = ['--memory=' + VAGRANT_MEM]
   end

@@ -15,6 +15,7 @@ More details can be found:
 - Ansible is used to install and configure the software products under test
 - Python, Pytest and Selenium/Webium will be used for the test framework
 - Automated vagrant provider support for virtualbox and docker
+- Cloud testing uses Gradle/Java
 
 ## Environment Setup
 
@@ -26,14 +27,13 @@ More details can be found:
 
 * Install Vagrant Provider
 
-  Install a vagrant provider either virtualbox (default) or docker.
-  For M1 hardware virtualbox is not supported.
+  Virtualbox or Docker
+  For M1 hardware Virtualbox is not supported.
 
   * Install Latest Virtualbox
-  https://www.virtualbox.org/wiki/Downloads
-
+    * https://www.virtualbox.org/wiki/Downloads
   * Install Latest Docker
-  https://docs.docker.com/get-docker/
+    * https://docs.docker.com/get-docker/
 
 ## Quick Start
 Running a playbook for provisioning
@@ -45,20 +45,32 @@ Running a playbook for provisioning
   git checkout 7.17
   export ES_BUILD_URL=artifacts.elastic.co/7.17.0
 
-  **Note: if running with Docker provider, the following is required:
+  **Note: Docker provider, the following is required:
   export VAGRANT_DEFAULT_PROVIDER=docker
 
-  **Note: if running on M1 hardware, the following is required:
+  **Note: On M1 hardware, seting docker provider and following is required:
   export ES_BUILD_ARCH=arm64
   ```
 4. Run the build: `./buildenv.sh`
 
-For more options see file: `CONTRIBUTING.md`
+For more options see file: `buildenv.sh`
+
+## Accessing Stack
+
+After successful installation, endpoints can be access as follows:
+
+```
+Elasticsearch: https://localhost:9200
+Kibana: https://localhost:5601
+User: elastic
+Password: changeme
+```
 
 ## Currently Supported
 
   - Machine: `Vagrant, Virtualbox or Docker`
   - Machine OS: `Ubuntu 18 or Ubuntu 20`
+  - Architecture: `x86_64 or arm64`
   - Node: `Single`
   - Product Versions: `5.6.x, 6.x, 7.x, 8.x`
   - Product Packages: `tar.gz`
