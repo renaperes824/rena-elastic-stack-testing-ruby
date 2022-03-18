@@ -48,7 +48,7 @@ Running a playbook for provisioning
   **Note: if running with Docker provider, the following is required:
   export VAGRANT_DEFAULT_PROVIDER=docker
 
-  **Note: if running on M1 hardoware, the following is required:
+  **Note: if running on M1 hardware, the following is required:
   export ES_BUILD_ARCH=arm64
   ```
 4. Run the build: `./buildenv.sh`
