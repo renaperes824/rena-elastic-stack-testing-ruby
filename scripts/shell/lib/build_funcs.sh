@@ -340,7 +340,6 @@ run_vm() {
 
   # Load docker image, if provider is selected
   if [ ! -z $VAGRANT_DEFAULT_PROVIDER ] && [ "$VAGRANT_DEFAULT_PROVIDER" == "docker" ]; then
-    echo_info "Get docker image"
     base_url="https://github.com/elastic/elastic-stack-testing/releases/download"
     tag="estf-vagrant-docker-v1.0"
     image_name="estf-vagrant-docker.tar.gz"
@@ -349,7 +348,8 @@ run_vm() {
       image_name="estf-vagrant-docker-arm64.tar.gz"
     fi
     docker_package="${base_url}/${tag}/${image_name}"
-    wget $docker_package
+    echo_info "Get docker image: ${docker_package}"
+    curl -sL ${docker_package} -o $image_name
     if [ $? -ne 0 ]; then
       echo_error "Unable to get url: ${docker_package}"
     fi
