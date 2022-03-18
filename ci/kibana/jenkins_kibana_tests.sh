@@ -1901,13 +1901,6 @@ function run_upgrade_tests() {
 }
 
 # -----------------------------------------------------------------------------
-# Method update_cloud_provider
-# -----------------------------------------------------------------------------
-function update_cloud_provider() {
-  sed -i s/"providerName: 'basic',"/"providerName: 'cloud-basic',"/g x-pack/plugins/security_solution/cypress/tasks/login.ts
-}
-
-# -----------------------------------------------------------------------------
 # Method to run security solution upgrade tests
 # -----------------------------------------------------------------------------
 function run_security_solution_upgrade_tests() {
@@ -1916,7 +1909,6 @@ function run_security_solution_upgrade_tests() {
 
   run_ci_setup
   update_test_files
-  update_cloud_provider
 
   local _xpack_dir="$(cd x-pack; pwd)"
   echo_info "-> XPACK_DIR ${_xpack_dir}"
@@ -1930,13 +1922,18 @@ function run_security_solution_upgrade_tests() {
     nodeOpts="--no-warnings "
   fi
 
+  esVersion=""
+  if [ ! -z $ESTF_FTR_ES_VERSION ]; then
+    esVersion=" --es-version $ESTF_FTR_ES_VERSION "
+  fi
+
   failures=0
   for i in $(seq 1 1 $maxRuns); do
     export ESTF_RUN_NUMBER=$i
     update_report_name "test/security_solution_cypress/upgrade_config.ts"
 
     echo_info " -> Running upgrade security solution tests, run $i of $maxRuns"
-    eval node $nodeOpts ../scripts/functional_test_runner \
+    eval node $nodeOpts ../scripts/functional_test_runner $esVersion \
           --config test/security_solution_cypress/upgrade_config.ts
 
     if [ $? -ne 0 ]; then
