@@ -340,24 +340,28 @@ run_vm() {
 
   # Load docker image, if provider is selected
   if [ ! -z $VAGRANT_DEFAULT_PROVIDER ] && [ "$VAGRANT_DEFAULT_PROVIDER" == "docker" ]; then
-    base_url="https://github.com/elastic/elastic-stack-testing/releases/download"
-    tag="estf-vagrant-docker-v1.0"
-    image_name="estf-vagrant-docker.tar.gz"
-    if [ ! -z $ES_BUILD_ARCH ] && [ "$ES_BUILD_ARCH" == "arm64" ]; then
-      tag="estf-vagrant-docker-arm64-v1.0"
-      image_name="estf-vagrant-docker-arm64.tar.gz"
+    if [ -z $(docker images -q estf-vagrant-docker:1.0) ] ||
+      ([ ! -z $VAGRANT_FORCE_DOCKER_DOWNLOAD ] && [ $VAGRANT_FORCE_DOCKER_DOWNLOAD == "true" ]); then
+      echo "Download vagrant docker image..."
+      base_url="https://github.com/elastic/elastic-stack-testing/releases/download"
+      tag="estf-vagrant-docker-v1.0"
+      image_name="estf-vagrant-docker.tar.gz"
+      if [ ! -z $ES_BUILD_ARCH ] && [ "$ES_BUILD_ARCH" == "arm64" ]; then
+        tag="estf-vagrant-docker-arm64-v1.0"
+        image_name="estf-vagrant-docker-arm64.tar.gz"
+      fi
+      docker_package="${base_url}/${tag}/${image_name}"
+      echo_info "Get docker image: ${docker_package}"
+      curl -sL ${docker_package} -o $image_name
+      if [ $? -ne 0 ]; then
+        echo_error "Unable to get url: ${docker_package}"
+      fi
+      docker load < $image_name
+      if [ $? -ne 0 ]; then
+        echo_error "Failed to docker load: ${image_name}"
+      fi
+      rm $image_name
     fi
-    docker_package="${base_url}/${tag}/${image_name}"
-    echo_info "Get docker image: ${docker_package}"
-    curl -sL ${docker_package} -o $image_name
-    if [ $? -ne 0 ]; then
-      echo_error "Unable to get url: ${docker_package}"
-    fi
-    docker load < $image_name
-    if [ $? -ne 0 ]; then
-      echo_error "Failed to docker load: ${image_name}"
-    fi
-    rm $image_name
   fi
 
   # Sync folder
