@@ -14,6 +14,8 @@ import java.nio.file.Paths;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -47,6 +49,11 @@ public class UpgradeAssistantApi extends DefaultTask {
     final int REINDEX_TIMEOUT = 60000;
     final int CHECK_INTERVAL = 5000;
 
+    private boolean readyForUpgrade = false;
+    private boolean needsSystemMigration = true;
+    private boolean hasEsDeprecations = true;
+    private boolean hasKbnDeprecations = true;
+
     @TaskAction
     public void run() throws IOException, InterruptedException {
 
@@ -71,12 +78,31 @@ public class UpgradeAssistantApi extends DefaultTask {
             } else if (majorVersion == 6) {
                 runMigrationAssistant6(api);
             } else if (majorVersion == 7) {
-                if (!readyForUpgrade(api)) {
-                    runMigrationAssistant7(api);
-                    runUpgradeAssistantSystemIndicesMigration(api);
-                    runEsDeprecations(api);
-                    runKbnDeprecations(api);
-                    if (!readyForUpgrade(api)) {
+                runUpgradeStatus(api);
+                System.out.println("Ready for upgrade: " + readyForUpgrade);
+                System.out.println("Needs system migration: " + needsSystemMigration);
+                System.out.println("Has Elasticsearch Deprecations: " + hasEsDeprecations);
+                System.out.println("Has Kibana Deprecations: " + hasKbnDeprecations);
+                if (!readyForUpgrade) {
+                    if (needsSystemMigration) {
+                        System.out.println("Running system indices migration");
+                        runMigrationAssistant7(api);
+                        runUpgradeAssistantSystemIndicesMigration(api);
+                    }
+                    if (hasEsDeprecations) {
+                        System.out.println("Resolving ES deprecations");
+                        runEsDeprecations(api);
+                    }
+                    if (hasKbnDeprecations) {
+                        System.out.println("Resolving KBN deprecations");
+                        runKbnDeprecations(api);
+                    }
+                    runUpgradeStatus(api);
+                    System.out.println("Ready for upgrade: " + readyForUpgrade);
+                    System.out.println("Needs system migration: " + needsSystemMigration);
+                    System.out.println("Has Elasticsearch Deprecations: " + hasEsDeprecations);
+                    System.out.println("Has Kibana Deprecations: " + hasKbnDeprecations);
+                    if (!readyForUpgrade) {
                         throw new IOException("System is not ready for upgrade!");
                     }
                 }
@@ -173,10 +199,23 @@ public class UpgradeAssistantApi extends DefaultTask {
         JSONArray cluster_settings = json.getJSONArray("cluster_settings");
         JSONArray node_settings = json.getJSONArray("node_settings");
         JSONObject index_settings = json.getJSONObject("index_settings");
-        if (! (cluster_settings.isEmpty() && node_settings.isEmpty()) ) {
+        if (!node_settings.isEmpty()) {
+            System.out.println("Node settings: " + node_settings);
+            for (int i = 0; i < node_settings.length(); i++) {
+                String level = node_settings.getJSONObject(i).getString("level");
+                if (! level.equals("warning")) {
+                    throw new IOException("There are deprecations in node settings");
+                }
+            }
+        }
+        if (!cluster_settings.isEmpty()) {
             System.out.println("Cluster settings: " + cluster_settings);
-            System.out.println("Node settings: " + node_settings.toString());
-            throw new IOException("There are deprecations in cluster and/or node settings");
+            for (int i = 0; i < cluster_settings.length(); i++) {
+                String level = cluster_settings.getJSONObject(i).getString("level");
+                if (! level.equals("warning")) {
+                    throw new IOException("There are deprecations in cluster settings");
+                }
+            }
         }
         Iterator<String> keys = index_settings.keys();
         while (keys.hasNext()) {
@@ -219,14 +258,30 @@ public class UpgradeAssistantApi extends DefaultTask {
         }
     }
 
-    public Boolean readyForUpgrade(RestApi api) throws IOException, InterruptedException {
+    public void runUpgradeStatus(RestApi api) throws IOException, InterruptedException {
         String path = "/api/upgrade_assistant/status";
         HttpResponse response = api.get(kbnBaseUrl + path);
         HttpEntity entity = response.getEntity();
         String content = EntityUtils.toString(entity);
         JSONObject json = new JSONObject(content);
         System.out.println("\n" + json + "\n");
-        return json.getBoolean("readyForUpgrade");
+        readyForUpgrade = json.getBoolean("readyForUpgrade");
+        String details = json.getString("details");
+        Pattern pattern = Pattern.compile("You have ([0-9]+) system indices that must be migrated and " +
+                "([0-9]+) Elasticsearch deprecation issues and " +
+                "([0-9]+) Kibana deprecation issues");
+        Matcher matcher = pattern.matcher(details);
+        if( matcher.find()) {
+            if (Integer.parseInt(matcher.group(1)) == 0) {
+                needsSystemMigration = false;
+            }
+            if (Integer.parseInt(matcher.group(2)) == 0) {
+                hasEsDeprecations = false;
+            }
+            if (Integer.parseInt(matcher.group(3)) == 0) {
+                hasKbnDeprecations = false;
+            }
+        }
     }
 
     public void runUpgradeAssistantReindex(RestApi api, String key) throws IOException, InterruptedException {
