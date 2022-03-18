@@ -158,12 +158,18 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
             test_failures.add(kibanaTests.getRc())
         }
         if ('security-solutions' in test_suites || 'all' in test_suites) {
+
+            def auth = 'https://' + (String) rootProject.props.es_username + ":" +
+                    (String) rootProject.props.es_password + "@"
+            def kbn_url_auth = auth + kibanaUri?.getHost() + ":" +  kibanaUri?.getPort()
+            def es_url_auth = auth + elasticUri?.getHost() + ":" + elasticUri?.getPort()
+
             def envList2 = []
             envList2.addAll(envList)
             envList2.add("TEST_ES_USER=" + (String) rootProject.props.es_username)
-            envList2.add("TEST_KIBANA_URL=" + kibanaUri)
-            envList2.add("TEST_ES_URL=" + elasticUri)
-            envList2.add("ORIGINAL_VERSION=" + (String) rootProject.createVersion )
+            envList2.add("ORIGINAL_VERSION=" + (String) rootProject.createVersion)
+            envList2.add("TEST_KIBANA_URL=" + kbn_url_auth)
+            envList2.add("TEST_ES_URL=" + es_url_auth)
 
             println "************ KIBANA TEST ENVIRONMENT VARS ************"
             println envList2
