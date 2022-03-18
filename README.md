@@ -1,13 +1,9 @@
 # elastic-stack-testing
 
-[WIP] Elastic Stack Testing Framework (ESTF)
+Elastic Stack Testing Framework (ESTF)
 
-This project is a work in progress to provide a common automation framework for elastic stack testing.
-<br>The goal is to provide a powerful, easy to use and maintain framework to build test suites.  
-<br>One main project for this framework is the development of a product integration test suite.
-  - Automated Integration Testing (AIT)
-
-This project is in early stage development and many things are still being ironed out.  
+This project provides a common automation framework for elastic stack testing.
+<br>The goal is to provide a powerful, easy to use and maintain framework to build test suites.
 
 More details can be found:
 - [Wiki](https://github.com/elastic/elastic-stack-testing/wiki)
@@ -15,53 +11,57 @@ More details can be found:
 
 ## Infrastructure
 
- - Software products under test: Elasticsearch, Kibana, Logstash, Beats, Cloud, APM, ML
- - Ansible is used to install and configure the software products under test
- - Python, Pytest and Selenium/Webium will be used for the test framework
- - Automated virtual machine support for Vagrant boxes, AWS EC2 and GCP
+- Software products under test: Elasticsearch, Kibana, Logstash, Beats, Cloud, APM, ML
+- Ansible is used to install and configure the software products under test
+- Python, Pytest and Selenium/Webium will be used for the test framework
+- Automated vagrant provider support for virtualbox and docker
 
 ## Environment Setup
 
- * Install Python 3
+* Install Latest Python 3
+  * https://www.python.org/downloads/
 
-   In this repo see version file: [**.python-version**](https://github.com/elastic/elastic-stack-testing/blob/master/.python-version)
+* Install Latest Vagrant
+  * https://www.vagrantup.com/downloads.html
 
-   https://www.python.org/downloads/
+* Install Vagrant Provider
 
- * Install Vagrant
+  Install a vagrant provider either virtualbox (default) or docker.
+  For M1 hardware virtualbox is not supported.
 
-   In this repo see version: [**.vagrant-version**](https://github.com/elastic/elastic-stack-testing/blob/master/.vagrant-version)
+  * Install Latest Virtualbox
+  https://www.virtualbox.org/wiki/Downloads
 
-   https://www.vagrantup.com/downloads.html
-
- * Install Virtualbox
-
-   In this repo see version file: [**.virtualbox-version**](https://github.com/elastic/elastic-stack-testing/blob/master/.virtualbox-version)
-
-   https://www.virtualbox.org/wiki/Downloads
+  * Install Latest Docker
+  https://docs.docker.com/get-docker/
 
 ## Quick Start
 Running a playbook for provisioning
 
-1. Clone repository: `git clone https://github.com/elastic/elastic-stack-testing.git` 
+1. Clone repository: `git clone https://github.com/elastic/elastic-stack-testing.git`
 2. `cd elastic-stack-testing`
 3. Select a build URL and switch to the appropriate branch, for example:
-   ```
-   git checkout 7.16
-   export ES_BUILD_URL=artifacts.elastic.co/7.16.3
-   ```
+  ```
+  git checkout 7.17
+  export ES_BUILD_URL=artifacts.elastic.co/7.17.0
+
+  **Note: if running with Docker provider, the following is required:
+  export VAGRANT_DEFAULT_PROVIDER=docker
+
+  **Note: if running on M1 hardoware, the following is required:
+  export ES_BUILD_ARCH=arm64
+  ```
 4. Run the build: `./buildenv.sh`
 
 For more options see file: `CONTRIBUTING.md`
 
 ## Currently Supported
 
-  - Machine: `Vagrant, Virtualbox`
-  - Machine OS: `Ubuntu-16.04-x86_64`
+  - Machine: `Vagrant, Virtualbox or Docker`
+  - Machine OS: `Ubuntu 18 or Ubuntu 20`
   - Node: `Single`
   - Product Versions: `5.6.x, 6.x, 7.x, 8.x`
   - Product Packages: `tar.gz`
-  - Product Types: `Regular and OSS`  
 
 ## Cloud Environment
 
@@ -82,8 +82,8 @@ For more options see file: `CONTRIBUTING.md`
 
 ## Authors
 
-  Elastic Stack Testing Framework created by [Liza Dayoub](https://github.com/liza-mae).  
-  
+  Elastic Stack Testing Framework created by [Liza Dayoub](https://github.com/liza-mae).
+
   Also see a list of [contributors](https://github.com/elastic/elastic-stack-testing/graphs/contributors) who participated in the project.
 
 ## License

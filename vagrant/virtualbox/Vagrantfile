@@ -1,7 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 #
-# Vagrant with Ansible configuration
+# Vagrant virtualbox with Ansible configuration
 #
 # See https://app.vagrantup.com/elastic for boxes available
 #

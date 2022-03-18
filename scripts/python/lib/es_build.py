@@ -224,12 +224,13 @@ class ElasticStackBuild:
                           'linux rpm 64': 'x86_64',
                           'linux tar.gz 32': 'linux-x86',
                           'linux tar.gz 64': 'linux-x86_64',
+                          'linux tar.gz arm64': 'linux-arm64',
                           'darwin tar.gz 64': 'darwin-x86_64',
                           'windows zip 32': 'windows-x86',
                           'windows zip 64': 'windows-x86_64'}
 
         ext = self.extension
-        r = re.search(r'^(windows|darwin|linux)*[\s|\-|\_]*(64|32){1}[\s|\-|\_]*[bit]*$', self._env_architecture.lower())
+        r = re.search(r'^(windows|darwin|linux)*[\s|\-|\_]*(64|32|arm64){1}[\s|\-|\_]*[bit]*$', self._env_architecture.lower())
         if not hasattr(r, 'group') and ext in self._valid_windows_extensions:
             return translate_arch.get('windows zip 64', '')
         if not hasattr(r, 'group') and ext not in self._valid_windows_extensions:
@@ -302,6 +303,8 @@ class ElasticStackBuild:
                 arch = self.architecture
                 if name == 'kibana':
                     arch = re.sub('windows-x86_64', 'windows-x86', arch)
+                if 'arm64' in arch and (name == 'kibana' or name == 'elasticearch' or name == 'logstash'):
+                    arch = re.sub('linux-arm64', 'linux-aarch64', arch)
                 if server in self._public_servers:
                     url = server + '/downloads/' + parent_name + '/' + name + '-' + version + '-' +  arch + '.' + ext
                 elif self._env_oss:

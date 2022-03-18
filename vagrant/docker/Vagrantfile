@@ -1,0 +1,138 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+#
+# Vagrant docker provider with ansible configuration
+#
+# Author: Liza Dayoub
+#
+# --
+
+VAGRANTFILE_API_VERSION = "2"
+
+module OS
+  def OS.windows?
+    (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
+  end
+end
+
+$script = <<-SCRIPT
+  # update limits
+  LINE1="*        hard    nofile          65536"
+  LINE2="*        soft    nofile          65536"
+  FILE="/etc/security/limits.conf"
+  grep -qF "$LINE1" "$FILE" || echo "$LINE1" >> "$FILE"
+  grep -qF "$LINE2" "$FILE" || echo "$LINE2" >> "$FILE"
+
+  # update vm map count
+  sysctl -w vm.max_map_count=262144
+SCRIPT
+
+# Default variables
+
+# Vagrant Info
+VAGRANT_DEFAULT_MEM = "4g"
+VAGRANT_DEFAULT_CPU = "1"
+
+# Host Ports
+ELASTICSEARCH_DEFAULT_PORT = 9200
+KIBANA_DEFAULT_PORT = 5601
+
+# Guest Ports
+ELASTICSEARCH_GUEST_PORT = 9200
+KIBANA_GUEST_PORT = 5601
+
+# Ansible Playbook
+ANSIBLE_DEFAULT_PLAYBOOK = "pass_thru"
+ANSIBLE_DEFAULT_ES_VARS = ""
+
+# Docker image type
+DOCKER_DEFAULT_IMAGE_NAME = "estf-vagrant-docker:1.0"
+
+# Environment variables
+
+# note: have to do if/else since you get warning messages if you init vars first, not sure why
+
+if ENV['ES_BUILD_VAGRANT_MEM']
+  VAGRANT_MEM = ENV['ES_BUILD_VAGRANT_MEM']
+else
+  VAGRANT_MEM = VAGRANT_DEFAULT_MEM
+end
+
+if ENV['ES_BUILD_VAGRANT_CPU']
+  VAGRANT_CPU = ENV['ES_BUILD_VAGRANT_CPU']
+else
+  VAGRANT_CPU = VAGRANT_DEFAULT_CPU
+end
+
+if ENV['AIT_ELASTICSEARCH_PORT']
+  ELASTICSEARCH_PORT = ENV['AIT_ELASTICSEARCH_PORT']
+else
+  ELASTICSEARCH_PORT = ELASTICSEARCH_DEFAULT_PORT
+end
+
+if ENV['AIT_KIBANA_PORT']
+  KIBANA_PORT = ENV['AIT_KIBANA_PORT']
+else
+  KIBANA_PORT = KIBANA_DEFAULT_PORT
+end
+
+if ENV['AIT_ANSIBLE_PLAYBOOK']
+  ANSIBLE_PLAYBOOK = ENV['AIT_ANSIBLE_PLAYBOOK']
+else
+  ANSIBLE_PLAYBOOK = ANSIBLE_DEFAULT_PLAYBOOK
+end
+
+if ENV['AIT_ANSIBLE_ES_VARS']
+  ANSIBLE_ES_VARS = ENV['AIT_ANSIBLE_ES_VARS']
+else
+  ANSIBLE_ES_VARS = ANSIBLE_DEFAULT_ES_VARS
+end
+
+if ENV['ES_BUILD_ARCH']
+  DOCKER_IMAGE_NAME = ENV['ES_BUILD_ARCH'] + "/" + DOCKER_DEFAULT_IMAGE_NAME
+else
+  DOCKER_IMAGE_NAME = DOCKER_DEFAULT_IMAGE_NAME
+end
+
+SYNC_FOLDER = "no"
+if ENV['AIT_SYNC_KBN_DIR']
+  SYNC_FOLDER = "yes"
+  SYNC_FOLDER_NAME = ENV['AIT_SYNC_FOLDER_NAME']
+end
+
+Vagrant.configure("2") do |config|
+
+  config.vm.network :forwarded_port, guest:ELASTICSEARCH_GUEST_PORT, host:ELASTICSEARCH_PORT, auto_correct: true
+  config.vm.network :forwarded_port, guest:KIBANA_GUEST_PORT, host:KIBANA_PORT, auto_correct: true
+
+  config.ssh.insert_key = false
+
+  # Sync folder
+  if SYNC_FOLDER == "yes"
+    config.vm.synced_folder "kibana-dir/", SYNC_FOLDER_NAME, create: true
+  end
+
+  config.vm.provider "docker" do |d|
+    d.image = DOCKER_IMAGE_NAME
+    d.has_ssh = true
+    d.create_args = ['--cpuset-cpus=' + VAGRANT_CPU]
+    d.create_args = ['--memory=' + VAGRANT_MEM]
+  end
+
+  if ! OS.windows?
+    config.vm.provision "shell", inline: $script, privileged: true
+  end
+
+  # Configure Provisioner - Ansible
+  config.vm.provision "ansible" do |ansible|
+    ansible_host = "aithost"
+    ansible_var_file = ANSIBLE_ES_VARS
+    config.vm.define ansible_host
+    ansible.extra_vars = {
+      "uut" => ansible_host,
+      "es_var_file" => ansible_var_file
+    }
+    ansible.verbose = "v"
+    ansible.playbook = ANSIBLE_PLAYBOOK
+  end
+end

@@ -338,6 +338,28 @@ run_vm() {
     exit 1
   fi
 
+  # Load docker image, if provider is selected
+  if [ ! -z $VAGRANT_DEFAULT_PROVIDER ] && [ "$VAGRANT_DEFAULT_PROVIDER" == "docker" ]; then
+    echo_info "Get docker image"
+    base_url="https://github.com/elastic/elastic-stack-testing/releases/download"
+    tag="estf-vagrant-docker-v1.0"
+    image_name="estf-vagrant-docker.tar.gz"
+    if [ ! -z $ES_BUILD_ARCH ] && [ "$ES_BUILD_ARCH" == "arm64" ]; then
+      tag="estf-vagrant-docker-arm64-v1.0"
+      image_name="estf-vagrant-docker-arm64.tar.gz"
+    fi
+    docker_package="${base_url}/${tag}/${image_name}"
+    wget $docker_package
+    if [ $? -ne 0 ]; then
+      echo_error "Unable to get url: ${docker_package}"
+    fi
+    docker load < $image_name
+    if [ $? -ne 0 ]; then
+      echo_error "Failed to docker load: ${image_name}"
+    fi
+    rm $image_name
+  fi
+
   # Sync folder
   # NOTE: Right now this is only for Kibana directory
   # if variable is empty, return
