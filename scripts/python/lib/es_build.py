@@ -303,7 +303,7 @@ class ElasticStackBuild:
                 arch = self.architecture
                 if name == 'kibana':
                     arch = re.sub('windows-x86_64', 'windows-x86', arch)
-                if 'arm64' in arch and (name == 'kibana' or name == 'elasticearch' or name == 'logstash'):
+                if 'arm64' in arch and (name == 'kibana' or name == 'elasticsearch' or name == 'logstash'):
                     arch = re.sub('linux-arm64', 'linux-aarch64', arch)
                 if server in self._public_servers:
                     url = server + '/downloads/' + parent_name + '/' + name + '-' + version + '-' +  arch + '.' + ext
