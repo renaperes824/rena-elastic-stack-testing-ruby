@@ -1870,6 +1870,9 @@ function run_upgrade_tests() {
   # To fix FTR ssl certificate issue: https://github.com/elastic/kibana/pull/73317
   export TEST_CLOUD=1
 
+  # Adding for debug: https://github.com/elastic/kibana/pull/128309
+  export DISABLE_CI_LOG_OUTPUT_CAPTURE=1
+
   nodeOpts=" "
   if [ ! -z $NODE_TLS_REJECT_UNAUTHORIZED ] && [[ $NODE_TLS_REJECT_UNAUTHORIZED -eq 0 ]]; then
     nodeOpts="--no-warnings "

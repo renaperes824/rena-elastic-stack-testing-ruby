@@ -64,6 +64,12 @@ task get_kibana_repo {
         String cloneCmd = 'git clone ' + cloneOpts + ' ' + kibanaRepo + ' ' + "$buildDir/kibana"
         File dir = new File("$buildDir/kibana")
         runcmd(cloneCmd, null)
+
+        // Test run for: https://github.com/elastic/kibana/pull/128309
+        runcmd('git fetch origin pull/128309/head:pr-128309', dir)
+        runcmd('git checkout pr-128309', dir)
+
+        /*
         runcmd('git checkout ' + checkout_ver, dir)
 
         if (commit) {
@@ -73,7 +79,7 @@ task get_kibana_repo {
                    !System.env.ESTF_KIBANA_CHECKOUT_LATEST) {
             runcmd('git checkout ' + rootProject.kibana_hash.toString(), dir)
         }
-
+        */
         def src = new File(System.env.WORKSPACE.toString() + "/ci/kibana/jenkins_kibana_tests.sh")
         if (!src.exists()) {
             throw new GradleException("jenkins_kibana_tests.sh does not exist")
