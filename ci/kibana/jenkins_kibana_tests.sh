@@ -2569,7 +2569,7 @@ function disable_security_user() {
 # Method to enable_security
 # -----------------------------------------------------------------------------
 function enable_security() {
-  sed -i "s/xpack.security.enabled=false/xpack.security.enabled=true/g" test/functional/config.js
+  export ES_SECURITY_ENABLED=true
 }
 
 # -----------------------------------------------------------------------------
