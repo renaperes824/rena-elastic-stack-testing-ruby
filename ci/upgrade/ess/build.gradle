@@ -101,8 +101,7 @@ task update_scripted_fields(type: ScriptedFieldsApi) {
         kbnBaseUrl = rootProject.props.kibana_url
         username = rootProject.props.es_username
         password = rootProject.props.es_password
-        version = "dontcare"
-        upgradeVersion = "dontcare"
+        finalVersion = rootProject.finalVersion
     }
 }
 
