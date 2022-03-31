@@ -2569,7 +2569,7 @@ function disable_security_user() {
 # Method to enable_security
 # -----------------------------------------------------------------------------
 function enable_security() {
-  export ES_SECURITY_ENABLED=true
+  export ES_SECURITY_ENABLED=1
 }
 
 # -----------------------------------------------------------------------------
