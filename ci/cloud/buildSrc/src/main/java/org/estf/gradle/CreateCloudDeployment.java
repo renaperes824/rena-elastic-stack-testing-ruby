@@ -97,21 +97,21 @@ public class CreateCloudDeployment extends DefaultTask {
         ApiClient apiClient = cloudApi.getApiClient();
 
         // Create cluster
-        esInstanceCfg = "aws.highio.classic";
-        kbnInstanceCfg = "aws.kibana.classic";
-        mlInstanceCfg = "aws.ml.m5";
-        ingestInstanceCfg = "aws.coordinating.m5";
+        esInstanceCfg = "aws.data.highcpu.m5d";
+        kbnInstanceCfg = "aws.kibana.r5d";
+        mlInstanceCfg = "aws.ml.m5d";
+        ingestInstanceCfg = "aws.coordinating.m5d";
         deploymentTemplate = "aws-compute-optimized-v2";
         dataRegion = cloudApi.getEnvRegion();
         if (dataRegion != null) {
             if (dataRegion.contains("gcp")) {
-                esInstanceCfg = "gcp.highio.classic";
-                kbnInstanceCfg = "gcp.kibana.classic";
+                esInstanceCfg = "gcp.data.highcpu.1";
+                kbnInstanceCfg = "gcp.kibana.1";
                 mlInstanceCfg = "gcp.ml.1";
                 ingestInstanceCfg = "gcp.coordinating.1";
-                deploymentTemplate = "gcp-storage-optimized";
+                deploymentTemplate = "gcp-compute-optimized-v2";
             } else if (dataRegion.contains("azure")) {
-                esInstanceCfg = "azure.master.e32sv3";
+                esInstanceCfg = "azure.data.highcpu.d64sv3";
                 kbnInstanceCfg = "azure.kibana.e32sv3";
                 mlInstanceCfg = "azure.ml.d64sv3";
                 ingestInstanceCfg = "azure.coordinating.d64sv3";
@@ -323,7 +323,7 @@ public class CreateCloudDeployment extends DefaultTask {
         if (isKbnReportsTesting()) {
             kbnTopology.size(getTopologySize(8192));
         } else {
-            kbnTopology.size(getTopologySize());
+            kbnTopology.size(getTopologySize(4096));
         }
 
         KibanaConfiguration kbnCfg = new KibanaConfiguration()
