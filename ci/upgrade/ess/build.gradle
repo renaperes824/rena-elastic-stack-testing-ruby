@@ -97,11 +97,9 @@ task ess_disable_options(type: EditEssDeployment) {
 task update_scripted_fields(type: ScriptedFieldsApi) {
     doFirst {
         println("******* SECTION: UPDATED SCRIPTED FIELDS *******")
-        esBaseUrl = "dontcare"
         kbnBaseUrl = rootProject.props.kibana_url
         username = rootProject.props.es_username
         password = rootProject.props.es_password
-        finalVersion = rootProject.finalVersion
     }
 }
 

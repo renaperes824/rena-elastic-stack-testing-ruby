@@ -2,6 +2,7 @@ package org.estf.gradle;
 
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -10,6 +11,7 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 import java.util.Base64;
@@ -66,15 +68,17 @@ public class RestApi {
             postRequest.setEntity(entity);
             HttpClient client = HttpClientBuilder.create().build();
             response = client.execute(postRequest);
-            int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode == 200) {
+            StatusLine statusLine = response.getStatusLine();
+            System.out.println(statusLine);
+            if (statusLine.getStatusCode() == 200) {
                 break;
             }
             if (retries < maxRetries) {
                 System.out.println("** Retrying post request **");
                 Thread.sleep(waitTime);
             } else {
-                throw new IOException("FAILED! POST: " + response.getStatusLine() + " " + path);
+                String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+                throw new IOException("FAILED! POST: " + path + " " + responseString);
             }
         }
         return response;
@@ -97,15 +101,17 @@ public class RestApi {
             putRequest.setEntity(entity);
             HttpClient client = HttpClientBuilder.create().build();
             response = client.execute(putRequest);
-            int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode == 200) {
+            StatusLine statusLine = response.getStatusLine();
+            System.out.println(statusLine);
+            if (statusLine.getStatusCode() == 200) {
                 break;
             }
             if (retries < maxRetries) {
                 System.out.println("** Retrying put request **");
                 Thread.sleep(waitTime);
             } else {
-                throw new IOException("FAILED! PUT: " + response.getStatusLine() + " " + path);
+                String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+                throw new IOException("FAILED! PUT: " + path + " " + responseString);
             }
         }
         return response;
@@ -121,15 +127,17 @@ public class RestApi {
             System.out.println("Path: " + path);
             HttpClient client = HttpClientBuilder.create().build();
             response = client.execute(getRequest);
-            int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode == 200) {
+            StatusLine statusLine = response.getStatusLine();
+            System.out.println(statusLine);
+            if (statusLine.getStatusCode() == 200) {
                 break;
             }
             if (retries < maxRetries) {
                 System.out.println("** Retrying get request **");
                 Thread.sleep(waitTime);
             } else {
-                throw new IOException("FAILED! GET: " + response.getStatusLine() + " " + path);
+                String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+                throw new IOException("FAILED! GET: " + path + " " + responseString);
             }
         }
         return response;
@@ -148,15 +156,17 @@ public class RestApi {
             System.out.println("Path: " + path);
             HttpClient client = HttpClientBuilder.create().build();
             response = client.execute(deleteRequest);
-            int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode == 200) {
+            StatusLine statusLine = response.getStatusLine();
+            System.out.println(statusLine);
+            if (statusLine.getStatusCode() == 200) {
                 break;
             }
             if (retries < maxRetries) {
                 System.out.println("** Retrying delete request **");
                 Thread.sleep(waitTime);
             } else {
-                throw new IOException("FAILED! DELETE: " + response.getStatusLine() + " " + path);
+                String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+                throw new IOException("FAILED! DELETE: " + path + " " + responseString);
             }
         }
         return response;
