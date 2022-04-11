@@ -289,7 +289,7 @@ public class CreateEssDeployment extends DefaultTask {
         KibanaClusterTopologyElement kbnTopology = new KibanaClusterTopologyElement()
                 .instanceConfigurationId(kbnInstanceCfg)
                 .zoneCount(1)
-                .size(getTopologySize(8192));
+                .size(getTopologySize(16384));
 
         KibanaConfiguration kbnCfg = new KibanaConfiguration()
                 .version(stackVersion);
