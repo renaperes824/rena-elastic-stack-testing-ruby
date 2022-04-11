@@ -31,7 +31,7 @@ public class VaultCredentials {
             throw new IOException(this.getClass().getSimpleName() + ": vaultToken is required");
         }
         if (vaultPath == null || vaultPath.trim().isEmpty()) {
-            vaultPath = "secret/stack-testing/estf-cloud-staging";
+            vaultPath = "secret/stack-testing/estf-cloud";
         }
         setApiKey();
     }
@@ -54,4 +54,4 @@ public class VaultCredentials {
         return apiKey;
     }
 
-} 
+}

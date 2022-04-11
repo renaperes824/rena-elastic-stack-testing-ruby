@@ -19,7 +19,7 @@ import java.util.ArrayList;
  */
 public class CloudApi {
 
-    private String host = "public-api.staging.foundit.no";
+    private String host = "cloud.elastic.co";
     final private ApiClient apiClient;
     final private String esRefId = "main-elasticsearch";
     final private String kbRefId = "main-kibana";
@@ -219,7 +219,7 @@ public class CloudApi {
     }
 
     public String getEnvRegion() {
-        String default_region = "azure-eastus2";
+        String default_region = "gcp-us-west2";
         ArrayList<String> regions = new ArrayList<>();
         regions.add("us-east-1");
         regions.add("us-west-1");
@@ -229,6 +229,7 @@ public class CloudApi {
         regions.add("sa-east-1");
         regions.add("ap-southeast-2");
         regions.add("aws-eu-central-1");
+        regions.add("gcp-us-west2");
         regions.add("gcp-us-central1");
         regions.add("gcp-europe-west-1");
         regions.add("azure-eastus2");
