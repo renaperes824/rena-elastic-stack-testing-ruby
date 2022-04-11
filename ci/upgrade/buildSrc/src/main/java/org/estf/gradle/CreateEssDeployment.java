@@ -106,7 +106,15 @@ public class CreateEssDeployment extends DefaultTask {
     }
 
     private void setInstanceConfiguration(CloudApi cloudApi) {
-        esInstanceCfg = "aws.data.highcpu.m5d";
+        esInstanceCfg = "gcp.data.highcpu.1";
+        kbnInstanceCfg = "gcp.kibana.1";
+        mlInstanceCfg = "gcp.ml.1";
+        ingestInstanceCfg = "gcp.coordinating.1";
+        apmInstanceCfg = "gcp.apm.1";
+        enterpriseSearchInstanceCfg = "gcp.enterprisesearch.1";
+        deploymentTemplate = "gcp-compute-optimized-v2";
+
+        /*esInstanceCfg = "aws.data.highcpu.m5d";
         kbnInstanceCfg = "aws.kibana.r5d";
         mlInstanceCfg = "aws.ml.m5d";
         ingestInstanceCfg = "aws.coordinating.m5d";
@@ -132,7 +140,7 @@ public class CreateEssDeployment extends DefaultTask {
                 enterpriseSearchInstanceCfg = "azure.enterprisesearch.d64sv3";
                 deploymentTemplate = "azure-compute-optimized-v2";
             }
-        }
+        }*/
     }
 
     private void generatePropertiesFile(DeploymentCreateResponse response, DeploymentsApi deploymentsApi) {
@@ -289,7 +297,7 @@ public class CreateEssDeployment extends DefaultTask {
         KibanaClusterTopologyElement kbnTopology = new KibanaClusterTopologyElement()
                 .instanceConfigurationId(kbnInstanceCfg)
                 .zoneCount(1)
-                .size(getTopologySize(16384));
+                .size(getTopologySize(8192));
 
         KibanaConfiguration kbnCfg = new KibanaConfiguration()
                 .version(stackVersion);
