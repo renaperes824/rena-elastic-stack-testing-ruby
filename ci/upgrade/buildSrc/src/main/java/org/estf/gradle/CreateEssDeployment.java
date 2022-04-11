@@ -106,15 +106,7 @@ public class CreateEssDeployment extends DefaultTask {
     }
 
     private void setInstanceConfiguration(CloudApi cloudApi) {
-        esInstanceCfg = "gcp.data.highcpu.1";
-        kbnInstanceCfg = "gcp.kibana.1";
-        mlInstanceCfg = "gcp.ml.1";
-        ingestInstanceCfg = "gcp.coordinating.1";
-        apmInstanceCfg = "gcp.apm.1";
-        enterpriseSearchInstanceCfg = "gcp.enterprisesearch.1";
-        deploymentTemplate = "gcp-compute-optimized-v2";
-
-        /*esInstanceCfg = "aws.data.highcpu.m5d";
+        esInstanceCfg = "aws.data.highcpu.m5d";
         kbnInstanceCfg = "aws.kibana.r5d";
         mlInstanceCfg = "aws.ml.m5d";
         ingestInstanceCfg = "aws.coordinating.m5d";
@@ -140,7 +132,7 @@ public class CreateEssDeployment extends DefaultTask {
                 enterpriseSearchInstanceCfg = "azure.enterprisesearch.d64sv3";
                 deploymentTemplate = "azure-compute-optimized-v2";
             }
-        }*/
+        }
     }
 
     private void generatePropertiesFile(DeploymentCreateResponse response, DeploymentsApi deploymentsApi) {
