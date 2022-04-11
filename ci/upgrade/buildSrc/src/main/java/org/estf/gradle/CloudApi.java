@@ -219,7 +219,7 @@ public class CloudApi {
     }
 
     public String getEnvRegion() {
-        String default_region = "gcp-us-central1";
+        String default_region = "azure-eastus2";
         ArrayList<String> regions = new ArrayList<>();
         regions.add("us-east-1");
         regions.add("us-west-1");
