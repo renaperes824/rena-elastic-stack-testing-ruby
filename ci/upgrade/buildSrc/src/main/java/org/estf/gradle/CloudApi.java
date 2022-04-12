@@ -30,10 +30,11 @@ public class CloudApi {
     CloudApi() throws VaultException, IOException {
         VaultCredentials credentials = new VaultCredentials();
 
-        String estf_host = System.getenv("ESTF_CLOUD_HOST");
-        if (estf_host != null) {
+        //TODO: Comment out until job updates are merged; infra#35595
+        //String estf_host = System.getenv("ESTF_CLOUD_HOST");
+        //if (estf_host != null) {
             host = estf_host;
-        }
+        //}
 
         boolean cloudApiDebug = false;
         String getEnvCloudApiDebug = System.getenv("ESTF_CLOUD_API_DEBUG");
