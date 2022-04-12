@@ -19,7 +19,7 @@ import java.util.ArrayList;
  */
 public class CloudApi {
 
-    private String host = "cloud.elastic.co";
+    private String host = "public-api.staging.foundit.no";
     final private ApiClient apiClient;
     final private String esRefId = "main-elasticsearch";
     final private String kbRefId = "main-kibana";
@@ -30,11 +30,10 @@ public class CloudApi {
     CloudApi() throws VaultException, IOException {
         VaultCredentials credentials = new VaultCredentials();
 
-        //TODO: Comment out until job updates are merged; infra#35595
-        //String estf_host = System.getenv("ESTF_CLOUD_HOST");
-        //if (estf_host != null) {
-        //    host = estf_host;
-        //}
+        String estf_host = System.getenv("ESTF_CLOUD_HOST");
+        if (estf_host != null) {
+            host = estf_host;
+        }
 
         boolean cloudApiDebug = false;
         String getEnvCloudApiDebug = System.getenv("ESTF_CLOUD_API_DEBUG");
@@ -220,7 +219,7 @@ public class CloudApi {
     }
 
     public String getEnvRegion() {
-        String default_region = "gcp-us-west2";
+        String default_region = "us-east-1";
         ArrayList<String> regions = new ArrayList<>();
         regions.add("us-east-1");
         regions.add("us-west-1");
