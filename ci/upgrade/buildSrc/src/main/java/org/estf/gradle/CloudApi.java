@@ -33,7 +33,7 @@ public class CloudApi {
         //TODO: Comment out until job updates are merged; infra#35595
         //String estf_host = System.getenv("ESTF_CLOUD_HOST");
         //if (estf_host != null) {
-            host = estf_host;
+        //    host = estf_host;
         //}
 
         boolean cloudApiDebug = false;
