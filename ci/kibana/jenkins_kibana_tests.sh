@@ -1912,6 +1912,10 @@ function run_security_solution_upgrade_tests() {
 
   run_ci_setup
   update_test_files
+  if [ ! -z  "$ESTF_CYPRESS_DISABLE_RETRY" ]; then
+      update_cypress_retries
+  fi
+  update_cypress_report_name
 
   local _xpack_dir="$(cd x-pack; pwd)"
   echo_info "-> XPACK_DIR ${_xpack_dir}"
@@ -2594,6 +2598,20 @@ function update_test_files() {
       sed -i $label '0,/describe(/ s/describe(/describe\.only(/' $testFile
     fi
   done
+}
+
+# -----------------------------------------------------------------------------
+# Method to update cypress retries
+# -----------------------------------------------------------------------------
+function update_cypress_retries() {
+   sed -i 's/\"runMode\": 2/\"runMode\": 0/g' x-pack/plugins/security_solution/cypress/cypress.json
+}
+
+# -----------------------------------------------------------------------------
+# Method to update cypress report name
+# -----------------------------------------------------------------------------
+function update_cypress_report_name() {
+  sed -i '/reporterOptions.*/a \    "reportTitle": "Security Solutions Tests",' x-pack/plugins/security_solution/cypress/reporter_config.json
 }
 
 # -----------------------------------------------------------------------------
