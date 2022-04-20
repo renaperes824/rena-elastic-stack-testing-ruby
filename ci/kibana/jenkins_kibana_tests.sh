@@ -2611,7 +2611,7 @@ function update_cypress_retries() {
 # Method to update cypress report name
 # -----------------------------------------------------------------------------
 function update_cypress_report_name() {
-  sed -i '/reporterOptions.*/a \    "reportTitle": "Security Solutions Tests",' x-pack/plugins/security_solution/cypress/reporter_config.json
+  sed -i '/reporterOptions.*/a \    "rootSuiteTitle": "Security Solutions Tests",' x-pack/plugins/security_solution/cypress/reporter_config.json
 }
 
 # -----------------------------------------------------------------------------
