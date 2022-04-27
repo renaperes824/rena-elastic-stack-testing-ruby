@@ -2045,7 +2045,7 @@ function wait_for_es_ready_docker {
 # -----------------------------------------------------------------------------
 function _wait_for_kbn_ready_docker {
   while true; do
-    docker logs kib01 | grep -E -i -w 'Kibana.*http server running at'
+    docker logs kib01 | grep -E -i -w '[http|kibana|Kibana].*[Server|server] running at'
     if [ $? -eq 0 ]; then
       break
     fi
@@ -2207,8 +2207,8 @@ function run_standalone_basic_tests() {
 
   TEST_KIBANA_BUILD=basic
 
+  install_standalone_servers
   if [[ "$Glb_SkipTests" == "yes" ]]; then
-    install_standalone_servers
     failures=$?
     echo_warning "Tests are not supported on this platform!!"
     run_ci_cleanup
@@ -2220,7 +2220,7 @@ function run_standalone_basic_tests() {
   update_test_files
 
   nodeOpts=" "
-  if [[ $_isSecurityOnByDefault == 1 ]]; then
+  if [[ $_isSecurityOnByDefault == 1 ]] && [[ "$ESTF_TEST_PACKAGE" != "docker" ]]; then
     enable_security
     if [ ! -z $NODE_TLS_REJECT_UNAUTHORIZED ] && [[ $NODE_TLS_REJECT_UNAUTHORIZED -eq 0 ]]; then
       nodeOpts="--no-warnings "
@@ -2234,8 +2234,6 @@ function run_standalone_basic_tests() {
     export TEST_BROWSER_BINARY_PATH=$Glb_Chromium
     export TEST_BROWSER_CHROMEDRIVER_PATH=$Glb_ChromeDriver
   fi
-
-  install_standalone_servers
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
@@ -2757,7 +2755,7 @@ function _wait_for_kbn_ready_logs() {
 
   sleep 15;
   while true; do
-    ${_sudo} tail -n 30 $_kbnLog/kibana.log | grep -E -i -w 'kibana.*Server running at'
+    ${_sudo} tail -n 30 $_kbnLog/kibana.log | grep -E -i -w '[http|kibana|Kibana].*[Server|server] running at'
     if [ $? -eq 0 ]; then
       break
     fi
@@ -3026,11 +3024,20 @@ function update_kibana_settings() {
 # elasticsearch_generate_certs
 # -----------------------------------------------------------------------------
 function elasticsearch_generate_certs() {
+  local _type=${TEST_KIBANA_BUILD:-basic}
   local _esHome="/etc/elasticsearch"
   local _esBin="/usr/share/elasticsearch"
   local _kbnHome="/etc/kibana"
   local _ip=$(get_hostname)
-  local _isNewCertUtils=$(vge $_version "8.0")
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
+  local _is8_0=$(vge $_version "8.0")
+  local _isSecurityOnByDefault=$_is8_0
+  local _isNewCertUtils=$_is8_0
+
+  if [[ $_isSecurityOnByDefault == 0 ]] && [[ "$_type" == "basic" ]]; then
+    return
+  fi
 
   local _sudo="sudo -s"
   if [ "$ESTF_TEST_PACKAGE" == "tar.gz" ] || [ "$ESTF_TEST_PACKAGE" == "zip" ]; then
@@ -3096,6 +3103,7 @@ function elasticsearch_generate_certs() {
       _dir=${_dir#/c}
   fi
 
+  if [[ $_isSecurityOnByDefault == 0 ]] && [[ "$_type" != "basic" ]]; then
 ${_sudo} tee -a $_esHome/elasticsearch.yml <<- EOM
 network.host: $_ip
 discovery.type: single-node
@@ -3107,6 +3115,7 @@ xpack.security.http.ssl.key: $_dir/escluster/escluster.key
 xpack.security.http.ssl.certificate: $_dir/escluster/escluster.crt
 xpack.security.http.ssl.certificate_authorities: [ '$_dir/ca/ca.crt' ]
 EOM
+  fi
 
 }
 
@@ -3167,15 +3176,14 @@ EOM
   else
 ${_sudo} tee -a $_kbnHome/kibana.yml <<- EOM
 server.host: $_ip
+server.ssl.enabled: true
+server.ssl.certificate: $_dir/escluster/escluster.crt
+server.ssl.key: $_dir/escluster/escluster.key
 EOM
   fi
 
   export TEST_KIBANA_HOSTNAME=$_ip
-  if [[ $_isSecurityOnByDefault == 0 ]]; then
-    export TEST_KIBANA_PROTOCOL=https
-  else
-     export TEST_KIBANA_PROTOCOL=http
-  fi
+  export TEST_KIBANA_PROTOCOL=https
   export TEST_KIBANA_PORT=5601
   export TEST_KIBANA_USERNAME=elastic
   export TEST_KIBANA_PASS=$espw
@@ -3374,6 +3382,7 @@ xpack.security.enabled: false
 EOM
     fi
   else
+    elasticsearch_generate_certs
     if [ "$type" != "basic" ]; then
 ${_sudo} tee -a $_esHome/elasticsearch.yml <<- EOM
 xpack.license.self_generated.type: trial
@@ -3491,7 +3500,7 @@ EOM
   kbn_url="${protocol}://${host}:5601"
   if [[ $_isSecurityOnByDefault == 1 ]]; then
     es_url="https://${host}:9200"
-    kbn_url="http://${_ip}:5601"
+    kbn_url="https://${_ip}:5601"
   fi
 
 
