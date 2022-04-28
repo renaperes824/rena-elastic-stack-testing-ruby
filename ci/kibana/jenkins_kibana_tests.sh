@@ -3281,7 +3281,7 @@ function start_elasticsearch() {
 
   if [[ $_isSecurityOnByDefault == 1 ]]; then
     echo_info "Reset Elasticsearch Password"
-    sleep 20
+    sleep 45
     $Glb_Es_Dir/bin/elasticsearch-reset-password -a -b -u elastic > es_install_log.txt
     sed -i $label 's/New value: /elastic built-in superuser is : /g' es_install_log.txt
   fi
@@ -3489,6 +3489,7 @@ function install_compressed_packages() {
       fi
     fi
   else
+    elasticsearch_generate_certs
     if [ "$type" != "basic" ]; then
 ${_sudo} tee -a $_esHome/elasticsearch.yml <<- EOM
 xpack.license.self_generated.type: trial
