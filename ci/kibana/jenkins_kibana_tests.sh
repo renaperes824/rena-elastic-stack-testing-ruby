@@ -2207,8 +2207,9 @@ function run_standalone_basic_tests() {
 
   TEST_KIBANA_BUILD=basic
 
-  install_standalone_servers
+
   if [[ "$Glb_SkipTests" == "yes" ]]; then
+    install_standalone_servers
     failures=$?
     echo_warning "Tests are not supported on this platform!!"
     run_ci_cleanup
@@ -2219,6 +2220,7 @@ function run_standalone_basic_tests() {
   includeTags=$(update_config "test/functional/config.js" $testGrp)
   update_test_files
 
+  install_standalone_servers
   nodeOpts=" "
   if [[ $_isSecurityOnByDefault == 1 ]] && [[ "$ESTF_TEST_PACKAGE" != "docker" ]]; then
     enable_security
