@@ -1,17 +1,23 @@
 TASK:
   - kibana_upgrade_tests
 JOB:
-    - upgradeTest2a
-    - upgradeTest2b
-    - upgradeTest2c
-    - upgradeTest2d
-    - upgradeTest2e
-    - upgradeTest2f
-    - upgradeTest2g
-    - upgradeTest2h
-    - upgradeTest2i
-    - upgradeTest2j
-    - upgradeTest2k
-    - upgradeTest2l
+    - upgradeTest3a
+    - upgradeTest3b
+    - upgradeTest3c
+    - upgradeTest3d
+    - upgradeTest3e
+    - upgradeTest3f
+    - upgradeTest3g
+    - upgradeTest3h
+    - upgradeTest3i
+    - upgradeTest5a
+    - upgradeTest5b
+    - upgradeTest5c
+    - upgradeTest5d
+    - upgradeTest5e
+    - upgradeTest5f
+    - upgradeTest5g
+    - upgradeTest5h
+    - upgradeTest5i
 
 exclude: ~
