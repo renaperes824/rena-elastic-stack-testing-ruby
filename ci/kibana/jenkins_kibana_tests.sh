@@ -422,7 +422,8 @@ function get_ftr_enabled_configs() {
 function filter_yaml() {
   filter=$1
   testGrp=$2
-  declare -n _filter_array=$3
+
+  Glb_FtrConfigs=()
 
   if [ -z "$testGrp" ]; then
     return
@@ -448,6 +449,7 @@ function filter_yaml() {
     pattern=$xpack_ext_functional_tests
   fi
 
+   _filter_array=()
   for element in "${array[@]}"; do
     if [[ $element =~ $pattern ]]; then
       if [[ $filter == "xpackext" ]]; then
@@ -471,6 +473,7 @@ function filter_yaml() {
     fi
   done
 
+  Glb_FtrConfigs=(${_filter_array[@]})
 }
 
 # ----------------------------------------------------------------------------
@@ -479,9 +482,9 @@ function filter_yaml() {
 function get_ftr_configs() {
   local filter=$1
   local testGrp=$2
-  declare -n _retarray=$3
 
   if [[ ! -f .buildkite/ftr_configs.yml ]]; then
+    _retarray=()
     if [[ $filter == "basic" ]]; then
       _retarray+=("test/functional/config.js")
     fi
@@ -510,10 +513,12 @@ function get_ftr_configs() {
 
       IFS=" " read -r -a _retarray <<< "$(echo $cfgs | xargs -n1 | sort -u | xargs)"
     fi
+
+    Glb_FtrConfigs=(${_retarray[@]})
     return
   fi
 
-  filter_yaml "$filter" "$testGrp" _retarray
+  filter_yaml "$filter" "$testGrp"
 }
 
 # ----------------------------------------------------------------------------
@@ -1569,7 +1574,7 @@ function run_basic_tests() {
   remove_oss
   disable_security_user
 
-  get_ftr_configs "basic" "$testGrp" cfgarray
+  get_ftr_configs "basic" "$testGrp"
 
   TEST_KIBANA_BUILD=basic
   install_kibana
@@ -1582,7 +1587,7 @@ function run_basic_tests() {
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
-    for cfg in "${cfgarray[@]}"; do
+    for cfg in "${Glb_FtrConfigs[@]}"; do
       export ESTF_RUN_NUMBER=$i
       update_report_name $cfg
       echo_info " -> Running basic tests config: $cfg, run $i of $maxRuns"
@@ -1620,7 +1625,7 @@ function run_xpack_func_tests() {
   includeTags=$(update_config "x-pack/test/functional/config.js" $testGrp)
   update_test_files
 
-  get_ftr_configs "xpack" "$testGrp" cfgarray
+  get_ftr_configs "xpack" "$testGrp"
 
   TEST_KIBANA_BUILD=default
   install_kibana
@@ -1637,7 +1642,7 @@ function run_xpack_func_tests() {
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
-    for cfg in "${cfgarray[@]}"; do
+    for cfg in "${Glb_FtrConfigs[@]}"; do
       export ESTF_RUN_NUMBER=$i
       update_report_name $cfg
       echo_info " -> Running xpack tests config: $cfg, run $i of $maxRuns"
@@ -1673,7 +1678,7 @@ function run_xpack_ext_tests() {
   run_ci_setup
   update_test_files
 
-  get_ftr_configs "xpackext" "$testGrp" cfgarray
+  get_ftr_configs "xpackext" "$testGrp"
 
   TEST_KIBANA_BUILD=default
   install_kibana
@@ -1690,7 +1695,7 @@ function run_xpack_ext_tests() {
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
-    for cfg in "${cfgarray[@]}"; do
+    for cfg in "${Glb_FtrConfigs[@]}"; do
       if [[ $cfg == "test/functional/config.js" ]] && [ $funcTests == "false" ]; then
         continue
       fi
@@ -1735,7 +1740,7 @@ function run_cloud_basic_tests() {
   remove_oss
   enable_security
 
-  get_ftr_configs "basic" "$testGrp" cfgarray
+  get_ftr_configs "basic" "$testGrp"
 
   export TEST_BROWSER_HEADLESS=1
   # To fix FTR ssl certificate issue: https://github.com/elastic/kibana/pull/73317
@@ -1753,7 +1758,7 @@ function run_cloud_basic_tests() {
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
-    for cfg in "${cfgarray[@]}"; do
+    for cfg in "${Glb_FtrConfigs[@]}"; do
       export ESTF_RUN_NUMBER=$i
       update_report_name $cfg
       echo_info " -> Running cloud basic tests config: $cfg, run $i of $maxRuns"
@@ -1787,7 +1792,7 @@ function run_cloud_xpack_func_tests() {
   includeTags=$(update_config "x-pack/test/functional/config.js" $testGrp)
   update_test_files
 
-  get_ftr_configs "xpack" "$testGrp" cfgarray
+  get_ftr_configs "xpack" "$testGrp"
 
   local _xpack_dir="$(cd x-pack; pwd)"
   echo_info "-> XPACK_DIR ${_xpack_dir}"
@@ -1804,7 +1809,7 @@ function run_cloud_xpack_func_tests() {
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
-    for cfg in "${cfgarray[@]}"; do
+    for cfg in "${Glb_FtrConfigs[@]}"; do
       export ESTF_RUN_NUMBER=$i
       update_report_name "$cfg"
       echo_info " -> Running cloud xpack tests config: $cfg, run $i of $maxRuns"
@@ -2419,7 +2424,7 @@ function run_standalone_basic_tests() {
   includeTags=$(update_config "test/functional/config.js" $testGrp)
   update_test_files
 
-  get_ftr_configs "basic" "$testGrp" cfgarray
+  get_ftr_configs "basic" "$testGrp"
 
   install_standalone_servers
   nodeOpts=" "
@@ -2440,7 +2445,7 @@ function run_standalone_basic_tests() {
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
-    for cfg in "${cfgarray[@]}"; do
+    for cfg in "${Glb_FtrConfigs[@]}"; do
       export ESTF_RUN_NUMBER=$i
       update_report_name $cfg
       echo_info " -> Running standalone basic tests config: $cfg, run $i of $maxRuns"
@@ -2483,7 +2488,7 @@ function run_standalone_xpack_func_tests() {
   includeTags=$(update_config "x-pack/test/functional/config.js" $testGrp)
   update_test_files
 
-  get_ftr_configs "xpack" "$testGrp" cfgarray
+  get_ftr_configs "xpack" "$testGrp"
 
   export TEST_BROWSER_HEADLESS=1
   if [[ "$Glb_Arch" == "aarch64" ]]; then
@@ -2504,7 +2509,7 @@ function run_standalone_xpack_func_tests() {
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
-    for cfg in "${cfgarray[@]}"; do
+    for cfg in "${Glb_FtrConfigs[@]}"; do
       export ESTF_RUN_NUMBER=$i
       update_report_name "$cfg"
       echo_info " -> Running standalone xpack tests config: $cfg, run $i of $maxRuns"
