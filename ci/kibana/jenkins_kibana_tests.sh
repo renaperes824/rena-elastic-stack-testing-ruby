@@ -481,11 +481,7 @@ function get_ftr_configs() {
   local testGrp=$2
   declare -n _retarray=$3
 
-  local _splitStr=(${Glb_Kibana_Version//./ })
-  local _version=${_splitStr[0]}.${_splitStr[1]}
-  local _newFtrGroups=$(vge $_version "8.3")
-
-  if [[ $_newFtrGroups == 0 ]]; then
+  if [[ ! -f .buildkite/ftr_configs.yml ]]; then
     if [[ $filter == "basic" ]]; then
       _retarray+=("test/functional/config.js")
     fi
