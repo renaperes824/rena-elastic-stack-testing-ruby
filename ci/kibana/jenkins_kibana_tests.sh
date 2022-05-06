@@ -489,7 +489,7 @@ function get_ftr_configs() {
       _retarray+=("test/functional/config.js")
     fi
     if [[ $filter == "xpack" ]]; then
-      _retarray+=("x-pack/test/functional/config.js")
+      _retarray+=("test/functional/config.js")
     fi
     if [[ $filter == "xpackext" ]]; then
       awk_exec="awk"
