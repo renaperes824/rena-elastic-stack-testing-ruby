@@ -6,16 +6,25 @@ import co.elastic.cloud.api.util.Waiter;
 import com.bettercloud.vault.VaultException;
 import io.swagger.client.ApiClient;
 
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.Optional;
+import org.json.JSONObject;
 
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.*;
 
@@ -29,6 +38,10 @@ public class CreateCloudDeployment extends DefaultTask {
 
     @Input
     public String stackVersion = "";
+
+    @Input
+    @Optional
+    public String remoteVersion = null;
 
     @Input
     @Optional
@@ -59,13 +72,25 @@ public class CreateCloudDeployment extends DefaultTask {
     private String deploymentId = null;
 
     @Internal
+    private String remoteDeploymentId = null;
+
+    @Internal
     private String elasticsearchClusterId = null;
+
+    @Internal
+    private String remoteElasticsearchClusterId = null;
 
     @Internal
     private String kibanaClusterId = null;
 
     @Internal
+    private String remoteKibanaClusterId = null;
+
+    @Internal
     private String propertiesFile = null;
+
+    @Internal
+    private String remotePropertiesFile = null;
 
     @Internal
     private String esInstanceCfg = null;
@@ -85,8 +110,11 @@ public class CreateCloudDeployment extends DefaultTask {
     @Internal
     private String dataRegion = null;
 
+    @Internal
+    private boolean remoteSetup = false;
+
     @TaskAction
-    public void run() throws IOException, VaultException {
+    public void run() throws IOException, VaultException, URISyntaxException {
 
         if (stackVersion == null) {
             throw new Error("Environment variable: ESTF_CLOUD_VERSION is required");
@@ -122,7 +150,12 @@ public class CreateCloudDeployment extends DefaultTask {
         DeploymentsApi deploymentsApi = new DeploymentsApi(apiClient);
         DeploymentCreateResponse response = createDeployment(cloudApi, deploymentsApi);
         generatePropertiesFile(response);
-
+        if (remoteVersion != null) {
+            remoteSetup = true;
+            response = createDeployment(cloudApi, deploymentsApi);
+            generatePropertiesFile(response);
+            configureRemoteCluster();
+        }
     }
 
     public String getEsUserSettings() { return esUserSettings; }
@@ -139,9 +172,9 @@ public class CreateCloudDeployment extends DefaultTask {
 
     public boolean isKbnReportsTesting() { return kbnReportsTesting; }
 
-    public String getDeploymentId() {
-        return deploymentId;
-    }
+    public boolean isRemoteSetup() { return remoteSetup; }
+
+    public String getDeploymentId() { return deploymentId; }
 
     public String getElasticsearchClusterId() { return elasticsearchClusterId; }
 
@@ -153,7 +186,23 @@ public class CreateCloudDeployment extends DefaultTask {
         return propertiesFile;
     }
 
+    public String getRemoteDeploymentId() {
+        return remoteDeploymentId;
+    }
+
+    public String getRemoteElasticsearchClusterId() { return remoteElasticsearchClusterId; }
+
+    public String getRemoteKibanaClusterId() {
+        return remoteKibanaClusterId;
+    }
+
+    public String getRemotePropertiesFile() {
+        return remotePropertiesFile;
+    }
+
     public String getStackVersion() { return stackVersion; }
+
+    public String getRemoteVersion() { return remoteVersion; }
 
     public String getEsInstanceCfg() { return esInstanceCfg; }
 
@@ -171,6 +220,8 @@ public class CreateCloudDeployment extends DefaultTask {
         String esUser = "";
         String esPassword = "";
         String region = "";
+        String esId = "";
+        String kbnId = "";
 
         List<DeploymentResource> deploymentResourceList =  response.getResources();
         for (DeploymentResource resource : deploymentResourceList) {
@@ -180,10 +231,20 @@ public class CreateCloudDeployment extends DefaultTask {
                 esUser = clusterCredentials.getUsername();
                 esPassword = clusterCredentials.getPassword();
                 region = resource.getRegion();
-                elasticsearchClusterId = resource.getId();
+                esId = resource.getId();
             } else if (kind.equals("kibana")) {
-                kibanaClusterId = resource.getId();
+                kbnId = resource.getId();
             }
+        }
+
+        String id = deploymentId;
+        if (isRemoteSetup()) {
+            id = remoteDeploymentId;
+            remoteElasticsearchClusterId = esId;
+            remoteKibanaClusterId = kbnId;
+        } else {
+            elasticsearchClusterId = esId;
+            kibanaClusterId = kbnId;
         }
 
         String domain = "foundit.no";
@@ -200,22 +261,27 @@ public class CreateCloudDeployment extends DefaultTask {
             region = "eu-central-1";
         }
 
-        String elasticsearch_url = String.format("https://%s.%s.%s.%s:%s", elasticsearchClusterId,
+        String elasticsearch_url = String.format("https://%s.%s.%s.%s:%s", esId,
                 region, provider, domain, port);
-        String kibana_url = String.format("https://%s.%s.%s.%s:%s", kibanaClusterId,
+        String kibana_url = String.format("https://%s.%s.%s.%s:%s", kbnId,
                 region, provider, domain, port);
 
         try {
             Properties properties = new Properties();
-            properties.setProperty("deployment_id", deploymentId);
-            properties.setProperty("elasticsearch_cluster_id", elasticsearchClusterId);
+            properties.setProperty("deployment_id", id);
+            properties.setProperty("elasticsearch_cluster_id", esId);
             properties.setProperty("es_username", esUser);
             properties.setProperty("es_password", esPassword);
-            properties.setProperty("kibana_cluster_id", kibanaClusterId);
+            properties.setProperty("kibana_cluster_id", kbnId);
             properties.setProperty("elasticsearch_url", elasticsearch_url);
             properties.setProperty("kibana_url", kibana_url);
-            propertiesFile = PropFile.getFilename(deploymentId);
-            File file = new File(propertiesFile);
+            String filename = PropFile.getFilename(id);
+            if (isRemoteSetup()) {
+                remotePropertiesFile = filename;
+            } else {
+               propertiesFile = filename;
+            }
+            File file = new File(filename);
             FileOutputStream fileOut = new FileOutputStream(file);
             properties.store(fileOut, "Cloud Cluster Info");
             fileOut.close();
@@ -235,6 +301,10 @@ public class CreateCloudDeployment extends DefaultTask {
     }
 
     private ElasticsearchPayload getElasticsearchPayload(CloudApi api) {
+        String deployVersion = stackVersion;
+        if (isRemoteSetup()) {
+            deployVersion = remoteVersion;
+        }
 
         List<ElasticsearchClusterTopologyElement.NodeRolesEnum> masterNodeRoleList = new ArrayList<>();
         masterNodeRoleList.add(ElasticsearchClusterTopologyElement.NodeRolesEnum.MASTER);
@@ -274,7 +344,7 @@ public class CreateCloudDeployment extends DefaultTask {
         mlTopology.nodeRoles(mlNodeRoleList);
 
         ElasticsearchConfiguration esCfg = new ElasticsearchConfiguration()
-                .version(stackVersion);
+                .version(deployVersion);
 
         if (getEsUserSettings() != null) {
             esCfg.userSettingsYaml(esUserSettings);
@@ -309,6 +379,11 @@ public class CreateCloudDeployment extends DefaultTask {
 
     private KibanaPayload getKibanaPayload(CloudApi api) {
 
+        String deployVersion = stackVersion;
+        if (isRemoteSetup()) {
+            deployVersion = remoteVersion;
+        }
+
         int kibanaZone;
         try {
             kibanaZone = Integer.parseInt(System.getenv("ESTF_CLOUD_KIBANA_ZONE"));
@@ -327,7 +402,7 @@ public class CreateCloudDeployment extends DefaultTask {
         }
 
         KibanaConfiguration kbnCfg = new KibanaConfiguration()
-                .version(stackVersion);
+                .version(deployVersion);
 
         if (getKibanaUserSettings() != null) {
             kbnCfg.userSettingsYaml(kibanaUserSettings);
@@ -361,12 +436,72 @@ public class CreateCloudDeployment extends DefaultTask {
                 "estf_request_id_" + UUID.randomUUID(),
                 false);
 
-        deploymentId = response.getId();
+        String id = response.getId();
+        if (isRemoteSetup()) {
+            remoteDeploymentId = id;
+        } else {
+            deploymentId = id;
+        }
 
         Waiter.setWait(Duration.ofMinutes(20));
-        cloudApi.waitForElasticsearch(deploymentsApi, deploymentId);
-        cloudApi.waitForKibana(deploymentsApi, deploymentId);
+        cloudApi.waitForElasticsearch(deploymentsApi, id);
+        cloudApi.waitForKibana(deploymentsApi, id);
 
         return response;
+    }
+
+    public void configureRemoteCluster()
+            throws IOException, URISyntaxException {
+
+        InputStream inDeployment = new FileInputStream(PropFile.getFilename(deploymentId));
+        InputStream inRemoteDeployment = new FileInputStream(PropFile.getFilename(remoteDeploymentId));
+
+        Properties propDeployment = new Properties();
+        Properties remotePropDeployment = new Properties();
+
+        propDeployment.load(inDeployment);
+        remotePropDeployment.load(inRemoteDeployment);
+
+        String username = propDeployment.getProperty("es_username");
+        String password = propDeployment.getProperty("es_password");
+        String kibanaUrl = propDeployment.getProperty("kibana_url");
+        String remoteElasticsearchUrl = remotePropDeployment.getProperty("elasticsearch_url");
+
+        String credentials = username + ":" + password;
+        String basicAuthPayload = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes());
+
+        URI remoteElasticsearchUri = new URI(remoteElasticsearchUrl);
+        String name = "ftr-remote";
+
+        String serverName = remoteElasticsearchUri.getHost();
+        String proxyAddress = remoteElasticsearchUri.getHost() + ":9400";
+
+        String path = "/api/remote_clusters";
+        String body = "{\"name\":\"" + name + "\"," +
+                "\"skipUnavailable\":true," +
+                "\"mode\":\"proxy\"," +
+                "\"proxyAddress\":\"" +  proxyAddress + "\"," +
+                "\"proxySocketConnections\":18," +
+                "\"serverName\":\"" + serverName + "\"}";
+
+        HttpPost postRequest = new HttpPost(kibanaUrl + path);
+        postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+        postRequest.setHeader("kbn-xsrf", "automation");
+        postRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+        StringEntity entity = new StringEntity(body);
+        entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+        postRequest.setEntity(entity);
+        HttpClient client = HttpClientBuilder.create().build();
+        HttpResponse response = client.execute(postRequest);
+        int statusCode = response.getStatusLine().getStatusCode();
+        if (statusCode != 200) {
+            throw new IOException("FAILED! POST: " + response.getStatusLine() + " " + path);
+        }
+        String content = EntityUtils.toString(response.getEntity());
+        JSONObject json = new JSONObject(content);
+        boolean acknowledged = json.getBoolean("acknowledged");
+        if (!acknowledged) {
+            throw new IOException("Remote cluster failed!");
+        }
     }
 }

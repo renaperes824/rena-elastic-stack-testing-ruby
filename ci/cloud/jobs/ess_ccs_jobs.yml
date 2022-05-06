@@ -1,0 +1,10 @@
+TASK:
+  - ccs_run_kibana_tests
+JOB:
+  - cssTest3a
+  - cssTest3b
+  - cssTest3c
+  - cssTest3d
+
+exclude: ~
+

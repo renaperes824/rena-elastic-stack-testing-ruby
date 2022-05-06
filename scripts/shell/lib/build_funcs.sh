@@ -461,6 +461,9 @@ run_cloud_tests() {
   if [ ! -z $ESTF_UPGRADE_CLOUD_VERSION ]; then
     export TASK=kibana_upgrade_tests
   fi
+  if [ ! -z $ESTF_REMOTE_CLOUD_VERSION ]; then
+    export TASK=ccs_run_kibana_tests
+  fi
   if [ -z $TASK ]; then
     echo_error "Gradle task name must be supplied"
     exit 1

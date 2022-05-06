@@ -11,47 +11,12 @@ import org.estf.gradle.CreateCloudDeployment
 import org.estf.gradle.EditCloudDeployment
 import org.estf.gradle.ShutdownCloudDeployment
 
-task saas_setup(type: CreateCloudDeployment) {
+task ccs_setup(type: CreateCloudDeployment) {
     doFirst {
-        stackVersion = System.env.ESTF_CLOUD_VERSION
-        String version = (System.env.ESTF_KIBANA_VERSION).minus('origin/')
-        String jobName = System.env.JOB.trim()
-        try {
-            URL defaultCfgUrl = new URL("https://raw.githubusercontent.com/elastic/elastic-stack-testing/" +
-                    version + "/ci/cloud/product/settings/kibana.yml")
-
-            URL jobCfgUrl = new URL("https://raw.githubusercontent.com/elastic/elastic-stack-testing/" +
-                    version + "/ci/cloud/product/settings/" + jobName + ".yml")
-
-            HttpURLConnection jobCfgHttp = (HttpURLConnection) jobCfgUrl.openConnection()
-            if (jobCfgHttp.getResponseCode() == 200) {
-                kibanaUserSettingsOverride = jobCfgUrl.getText('UTF-8')
-            } else {
-                kibanaUserSettingsOverride = defaultCfgUrl.getText('UTF-8')
-            }
-        } catch (Exception ignored) {
-        }
-
-        if (System.env.JOB == "xpackGrp3") {
-            mlTesting = true
-            ingestNodeTesting = true
-            kbnReportsTesting = true
-        } else if (System.env.JOB == "xpackGrp2" || System.env.JOB == "xpackGrp4") {
-            kbnReportsTesting = true
-        } else if (System.env.JOB == "xpackExtGrp1") {
-            kbnReportsTesting = true
-        } else if (System.env.JOB == "xpackExtGrp2") {
-            mlTesting = true
-            ingestNodeTesting = true
-        }
-        if (System.env.ESTF_ML_TESTING) {
-            mlTesting = true
-        }
-        if (System.env.ESTF_INGEST_NODE_TESTING) {
-            ingestNodeTesting = true
-        }
-        if (System.env.ESTF_KIBANA_REPORTS_TESTING) {
-            kbnReportsTesting = true
+        stackVersion = rootProject.createVersion
+        remoteVersion = rootProject.remoteVersion
+        if (!remoteVersion) {
+            throw new GradleException("Remote version must be specified")
         }
     }
     doLast {
@@ -62,10 +27,20 @@ task saas_setup(type: CreateCloudDeployment) {
             properties.load(it)
         }
 
+        def remotePropFile = getRemotePropertiesFile()
+        Properties remoteProperties = new Properties()
+        File remotePropertiesFile = new File(remotePropFile.trim())
+        remotePropertiesFile.withInputStream {
+            remoteProperties.load(it)
+        }
+
         rootProject.ext.props = properties
         rootProject.ext.deployment_id = getDeploymentId()
         rootProject.ext.cluster_id = getElasticsearchClusterId()
         rootProject.ext.kibana_cluster_id = getKibanaClusterId()
+
+        rootProject.ext.remoteprops = remoteProperties
+        rootProject.ext.remote_deployment_id = getRemoteDeploymentId()
 
         // Print information about elasticsearch and kibana
         URLConnection kbnUrl = new URL(properties.kibana_url.toString() + "/api/status").openConnection()
@@ -93,30 +68,59 @@ task saas_setup(type: CreateCloudDeployment) {
     }
 }
 
-task saas_disable_saml_login(type: EditCloudDeployment) {
+task ccs_disable_saml_login(type: EditCloudDeployment) {
     doFirst {
         deploymentId = rootProject.deployment_id
         disableSamlLogin = true
     }
 }
 
-task saas_cleanup(type: ShutdownCloudDeployment) {
+task ccs_cleanup(type: ShutdownCloudDeployment) {
     doFirst {
         deploymentId =  rootProject.deployment_id
     }
 }
 
-task saas_run_kibana_tests {
+task ccs_remote_cleanup(type: ShutdownCloudDeployment) {
+    doFirst {
+        deploymentId =  rootProject.remote_deployment_id
+    }
+}
+
+task ccs_run_kibana_tests {
     doFirst {
         println "Run tests"
     }
 }
-task run_kibana_tests {
+
+task kibana_ccs_tests {
     dependsOn tasks.getByPath(':common:run_kibana_tests')
 }
 
-saas_run_kibana_tests.dependsOn saas_setup, saas_disable_saml_login, run_kibana_tests
-saas_disable_saml_login.mustRunAfter(saas_setup)
-run_kibana_tests.mustRunAfter(saas_disable_saml_login)
-tasks.getByPath(':common:run_kibana_tests').finalizedBy saas_cleanup
-saas_run_kibana_tests.finalizedBy saas_cleanup
+String _job = System.env.JOB ?: ""
+String _cloud_version = ""
+def _remote_cloud_version = null
+if (_job) {
+    def jsonSlurper = new JsonSlurper()
+    def data = jsonSlurper.parseText(new File("$projectDir/css_paths.json").text)
+    String jobName = data["$_job"]
+    if (jobName) {
+        def testPaths = jobName.split(',')
+        if (testPaths.size() < 3) {
+            throw new Exception("Test path is malformed!")
+        }
+        rootProject.ext.kibana_version = testPaths[0]
+        _cloud_version = testPaths[1]
+        _remote_cloud_version = testPaths[2]
+    }
+}
+
+rootProject.ext.remoteVersion = System.env.ESTF_REMOTE_CLOUD_VERSION ?: _remote_cloud_version
+rootProject.ext.createVersion = System.env.ESTF_CLOUD_VERSION ?: _cloud_version
+rootProject.ext.ccs = true
+
+ccs_run_kibana_tests.dependsOn ccs_setup, ccs_disable_saml_login, kibana_ccs_tests
+ccs_disable_saml_login.mustRunAfter(ccs_setup)
+kibana_ccs_tests.mustRunAfter(ccs_disable_saml_login)
+tasks.getByPath(':common:run_kibana_tests').finalizedBy ccs_cleanup, ccs_remote_cleanup
+ccs_run_kibana_tests.finalizedBy ccs_cleanup, ccs_remote_cleanup

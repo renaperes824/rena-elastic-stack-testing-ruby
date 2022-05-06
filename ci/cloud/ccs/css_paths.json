@@ -1,0 +1,14 @@
+{
+  "cssTest1a": "8.2,8.2.0,8.2.0",
+  "cssTest1b": "8.2,8.2.0,8.1.3",
+  "cssTest1c": "8.2,8.2.0,8.0.1",
+  "cssTest1d": "8.2,8.2.0,7.17.3",
+  "cssTest2a": "8.2,8.2.1-SNAPSHOT,8.2.0",
+  "cssTest2b": "8.2,8.2.1-SNAPSHOT,8.1.3",
+  "cssTest2c": "8.2,8.2.1-SNAPSHOT,8.0.1",
+  "cssTest2d": "8.2,8.2.1-SNAPSHOT,7.17.3",
+  "cssTest3a": "main,8.3.0-SNAPSHOT,8.2.0",
+  "cssTest3b": "main,8.3.0-SNAPSHOT,8.1.3",
+  "cssTest3c": "main,8.3.0-SNAPSHOT,8.0.1",
+  "cssTest3d": "main,8.3.0-SNAPSHOT,7.17.3"
+}

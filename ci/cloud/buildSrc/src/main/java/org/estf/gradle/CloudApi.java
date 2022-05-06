@@ -32,14 +32,20 @@ public class CloudApi {
         if (estf_host != null) {
             host = estf_host;
         }
-        String url = getUrl();
 
+        boolean cloudApiDebug = false;
+        String getEnvCloudApiDebug = System.getenv("ESTF_CLOUD_API_DEBUG");
+        if (getEnvCloudApiDebug != null) {
+            cloudApiDebug = Boolean.parseBoolean(getEnvCloudApiDebug);
+        }
+
+        String url = getUrl();
         System.out.println("Debug: Setting up API client");
         apiClient = new ApiClient();
         apiClient.setApiKey(credentials.getApiKey());
         apiClient.setApiKeyPrefix("ApiKey");
         apiClient.setBasePath(url);
-        apiClient.setDebugging(true);
+        apiClient.setDebugging(cloudApiDebug);
         System.out.println("Debug: API URL: " + url);
     }
 
