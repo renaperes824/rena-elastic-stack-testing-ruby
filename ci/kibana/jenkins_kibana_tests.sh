@@ -3061,15 +3061,6 @@ function set_package() {
   local _platform=$1
   local _grp=$2
 
-  if [[ "$_platform" == "cloud" ]] || [[ -z $_grp ]]; then
-    get_version
-    return
-  fi
-
-  get_build_server
-  get_version
-  get_os
-
   export ESTF_TEST_STANDALONE=false
 
   if [[ "$_platform" == "docker" ]]; then
@@ -3088,6 +3079,14 @@ function set_package() {
     export ESTF_TEST_PACKAGE="tar.gz"
     return
   fi
+
+  if [[ "$_platform" == "cloud" ]] || [[ -z $_grp ]]; then
+    return
+  fi
+
+  get_build_server
+  get_version
+  get_os
 
   local _splitStr=(${Glb_Kibana_Version//./ })
   local _version=${_splitStr[0]}.${_splitStr[1]}
