@@ -61,7 +61,7 @@ xpackGrp4="api_keys
 
 xpackExtGrp1="alerting_api_integration
               plugin_api_integration
-              reporting
+              reporting_functional
               reporting_api_integration
              "
 

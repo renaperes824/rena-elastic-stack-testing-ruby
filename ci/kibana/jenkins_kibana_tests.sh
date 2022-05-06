@@ -344,10 +344,10 @@ function get_os() {
     echo_error_exit "gawk is not installed"
   fi
 
-  echo_info "Running on OS: $Glb_OS"
-  echo_info "Running on Arch: $Glb_Arch"
-  echo_info "Running on Dist: $Glb_Distr"
-  echo_info "Running on Dist Ver: $Glb_Distr_Ver"
+  echo_info "Operating System: $Glb_OS"
+  echo_info "Architecture: $Glb_Arch"
+  echo_info "Distribution: $Glb_Distr"
+  echo_info "Distribution Version: $Glb_Distr_Ver"
 
   readonly Glb_OS Glb_Arch Glb_Chromium Glb_ChromeDriver Glb_Distr Glb_Distr_Ver
 }
@@ -391,6 +391,133 @@ function vge() {
   else
    echo 0
   fi
+}
+
+# ----------------------------------------------------------------------------
+# Test stats
+# ----------------------------------------------------------------------------
+function test_stats() {
+  cfg=$1
+  if [[ ! -z $ESTF_SKIP_STATS ]]; then
+    return
+  fi
+  help=$(node scripts/functional_test_runner --help | grep test-stats)
+  if [[ $? -eq 0 ]]; then
+    node scripts/functional_test_runner --config $cfg --test-stats
+  fi
+}
+
+# ----------------------------------------------------------------------------
+# Parse YAML
+# ----------------------------------------------------------------------------
+function parse_yaml() {
+  file=$1
+  key=$2
+  python3 -c "import yaml;print(yaml.safe_load(open('$file'))$key)"
+}
+
+# ----------------------------------------------------------------------------
+# Filter YAML
+# ----------------------------------------------------------------------------
+function filter_yaml() {
+  filter=$1
+  testGrp=$2
+  declare -n _filter_array=$3
+
+  if [ -z "$testGrp" ]; then
+    return
+  fi
+
+  read testGrp tag < <(parse_str $testGrp)
+  testGrpMapped=$(join_by \  ${!testGrp})
+  echo_debug "Finding configurations for: $(join_by \, ${!testGrp})"
+
+  basic_functional_tests='^test/functional/app'
+  xpack_functional_tests='^x-pack/test/functional/app'
+  xpack_ext_functional_tests='^x-pack/test'
+  pattern=""
+
+  DATA=$(parse_yaml .buildkite/ftr_configs.yml "['enabled']")
+  IFS=', ' read -r -a array <<< "${DATA//[\'\[\]]/ }"
+
+  if [[ $filter == "basic" ]]; then
+    pattern=$basic_functional_tests
+  elif [[ $filter == "xpack" ]]; then
+    pattern=$xpack_functional_tests
+  elif [[ $filter == "xpackext" ]]; then
+    pattern=$xpack_ext_functional_tests
+  fi
+
+  for element in "${array[@]}"; do
+    if [[ $element =~ $pattern ]]; then
+      if [[ $filter == "xpackext" ]]; then
+        if [[ $element =~ $xpack_functional_tests ]]; then
+          continue
+        fi
+        rmdir="${element#*x-pack/test/}"
+        testname="${rmdir%%/*}"
+      fi
+      if [[ $filter == "basic" ]]; then
+        rmdir="${element#*test/functional/apps/}"
+        testname="${rmdir%%/*}"
+      fi
+      if [[ $filter == "xpack" ]]; then
+        rmdir="${element#*x-pack/test/functional/apps/}"
+        testname="${rmdir%%/*}"
+      fi
+      if [[ "$testGrpMapped" == *"$testname"* ]]; then
+        _filter_array+=(${element#*x-pack/})
+      fi
+    fi
+  done
+
+}
+
+# ----------------------------------------------------------------------------
+# Get FTR configurations
+# ----------------------------------------------------------------------------
+function get_ftr_configs() {
+  local filter=$1
+  local testGrp=$2
+  declare -n _retarray=$3
+
+  local _splitStr=(${Glb_Kibana_Version//./ })
+  local _version=${_splitStr[0]}.${_splitStr[1]}
+  local _newFtrGroups=$(vge $_version "8.3")
+
+  if [[ $_newFtrGroups == 0 ]]; then
+    if [[ $filter == "basic" ]]; then
+      _retarray+=("test/functional/config.js")
+    fi
+    if [[ $filter == "xpack" ]]; then
+      _retarray+=("x-pack/test/functional/config.js")
+    fi
+    if [[ $filter == "xpackext" ]]; then
+      awk_exec="awk"
+      if [[ "$Glb_OS" = "darwin" ]]; then
+        awk_exec="gawk"
+      fi
+
+      matches=$(cd x-pack; find test/ -regex '.*config\.js\|.*config\.ts' | grep -v "test/functional/" | sort)
+      echo_debug "Finding configurations for: $(join_by \, ${!testGrp})"
+
+      filter_matches=""
+      for grp in ${!testGrp}; do
+        cfgs=$(echo $matches | tr " " "\n" | grep "test/$grp[\a-z]*")
+        filter_matches="${filter_matches} $cfgs"
+      done
+
+      cfgs=$matches
+      if [ ! -z "$filter_matches" ]; then
+        cfgs=$filter_matches
+      fi
+
+      IFS=" " read -r -a _retarray <<< "$(echo $cfgs | xargs -n1 | sort -u | xargs)"
+    fi
+    return
+  fi
+
+  filter_yaml "$filter" "$testGrp" _retarray
 }
 
 # ----------------------------------------------------------------------------
@@ -916,7 +1043,7 @@ function check_git_changes() {
 # Method to setup CI environment
 # -----------------------------------------------------------------------------
 function run_ci_setup() {
-  if [[ ! -z $TEST_SKIP_CI_SETUP ]]; then
+  if [[ ! -z $TEST_SKIP_CI_SETUP ]] || [[ ! -z $ESTF_DRY_RUN ]]; then
     return
   fi
   get_os
@@ -943,6 +1070,9 @@ function run_ci_setup_get_docker_images() {
 # Method to cleanup CI environment
 # -----------------------------------------------------------------------------
 function run_ci_cleanup() {
+  if [[ ! -z $ESTF_DRY_RUN ]]; then
+    return
+  fi
   if [ $Glb_KbnClean == "yes" ]; then
     #cleanup_docker
     #uninstall_standalone_servers
@@ -957,6 +1087,9 @@ function run_ci_cleanup() {
 # Method to install Kibana
 # -----------------------------------------------------------------------------
 function install_kibana() {
+  if [[ ! -z $ESTF_DRY_RUN ]]; then
+    return
+  fi
   create_install_dir
   get_build_server
   get_version
@@ -1440,6 +1573,8 @@ function run_basic_tests() {
   remove_oss
   disable_security_user
 
+  get_ftr_configs "basic" "$testGrp" cfgarray
+
   TEST_KIBANA_BUILD=basic
   install_kibana
 
@@ -1451,19 +1586,24 @@ function run_basic_tests() {
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
-    export ESTF_RUN_NUMBER=$i
-    update_report_name "test/functional/config.js"
-
-    echo_info " -> Running basic functional tests, run $i of $maxRuns"
-    eval node scripts/functional_tests \
-          --esFrom snapshot \
-          --kibana-install-dir=${Glb_Kibana_Dir} \
-          --config test/functional/config.js \
-          --debug " $includeTags" \
-          -- --server.maxPayloadBytes=1679958
-    if [ $? -ne 0 ]; then
-      failures=1
-    fi
+    for cfg in "${cfgarray[@]}"; do
+      export ESTF_RUN_NUMBER=$i
+      update_report_name $cfg
+      echo_info " -> Running basic tests config: $cfg, run $i of $maxRuns"
+      if [[ ! -z $ESTF_DRY_RUN ]]; then
+        test_stats $cfg
+        continue
+      fi
+      eval node scripts/functional_tests \
+            --esFrom snapshot \
+            --kibana-install-dir=${Glb_Kibana_Dir} \
+            --config "$cfg" \
+            --debug " $includeTags" \
+            -- --server.maxPayloadBytes=1679958
+      if [ $? -ne 0 ]; then
+        failures=1
+      fi
+    done
   done
 
   run_ci_cleanup
@@ -1484,6 +1624,8 @@ function run_xpack_func_tests() {
   includeTags=$(update_config "x-pack/test/functional/config.js" $testGrp)
   update_test_files
 
+  get_ftr_configs "xpack" "$testGrp" cfgarray
+
   TEST_KIBANA_BUILD=default
   install_kibana
 
@@ -1499,18 +1641,23 @@ function run_xpack_func_tests() {
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
-    export ESTF_RUN_NUMBER=$i
-    update_report_name "test/functional/config.js"
-
-    echo_info " -> Running xpack func tests, run $i of $maxRuns"
-    eval node scripts/functional_tests \
-          --esFrom=snapshot \
-          --config test/functional/config.js \
-          --kibana-install-dir=${Glb_Kibana_Dir} \
-          --debug " $includeTags"
-    if [ $? -ne 0 ]; then
-      failures=1
-    fi
+    for cfg in "${cfgarray[@]}"; do
+      export ESTF_RUN_NUMBER=$i
+      update_report_name $cfg
+      echo_info " -> Running xpack tests config: $cfg, run $i of $maxRuns"
+      if [[ ! -z $ESTF_DRY_RUN ]]; then
+        test_stats $cfg
+        continue
+      fi
+      eval node scripts/functional_tests \
+            --esFrom=snapshot \
+            --config "$cfg" \
+            --kibana-install-dir=${Glb_Kibana_Dir} \
+            --debug " $includeTags"
+      if [ $? -ne 0 ]; then
+        failures=1
+      fi
+    done
   done
 
   run_ci_cleanup
@@ -1530,6 +1677,8 @@ function run_xpack_ext_tests() {
   run_ci_setup
   update_test_files
 
+  get_ftr_configs "xpackext" "$testGrp" cfgarray
+
   TEST_KIBANA_BUILD=default
   install_kibana
 
@@ -1543,31 +1692,10 @@ function run_xpack_ext_tests() {
     export TEST_BROWSER_CHROMEDRIVER_PATH=$Glb_ChromeDriver
   fi
 
-  awk_exec="awk"
-  if [[ "$Glb_OS" = "darwin" ]]; then
-    awk_exec="gawk"
-  fi
-
-  # Note: It is done this way until kibana issue #42454 is resolved
-  matches=$($awk_exec 'match($0, /test[\a-z.]+'\''/) { print substr($0,RSTART,RLENGTH-1) }' scripts/functional_tests.js)
-
-  filter_matches=""
-  for grp in ${!testGrp}; do
-    cfgs=$(echo $matches | tr " " "\n" | grep "test/$grp[\a-z]*")
-    filter_matches="${filter_matches} $cfgs"
-  done
-
-  cfgs=$matches
-  if [ ! -z "$filter_matches" ]; then
-    cfgs=$filter_matches
-  fi
-
-  cfgs=$(echo $cfgs | xargs -n1 | sort -u | xargs)
-
   failures=0
   for i in $(seq 1 1 $maxRuns); do
-    for cfg in $cfgs; do
-      if [ $cfg == "test/functional/config.js" ] && [ $funcTests == "false" ]; then
+    for cfg in "${cfgarray[@]}"; do
+      if [[ $cfg == "test/functional/config.js" ]] && [ $funcTests == "false" ]; then
         continue
       fi
       if [[ $Glb_ApiOnly == "yes" ]] && [[ "$cfg" != *"api"* ]]; then
@@ -1575,8 +1703,11 @@ function run_xpack_ext_tests() {
       fi
       export ESTF_RUN_NUMBER=$i
       update_report_name $cfg
-
-      echo " -> Running xpack ext tests config: $cfg, run $i of $maxRuns"
+      echo_info " -> Running xpack ext tests config: $cfg, run $i of $maxRuns"
+      if [[ ! -z $ESTF_DRY_RUN ]]; then
+        test_stats $cfg
+        continue
+      fi
       node scripts/functional_tests \
         --esFrom=snapshot \
         --config $cfg \
@@ -1608,6 +1739,8 @@ function run_cloud_basic_tests() {
   remove_oss
   enable_security
 
+  get_ftr_configs "basic" "$testGrp" cfgarray
+
   export TEST_BROWSER_HEADLESS=1
   # To fix FTR ssl certificate issue: https://github.com/elastic/kibana/pull/73317
   export TEST_CLOUD=1
@@ -1624,17 +1757,21 @@ function run_cloud_basic_tests() {
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
-    export ESTF_RUN_NUMBER=$i
-    update_report_name "test/functional/config.js"
-
-    echo_info " -> Running cloud basic functional tests, run $i of $maxRuns"
-    eval node $nodeOpts scripts/functional_test_runner \
-          --config test/functional/config.js \
-          --exclude-tag skipCloud " $includeTags"
-
-    if [ $? -ne 0 ]; then
-      failures=1
-    fi
+    for cfg in "${cfgarray[@]}"; do
+      export ESTF_RUN_NUMBER=$i
+      update_report_name $cfg
+      echo_info " -> Running cloud basic tests config: $cfg, run $i of $maxRuns"
+      if [[ ! -z $ESTF_DRY_RUN ]]; then
+        test_stats $cfg
+        continue
+      fi
+      eval node $nodeOpts scripts/functional_test_runner \
+            --config "$cfg" \
+            --exclude-tag skipCloud " $includeTags"
+      if [ $? -ne 0 ]; then
+        failures=1
+      fi
+    done
   done
 
   run_ci_cleanup
@@ -1654,6 +1791,8 @@ function run_cloud_xpack_func_tests() {
   includeTags=$(update_config "x-pack/test/functional/config.js" $testGrp)
   update_test_files
 
+  get_ftr_configs "xpack" "$testGrp" cfgarray
+
   local _xpack_dir="$(cd x-pack; pwd)"
   echo_info "-> XPACK_DIR ${_xpack_dir}"
   cd "$_xpack_dir"
@@ -1669,17 +1808,21 @@ function run_cloud_xpack_func_tests() {
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
-    export ESTF_RUN_NUMBER=$i
-    update_report_name "test/functional/config.js"
-
-    echo_info " -> Running cloud xpack func tests, run $i of $maxRuns"
-    eval node $nodeOpts ../scripts/functional_test_runner \
-          --config test/functional/config.js \
-          --exclude-tag skipCloud " $includeTags"
-
-    if [ $? -ne 0 ]; then
-      failures=1
-    fi
+    for cfg in "${cfgarray[@]}"; do
+      export ESTF_RUN_NUMBER=$i
+      update_report_name "$cfg"
+      echo_info " -> Running cloud xpack tests config: $cfg, run $i of $maxRuns"
+      if [[ ! -z $ESTF_DRY_RUN ]]; then
+        test_stats $cfg
+        continue
+      fi
+      eval node $nodeOpts ../scripts/functional_test_runner \
+            --config "$cfg" \
+            --exclude-tag skipCloud " $includeTags"
+      if [ $? -ne 0 ]; then
+        failures=1
+      fi
+    done
   done
 
   run_ci_cleanup
@@ -1785,10 +1928,12 @@ function run_cloud_xpack_ext_tests() {
       fi
       export ESTF_RUN_NUMBER=$i
       update_report_name $cfg
-
-      echo " -> Running cloud xpack ext tests config: $cfg, run $i of $maxRuns"
+      echo_info " -> Running cloud xpack ext tests config: $cfg, run $i of $maxRuns"
+      if [[ ! -z $ESTF_DRY_RUN ]]; then
+        test_stats $cfg
+        continue
+      fi
       node $nodeOpts ../scripts/functional_test_runner --config $cfg --exclude-tag skipCloud
-
       if [ $? -ne 0 ]; then
         failures=1
       fi
@@ -1818,7 +1963,7 @@ function run_visual_tests_basic() {
   export TEST_BROWSER_HEADLESS=1
   export LOG_LEVEL=debug
 
-  echo_info "Running basic visual tests"
+  echo_info " -> Running basic visual tests"
   yarn run percy exec -- -t 700 -- \
   node scripts/functional_tests \
     --kibana-install-dir=${Glb_Kibana_Dir} \
@@ -1842,7 +1987,7 @@ function run_visual_tests_default() {
   export TEST_BROWSER_HEADLESS=1
   export LOG_LEVEL=debug
 
-  echo_info "Running default visual tests"
+  echo_info " -> Running default visual tests"
   yarn run percy exec -- -t 700 -- \
   node scripts/functional_tests \
     --kibana-install-dir=${Glb_Kibana_Dir} \
@@ -1884,15 +2029,18 @@ function run_upgrade_tests() {
   fi
 
   failures=0
+  cfg="test/upgrade/config.ts"
   for i in $(seq 1 1 $maxRuns); do
     export ESTF_RUN_NUMBER=$i
-    update_report_name "test/upgrade/config.ts"
-
-    echo_info " -> Running upgrade tests, run $i of $maxRuns"
+    update_report_name $cfg
+    echo_info " -> Running upgrade tests config: $cfg, run $i of $maxRuns"
+    if [[ ! -z $ESTF_DRY_RUN ]]; then
+      test_stats $cfg
+      continue
+    fi
     eval xvfb-run node $nodeOpts ../scripts/functional_test_runner $esVersion \
-          --config test/upgrade/config.ts \
+          --config $cfg \
           --exclude-tag skipCloud " $includeTags"
-
     if [ $? -ne 0 ]; then
       failures=1
     fi
@@ -1901,6 +2049,59 @@ function run_upgrade_tests() {
   run_ci_cleanup
 
   exit_script $failures "Upgrade Test failed!"
+}
+
+# -----------------------------------------------------------------------------
+# Method to run ccs tests
+# -----------------------------------------------------------------------------
+function run_ccs_tests() {
+  echo_info "In run_ccs_tests"
+  local testGrp=$1
+  local maxRuns="${ESTF_NUMBER_EXECUTIONS:-1}"
+
+  run_ci_setup
+  remove_oss
+  enable_security
+
+  export TEST_BROWSER_HEADLESS=1
+  # To fix FTR ssl certificate issue: https://github.com/elastic/kibana/pull/73317
+  export TEST_CLOUD=1
+
+  # Adding for debug: https://github.com/elastic/kibana/pull/128309
+  export DISABLE_CI_LOG_OUTPUT_CAPTURE=1
+
+  nodeOpts=" "
+  if [ ! -z $NODE_TLS_REJECT_UNAUTHORIZED ] && [[ $NODE_TLS_REJECT_UNAUTHORIZED -eq 0 ]]; then
+    nodeOpts="--no-warnings "
+  fi
+
+  esVersion=""
+  if [ ! -z $ESTF_FTR_ES_VERSION ]; then
+    esVersion=" --es-version $ESTF_FTR_ES_VERSION "
+  fi
+
+  failures=0
+  cfgs="test/functional/config.ccs.ts x-pack/test/functional/config.ccs.ts"
+  for i in $(seq 1 1 $maxRuns); do
+    for cfg in $cfgs; do
+      export ESTF_RUN_NUMBER=$i
+      echo_info " -> Running ccs tests config: $cfg, run $i of $maxRuns"
+      if [[ ! -z $ESTF_DRY_RUN ]]; then
+        test_stats $cfg
+        continue
+      fi
+      eval node $nodeOpts scripts/functional_test_runner $esVersion \
+            --config "$cfg" \
+            --exclude-tag skipCloud
+      if [ $? -ne 0 ]; then
+        failures=1
+      fi
+    done
+  done
+
+  run_ci_cleanup
+
+  exit_script $failures "CCS Test failed!"
 }
 
 # -----------------------------------------------------------------------------
@@ -1935,14 +2136,16 @@ function run_security_solution_upgrade_tests() {
   fi
 
   failures=0
+  cfg="test/security_solution_cypress/upgrade_config.ts"
   for i in $(seq 1 1 $maxRuns); do
     export ESTF_RUN_NUMBER=$i
     update_report_name "test/security_solution_cypress/upgrade_config.ts"
-
-    echo_info " -> Running upgrade security solution tests, run $i of $maxRuns"
-    eval node $nodeOpts ../scripts/functional_test_runner $esVersion \
-          --config test/security_solution_cypress/upgrade_config.ts
-
+    echo_info " -> Running upgrade security solution tests config $cfg, run $i of $maxRuns"
+    if [[ ! -z $ESTF_DRY_RUN ]]; then
+      test_stats $cfg
+      continue
+    fi
+    eval node $nodeOpts ../scripts/functional_test_runner $esVersion --config $cfg
     if [ $? -ne 0 ]; then
       failures=1
     fi
@@ -2220,6 +2423,8 @@ function run_standalone_basic_tests() {
   includeTags=$(update_config "test/functional/config.js" $testGrp)
   update_test_files
 
+  get_ftr_configs "basic" "$testGrp" cfgarray
+
   install_standalone_servers
   nodeOpts=" "
   if [[ $_isSecurityOnByDefault == 1 ]] && [[ "$ESTF_TEST_PACKAGE" != "docker" ]]; then
@@ -2239,15 +2444,19 @@ function run_standalone_basic_tests() {
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
-    export ESTF_RUN_NUMBER=$i
-    update_report_name "test/functional/config.js"
-
-    echo_info " -> Running standalone basic functional tests, run $i of $maxRuns"
-    eval node $nodeOpts scripts/functional_test_runner --config test/functional/config.js " $includeTags"
-
-    if [ $? -ne 0 ]; then
-      failures=1
-    fi
+    for cfg in "${cfgarray[@]}"; do
+      export ESTF_RUN_NUMBER=$i
+      update_report_name $cfg
+      echo_info " -> Running standalone basic tests config: $cfg, run $i of $maxRuns"
+      if [[ ! -z $ESTF_DRY_RUN ]]; then
+        test_stats $cfg
+        continue
+      fi
+      eval node $nodeOpts scripts/functional_test_runner --config "$cfg" " $includeTags"
+      if [ $? -ne 0 ]; then
+        failures=1
+      fi
+    done
   done
 
   run_ci_cleanup
@@ -2278,6 +2487,8 @@ function run_standalone_xpack_func_tests() {
   includeTags=$(update_config "x-pack/test/functional/config.js" $testGrp)
   update_test_files
 
+  get_ftr_configs "xpack" "$testGrp" cfgarray
+
   export TEST_BROWSER_HEADLESS=1
   if [[ "$Glb_Arch" == "aarch64" ]]; then
     export TEST_BROWSER_BINARY_PATH=$Glb_Chromium
@@ -2297,16 +2508,20 @@ function run_standalone_xpack_func_tests() {
 
   failures=0
   for i in $(seq 1 1 $maxRuns); do
-    export ESTF_RUN_NUMBER=$i
-    update_report_name "test/functional/config.js"
-
-    echo_info " -> Running standalone xpack func tests, run $i of $maxRuns"
-    eval node $nodeOpts ../scripts/functional_test_runner \
-          --config test/functional/config.js " $includeTags"
-
-    if [ $? -ne 0 ]; then
-      failures=1
-    fi
+    for cfg in "${cfgarray[@]}"; do
+      export ESTF_RUN_NUMBER=$i
+      update_report_name "$cfg"
+      echo_info " -> Running standalone xpack tests config: $cfg, run $i of $maxRuns"
+      if [[ ! -z $ESTF_DRY_RUN ]]; then
+        test_stats $cfg
+        continue
+      fi
+      eval node $nodeOpts ../scripts/functional_test_runner \
+            --config "$cfg" " $includeTags"
+      if [ $? -ne 0 ]; then
+        failures=1
+      fi
+    done
   done
 
   run_ci_cleanup
@@ -2373,10 +2588,12 @@ function run_standalone_xpack_ext_tests() {
       fi
       export ESTF_RUN_NUMBER=$i
       update_report_name $cfg
-
-      echo " -> Running standalone xpack ext tests config: $cfg, run $i of $maxRuns"
+      echo_info " -> Running standalone xpack ext tests config: $cfg, run $i of $maxRuns"
+      if [[ ! -z $ESTF_DRY_RUN ]]; then
+        test_stats $cfg
+        continue
+      fi
       node $nodeOpts ../scripts/functional_test_runner --config $cfg
-
       if [ $? -ne 0 ]; then
         failures=1
       fi
@@ -2400,9 +2617,20 @@ function remove_oss() {
   if [[ "$Glb_OS" = "darwin" ]]; then
     label=".bak"
   fi
-  sed -i $label "s/license: 'oss'/license: 'basic'/g" test/common/config.js
-  sed -i $label '/--oss/d' test/new_visualize_flow/config.ts
-  sed -i $label '/--oss/d' test/functional/config.js
+
+  cmn_cfg="test/common/config.js"
+  vis_cfg="test/new_visualize_flow/config.ts"
+  fnc_cfg="test/functional/config.js"
+
+  if [[ -f $cmn_cfg ]]; then
+    sed -i $label "s/license: 'oss'/license: 'basic'/g" $cmn_cfg
+  fi
+  if [[ -f $vis_cfg ]]; then
+    sed -i $label '/--oss/d' $vis_cfg
+  fi
+  if [[ -f $fnc_cfg ]]; then
+    sed -i $label '/--oss/d' $fnc_cfg
+  fi
 }
 
 # -----------------------------------------------------------------------------
@@ -2433,7 +2661,11 @@ function update_config() {
   local configFile=$1
   local testGrp=$2
 
-  if [ -z "$testGrp" ]; then
+  if [ -z "$testGrp" ] || [ -z $configFile ] ; then
+    return
+  fi
+
+  if [ ! -f $configFile ]; then
     return
   fi
 
@@ -2444,7 +2676,9 @@ function update_config() {
 
   update_config_file "$testGrp" $configFile
 
-  echo $(get_tags "${!tag}")
+  if [ ! -z $tag ]; then
+    echo $(get_tags "${!tag}")
+  fi
 }
 
 # -----------------------------------------------------------------------------
@@ -2574,7 +2808,11 @@ function disable_security_user() {
 # -----------------------------------------------------------------------------
 function enable_security() {
   export ES_SECURITY_ENABLED=1
-  sed -i "s/xpack.security.enabled=false/xpack.security.enabled=true/g" test/functional/config.js
+
+  cfg="test/functional/config.js"
+  if [[ -f  $cfg ]]; then
+    sed -i "s/xpack.security.enabled=false/xpack.security.enabled=true/g" $cfg
+  fi
 }
 
 # -----------------------------------------------------------------------------
@@ -2829,6 +3067,10 @@ function set_package() {
 
   export ESTF_TEST_STANDALONE=false
 
+  get_build_server
+  get_version
+  get_os
+
   if [[ "$_platform" == "docker" ]]; then
     export ESTF_TEST_PACKAGE="docker"
     export ESTF_TEST_STANDALONE=true
@@ -2844,10 +3086,6 @@ function set_package() {
   elif [[ "$_platform" == "cloud" ]]; then
     return
   fi
-
-  get_build_server
-  get_version
-  get_os
 
   local _splitStr=(${Glb_Kibana_Version//./ })
   local _version=${_splitStr[0]}.${_splitStr[1]}
@@ -3346,6 +3584,7 @@ function set_elasticsearch_jvm_options() {
 # Install debian packages for elasticsearch and kibana
 # -----------------------------------------------------------------------------
 function install_packages() {
+
   local type=${TEST_KIBANA_BUILD:-basic}
   local _esHome="/etc/elasticsearch"
   local _sudo="sudo -s"
@@ -3530,6 +3769,11 @@ EOM
 # Install standalone servers
 # ----------------------------------------------------------------------------
 function install_standalone_servers() {
+
+  if [[ ! -z $ESTF_DRY_RUN ]]; then
+    return
+  fi
+
   local type=${TEST_KIBANA_BUILD:-basic}
 
   if [ "$ESTF_TEST_PACKAGE" = "docker" ]; then
@@ -3731,6 +3975,9 @@ case "$TEST_GROUP" in
     ;;
   upgrade_security_solution)
     run_security_solution_upgrade_tests
+    ;;
+  ccs)
+    run_ccs_tests
     ;;
   selenium)
     run_basic_tests
