@@ -239,6 +239,8 @@ function get_version() {
      Glb_Kibana_Version="${Glb_Kibana_Version}-${BASH_REMATCH[1]}"
   fi
 
+  echo_debug "Kibana Version: $Glb_Kibana_Version"
+
   readonly Glb_Kibana_Version
 }
 
@@ -408,12 +410,10 @@ function test_stats() {
 }
 
 # ----------------------------------------------------------------------------
-# Parse YAML
+# Get FTR enabled configurations
 # ----------------------------------------------------------------------------
-function parse_yaml() {
-  file=$1
-  key=$2
-  python3 -c "import yaml;print(yaml.safe_load(open('$file'))$key)"
+function get_ftr_enabled_configs() {
+  sed -n '/enabled:/,/.*:/{ /enabled:/! {/.*:/! p} }' .buildkite/ftr_configs.yml
 }
 
 # ----------------------------------------------------------------------------
@@ -437,8 +437,8 @@ function filter_yaml() {
   xpack_ext_functional_tests='^x-pack/test'
   pattern=""
 
-  DATA=$(parse_yaml .buildkite/ftr_configs.yml "['enabled']")
-  IFS=', ' read -r -a array <<< "${DATA//[\'\[\]]/ }"
+  DATA=$(get_ftr_enabled_configs)
+  array=(${DATA//\- / })
 
   if [[ $filter == "basic" ]]; then
     pattern=$basic_functional_tests
@@ -3065,25 +3065,31 @@ function set_package() {
   local _platform=$1
   local _grp=$2
 
-  export ESTF_TEST_STANDALONE=false
+  if [[ "$_platform" == "cloud" ]] || [[ -z $_grp ]]; then
+    get_version
+    return
+  fi
 
   get_build_server
   get_version
   get_os
 
+  export ESTF_TEST_STANDALONE=false
+
   if [[ "$_platform" == "docker" ]]; then
     export ESTF_TEST_PACKAGE="docker"
     export ESTF_TEST_STANDALONE=true
     return
-  elif [[ "$_platform" != "linux" ]]; then
-    if [[ "$_platform" == "windows" ]]; then
-      export ESTF_TEST_PACKAGE="zip"
-      #export ESTF_TEST_STANDALONE=true
-    elif [[ "$_platform" == "darwin" ]]; then
-      export ESTF_TEST_PACKAGE="tar.gz"
-    fi
+  fi
+
+  if [[ "$_platform" == "windows" ]]; then
+    export ESTF_TEST_PACKAGE="zip"
+    #export ESTF_TEST_STANDALONE=true
     return
-  elif [[ "$_platform" == "cloud" ]]; then
+  fi
+
+  if [[ "$_platform" == "darwin" ]]; then
+    export ESTF_TEST_PACKAGE="tar.gz"
     return
   fi
 
