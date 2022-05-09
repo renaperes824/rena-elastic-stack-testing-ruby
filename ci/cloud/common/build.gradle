@@ -112,7 +112,7 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
         def kibanaUri = new URI(rootProject.props.kibana_url.toString())
         def elasticUri = new URI(rootProject.props.elasticsearch_url.toString())
 
-        if (rootProject.ccs) {
+        if (rootProject.hasProperty('ccs')) {
             def remoteElasticUri = new URI(rootProject.remoteprops.elasticsearch_url.toString())
 
             def auth = 'https://' + (String) rootProject.props.es_username + ":" +
