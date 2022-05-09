@@ -48,5 +48,6 @@
   "upgradeTest5f": "main,7.13.5-SNAPSHOT,7.17.4-SNAPSHOT,8.3.0-SNAPSHOT",
   "upgradeTest5g": "main,7.14.3-SNAPSHOT,7.17.4-SNAPSHOT,8.3.0-SNAPSHOT",
   "upgradeTest5h": "main,7.15.3-SNAPSHOT,7.17.4-SNAPSHOT,8.3.0-SNAPSHOT",
-  "upgradeTest5i": "main,7.16.4-SNAPSHOT,7.17.4-SNAPSHOT,8.3.0-SNAPSHOT"
+  "upgradeTest5i": "main,7.16.4-SNAPSHOT,7.17.4-SNAPSHOT,8.3.0-SNAPSHOT",
+  "upgradeTest5j": "main,7.16.4-SNAPSHOT,7.17.4-SNAPSHOT,8.2.0-SNAPSHOT, 8.3.0-SNAPSHOT"
 }
