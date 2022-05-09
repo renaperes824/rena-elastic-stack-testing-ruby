@@ -166,7 +166,7 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
         ShellCommand shell
         if (System.env.ESTF_FLAKY_TEST_SUITE) {
             shell = new ShellCommand("./jenkins_kibana_tests.sh flaky_test_runner", "$buildDir/kibana", envList)
-        } else if (rootProject.ccs) {
+        } else if (rootProject.hasProperty('ccs')) {
             shell = new ShellCommand("./jenkins_kibana_tests.sh ccs", "$buildDir/kibana", envList)
         } else {
             shell = new ShellCommand("./jenkins_kibana_tests.sh cloud " + System.env.JOB.toString(), "$buildDir/kibana", envList)

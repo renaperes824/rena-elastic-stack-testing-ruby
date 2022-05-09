@@ -34,6 +34,7 @@ task ccs_setup(type: CreateCloudDeployment) {
             remoteProperties.load(it)
         }
 
+        rootProject.ext.ccs = true
         rootProject.ext.props = properties
         rootProject.ext.deployment_id = getDeploymentId()
         rootProject.ext.cluster_id = getElasticsearchClusterId()
@@ -79,11 +80,17 @@ task ccs_cleanup(type: ShutdownCloudDeployment) {
     doFirst {
         deploymentId =  rootProject.deployment_id
     }
+    onlyIf {
+        rootProject.hasProperty('ccs')
+    }
 }
 
 task ccs_remote_cleanup(type: ShutdownCloudDeployment) {
     doFirst {
         deploymentId =  rootProject.remote_deployment_id
+    }
+    onlyIf {
+        rootProject.hasProperty('ccs')
     }
 }
 
@@ -117,7 +124,6 @@ if (_job) {
 
 rootProject.ext.remoteVersion = System.env.ESTF_REMOTE_CLOUD_VERSION ?: _remote_cloud_version
 rootProject.ext.createVersion = System.env.ESTF_CLOUD_VERSION ?: _cloud_version
-rootProject.ext.ccs = true
 
 ccs_run_kibana_tests.dependsOn ccs_setup, ccs_disable_saml_login, kibana_ccs_tests
 ccs_disable_saml_login.mustRunAfter(ccs_setup)
