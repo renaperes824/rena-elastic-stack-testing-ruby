@@ -1084,6 +1084,8 @@ function run_ci_cleanup() {
     return
   fi
   if [ $Glb_KbnClean == "yes" ]; then
+    echo_debug "In run_ci_cleanup ..."
+    find . -follow -printf ""
     #cleanup_docker
     #uninstall_standalone_servers
     uninstall_packages
@@ -1091,6 +1093,8 @@ function run_ci_cleanup() {
     remove_bazel_dirs
     remove_install_dir
     remove_es_install_dir
+    echo_debug "After run_ci_cleanup ..."
+    find . -follow -printf ""
   fi
 }
 
