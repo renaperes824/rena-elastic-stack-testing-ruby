@@ -192,6 +192,15 @@ function remove_node_modules_dir() {
 }
 
 # ----------------------------------------------------------------------------
+# Method to remove bazel directory
+# ----------------------------------------------------------------------------
+function remove_bazel_dirs() {
+  for dir in bazel*/ ; do
+    rm -rf $dir
+  done
+}
+
+# ----------------------------------------------------------------------------
 # Method to get build server: snapshots
 # ----------------------------------------------------------------------------
 function get_build_server() {
@@ -335,7 +344,7 @@ function get_os() {
     fi
   fi
 
-  if [[ "$Glb_OS" == "darwin" ]] || [[ "$Glb_Arch" == "aarch64" ]]; then
+  if [[ "$Glb_OS" == "darwin" ]] || [[ "$Glb_Arch" == "aarch64" ]] || [[ "$Glb_OS" == "windows" ]]; then
     Glb_KbnClean="yes"
   fi
 
@@ -1079,6 +1088,7 @@ function run_ci_cleanup() {
     #uninstall_standalone_servers
     uninstall_packages
     remove_node_modules_dir
+    remove_bazel_dirs
     remove_install_dir
     remove_es_install_dir
   fi
