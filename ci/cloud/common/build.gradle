@@ -112,17 +112,31 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
         def kibanaUri = new URI(rootProject.props.kibana_url.toString())
         def elasticUri = new URI(rootProject.props.elasticsearch_url.toString())
 
+        def elasticsearch_port = elasticUri?.getPort()
+        def kibana_port = kibanaUri?.getPort()
+        if (elasticsearch_port == -1) {
+            elasticsearch_port = 443
+        }
+        if (kibana_port == -1) {
+            kibana_port = 443
+        }
+
         if (rootProject.hasProperty('ccs')) {
             def remoteElasticUri = new URI(rootProject.remoteprops.elasticsearch_url.toString())
+
+            def remote_elasticsearch_port = remoteElasticUri?.getPort()
+            if (remote_elasticsearch_port == -1) {
+                remote_elasticsearch_port = 443
+            }
 
             def auth = 'https://' + (String) rootProject.props.es_username + ":" +
                     (String) rootProject.props.es_password + "@"
             def remote_auth =  'https://' + (String) rootProject.remoteprops.es_username + ":" +
                     (String) rootProject.remoteprops.es_password + "@"
 
-            def kbn_url_auth = auth + kibanaUri?.getHost() + ":" +  kibanaUri?.getPort()
-            def es_url_auth = auth + elasticUri?.getHost() + ":" + elasticUri?.getPort()
-            def remote_es_url_auth = remote_auth + remoteElasticUri?.getHost() + ":" +  remoteElasticUri?.getPort()
+            def kbn_url_auth = auth + kibanaUri?.getHost() + ":" + kibana_port
+            def es_url_auth = auth + elasticUri?.getHost() + ":" + elasticsearch_port
+            def remote_es_url_auth = remote_auth + remoteElasticUri?.getHost() + ":" +  remote_elasticsearch_port
 
             envList.add("TEST_KIBANA_URL=" + kbn_url_auth)
             envList.add("TEST_ES_URL=" + es_url_auth)
@@ -132,13 +146,13 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
             // Add specific Kibana environment variables
             envList.add("TEST_KIBANA_HOSTNAME=" + kibanaUri?.getHost())
             envList.add("TEST_KIBANA_PROTOCOL=" + 'https')
-            envList.add("TEST_KIBANA_PORT=" + kibanaUri?.getPort())
+            envList.add("TEST_KIBANA_PORT=" + kibana_port)
             envList.add("TEST_KIBANA_USERNAME=" + rootProject.props.es_username.toString())
             envList.add("TEST_KIBANA_PASS=" + rootProject.props.es_password.toString())
 
             envList.add("TEST_ES_HOSTNAME=" + elasticUri?.getHost())
             envList.add("TEST_ES_PROTOCOL=" + 'https')
-            envList.add("TEST_ES_PORT=" + elasticUri?.getPort())
+            envList.add("TEST_ES_PORT=" + elasticsearch_port)
             envList.add("TEST_ES_USERNAME=" + rootProject.props.es_username.toString())
             envList.add("TEST_ES_PASS=" + rootProject.props.es_password.toString())
         }
