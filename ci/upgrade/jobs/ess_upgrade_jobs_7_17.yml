@@ -1,0 +1,15 @@
+TASK:
+  - kibana_upgrade_tests
+JOB:
+    - upgradeTest3a
+    - upgradeTest3b
+    - upgradeTest3c
+    - upgradeTest3d
+    - upgradeTest3e
+    - upgradeTest3f
+    - upgradeTest3g
+    - upgradeTest3h
+    - upgradeTest3i
+    - upgradeTest3j
+
+exclude: ~

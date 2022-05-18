@@ -1,20 +1,34 @@
 TASK:
   - kibana_upgrade_tests
 JOB:
-    - upgradeTest4a
-    - upgradeTest4b
-    - upgradeTest4c
-    - upgradeTest4d
-    - upgradeTest4e
-    - upgradeTest4f
-    - upgradeTest4g
-    - upgradeTest4h
-    - upgradeTest4i
-    - upgradeTest4j
-    - upgradeTest4k
-    - upgradeTest4l
-    - upgradeTest4m
-    - upgradeTest4n
-    - upgradeTest4o
+  - upgradeTest1a
+  - upgradeTest1b
+  - upgradeTest1c
+  - upgradeTest1d
+  - upgradeTest1e
+  - upgradeTest1f
+  - upgradeTest1g
+  - upgradeTest1h
+  - upgradeTest1i
+  - upgradeTest1j
+  - upgradeTest1k
+  - upgradeTest1l
+  - upgradeTest2a
+  - upgradeTest2b
+  - upgradeTest2c
+  - upgradeTest2d
+  - upgradeTest2e
+  - upgradeTest2f
+  - upgradeTest2g
+  - upgradeTest2h
+  - upgradeTest2i
+  - upgradeTest2j
+  - upgradeTest2k
+  - upgradeTest2l
+  - upgradeTest2m
+  - upgradeTest2n
+  - upgradeTest2o
+  - upgradeTest2p
+  - upgradeTest21
 
 exclude: ~

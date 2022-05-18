@@ -1,0 +1,20 @@
+TASK:
+  - kibana_upgrade_tests
+JOB:
+    - upgradeTest4a
+    - upgradeTest4b
+    - upgradeTest4c
+    - upgradeTest4d
+    - upgradeTest4e
+    - upgradeTest4f
+    - upgradeTest4g
+    - upgradeTest4h
+    - upgradeTest4i
+    - upgradeTest4j
+    - upgradeTest4k
+    - upgradeTest4l
+    - upgradeTest4m
+    - upgradeTest4n
+    - upgradeTest4o
+
+exclude: ~

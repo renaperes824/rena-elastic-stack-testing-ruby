@@ -1,0 +1,20 @@
+TASK:
+  - kibana_upgrade_tests
+JOB:
+    - upgradeTest5a
+    - upgradeTest5b
+    - upgradeTest5c
+    - upgradeTest5d
+    - upgradeTest5e
+    - upgradeTest5f
+    - upgradeTest5g
+    - upgradeTest5h
+    - upgradeTest5i
+    - upgradeTest5j
+    - upgradeTest5k
+    - upgradeTest5l
+    - upgradeTest5m
+    - upgradeTest5n
+    - upgradeTest5o
+
+exclude: ~
