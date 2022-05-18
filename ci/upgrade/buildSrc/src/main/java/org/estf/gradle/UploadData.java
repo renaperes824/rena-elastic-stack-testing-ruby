@@ -59,8 +59,10 @@ public class UploadData extends DefaultTask {
     public void run() throws IOException, InterruptedException {
         RestApi api = new RestApi(username, password, version, upgradeVersion);
         int majorVersion = api.setMajorVersion();
-        uploadBankAccountData();
-        createBankIndexPatternAsDefault();
+        if (majorVersion < 8) {
+            uploadBankAccountData();
+            createBankIndexPatternAsDefault();
+        }
         if (majorVersion > 5) {
             loadSampleData();
         }
