@@ -478,6 +478,28 @@ run_cloud_tests() {
     fi
     cd ${AIT_CI_CLOUD_UPGRADE_DIR}
   fi
+
+  # Going to also trigger Buildkite job for CKFT, jenkins job TBR after testing
+  if [[ $TASK == "saas_run_kibana_tests" ]]; then
+    bktoken=$(vault read secret/stack-testing/estf-bk-token -format=json | jq -r .data.token)
+    curl -sH "Authorization: Bearer $bktoken" "https://api.buildkite.com/v2/organizations/elastic/pipelines/estf-cloud-kibana-functional-tests/builds" \
+         -X "POST" \
+         -d '{
+          "commit": "HEAD",
+          "branch": "main",
+          "message": ":cloud: '$ESTF_CLOUD_VERSION'",
+          "author": {
+            "name": "Liza Mae"
+          },
+          "env": {
+            "ESTF_CLOUD_VERSION": "'$ESTF_CLOUD_VERSION'"
+          },
+          "meta_data": {
+            "source trigger": "jenkins release manager"
+          }
+        }'
+  fi
+
   ./gradlew $TASK
   RC=$?
   if [ $RC -ne 0 ]; then
