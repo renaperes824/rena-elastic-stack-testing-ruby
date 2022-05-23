@@ -19,6 +19,14 @@
       when: elasticsearch_stop_process_id.stdout | length > 0
     - name: Start elasticsearch process
       command: '{{ elasticsearch_exe }} -d -p {{ elasticsearch_pid_file }}'
-      async: 5
+      async: 1000
       poll: 0
+      register: start_elasticsearch
       changed_when: false
+    - name: Check on elasticsearch process
+      async_status:
+        jid: "{{ start_elasticsearch.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+      retries: 10
+      delay: 10
