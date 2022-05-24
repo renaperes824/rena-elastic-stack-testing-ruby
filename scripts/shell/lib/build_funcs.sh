@@ -246,6 +246,28 @@ activate_python_virtual_env() {
 }
 
 # ----------------------------------------------------------------------------
+retry() {
+  local retries=$1; shift
+  local delay=$1; shift
+  local attempts=1
+
+  until "$@"; do
+    retry_exit_status=$?
+    echo "Exited with $retry_exit_status" >&2
+    if (( retries == "0" )); then
+      return $retry_exit_status
+    elif (( attempts == retries )); then
+      echo "Failed $attempts retries" >&2
+      return $retry_exit_status
+    else
+      echo "Retrying $((retries - attempts)) more times..." >&2
+      attempts=$((attempts + 1))
+      sleep "$delay"
+    fi
+  done
+}
+
+# ----------------------------------------------------------------------------
 python_install_packages() {
   type=$1; # cloud or empty
   check_python_virtual_env
@@ -254,7 +276,11 @@ python_install_packages() {
   if [ $RC == 1 ] && [ ! -z $PYENV_VIRTUALENV_INIT ]; then
     echo_info "Install python"
     pyver=$(cat .python-version)
-    pyenv install -s $pyver
+    retry 5 10 pyenv install -s $pyver
+    if [ $? -ne 0 ]; then
+      echo_error "FAILED! Python could not be installed"
+      exit 1
+    fi
     pyenv global $pyver
     echo_info "Set python exe"
     export PYTHON_EXE="python$(cat .python-version | egrep -o '[0-9]+\.[0-9]+')"
