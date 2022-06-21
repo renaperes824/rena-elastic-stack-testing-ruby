@@ -33,7 +33,7 @@ public class CloudApi {
             host = estf_host;
         }
 
-        boolean cloudApiDebug = false;
+        boolean cloudApiDebug = true;
         String getEnvCloudApiDebug = System.getenv("ESTF_CLOUD_API_DEBUG");
         if (getEnvCloudApiDebug != null) {
             cloudApiDebug = Boolean.parseBoolean(getEnvCloudApiDebug);
