@@ -18,5 +18,6 @@ JOB:
   - upgradeTest3o
   - upgradeTest3p
   - upgradeTest3q
+  - upgradeTest3r
 
 exclude: ~
