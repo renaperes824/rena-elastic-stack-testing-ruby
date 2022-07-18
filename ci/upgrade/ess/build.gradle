@@ -4,6 +4,7 @@ import org.estf.gradle.EditEssDeployment
 import org.estf.gradle.ShutdownEssDeployment
 import org.estf.gradle.UpgradeEssDeployment
 import org.estf.gradle.UploadData
+import org.estf.gradle.UploadRulesData
 import org.estf.gradle.UploadSecuritySolutionData
 import org.estf.gradle.UpgradeAssistantApi
 import org.estf.gradle.ScriptedFieldsApi
@@ -207,6 +208,23 @@ if (rootProject.createVersion && upgrade_versions ) {
                 password = rootProject.props.es_password
                 version = originating_version
                 upgradeVersion = upgrade_version
+            }
+        }
+
+        tasks.create("upload_rule_data" + i, UploadRulesData) {
+            doFirst {
+                println("******* SECTION: UPLOAD RULE DATA *******")
+                esBaseUrl = rootProject.props.elasticsearch_url
+                kbnBaseUrl = rootProject.props.kibana_url
+                username = rootProject.props.es_username
+                password = rootProject.props.es_password
+                version = originating_version
+                upgradeVersion = upgrade_version
+            }
+            doLast {
+                if (applyWorkaround() == true) {
+                    rootProject.ext.rule_workaround = applyWorkaround()
+                }
             }
         }
 

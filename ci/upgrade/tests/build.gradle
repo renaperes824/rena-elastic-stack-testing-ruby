@@ -1,5 +1,6 @@
 import org.estf.gradle.UploadData
 import org.estf.gradle.UploadSecuritySolutionData
+import org.estf.gradle.UploadRulesData
 
 /**
  * build.gradle for testing uploading data
@@ -37,6 +38,22 @@ task testSampleData(type: UploadData, dependsOn: deployment) {
         password = deployment.password
         version = deployment.version
         upgradeVersion = deployment.upgradeVersion
+    }
+}
+
+task testRulesData(type: UploadRulesData, dependsOn: deployment) {
+    doFirst {
+        esBaseUrl = deployment.esBaseUrl
+        kbnBaseUrl = deployment.kbnBaseUrl
+        username = deployment.username
+        password = deployment.password
+        version = deployment.version
+        upgradeVersion = deployment.upgradeVersion
+    }
+    doLast {
+        if (applyWorkaround() == true) {
+            rootProject.ext.rule_workaround = applyWorkaround()
+        }
     }
 }
 

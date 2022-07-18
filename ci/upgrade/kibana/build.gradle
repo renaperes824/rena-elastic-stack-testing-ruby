@@ -156,6 +156,10 @@ task run_kibana_tests(dependsOn: get_kibana_commit) {
             envList1.add("TEST_ES_PROTOCOL=" + 'https')
             envList1.add("TEST_ES_PORT=" + elasticsearch_port)
 
+            if (rootProject.hasProperty('rule_workaround')) {
+                envList1.add("TEST_RULE_WORKAROUND=" + rootProject.rule_workaround)
+            }
+
             println "************ KIBANA TEST ENVIRONMENT VARS ************"
             println envList1
             println "******************************************************"
