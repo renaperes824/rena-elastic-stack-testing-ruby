@@ -1,0 +1,21 @@
+TASK:
+  - kibana_upgrade_tests
+JOB:
+    - upgradeTest7a
+    - upgradeTest7b
+    - upgradeTest7c
+    - upgradeTest7d
+    - upgradeTest7e
+    - upgradeTest7f
+    - upgradeTest7g
+    - upgradeTest7h
+    - upgradeTest7i
+    - upgradeTest7j
+    - upgradeTest7k
+    - upgradeTest7l
+    - upgradeTest7m
+    - upgradeTest7n
+    - upgradeTest7o
+    - upgradeTest7p
+
+exclude: ~
