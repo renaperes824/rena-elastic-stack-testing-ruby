@@ -11,8 +11,5 @@ JOB:
     - upgradeTest4h
     - upgradeTest4i
     - upgradeTest4j
-    - upgradeTest4k
-    - upgradeTest4l
-    - upgradeTest4m
 
 exclude: ~
