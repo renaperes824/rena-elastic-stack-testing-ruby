@@ -143,35 +143,43 @@ public class UploadRulesData extends DefaultTask {
         createNonDefaultSpace("Automation", "automation");
         String credentials = username + ":" + password;
         String basicAuthPayload = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes());
-        String jsonStr = "{\"params\":{\"nodeType\":\"host\",\"criteria\":[{\"metric\":\"cpu\",\"comparator\":\">\",\"threshold\":[75],\"timeSize\":1,\"timeUnit\":\"m\",\"customMetric\":{\"type\":\"custom\",\"id\":\"alert-custom-metric\",\"field\":\"\",\"aggregation\":\"avg\"}}],\"sourceId\":\"default\"},\"consumer\":\"alerts\",\"schedule\":{\"interval\":\"1m\"},\"tags\":[],\"name\":\"Upgrade Rule\",\"rule_type_id\":\"metrics.alert.inventory.threshold\",\"notify_when\":\"onActionGroupChange\",\"actions\":[]}";
-        List<String> dataList = new ArrayList<>(6);
+        String payload1 = "{\"params\":{\"nodeType\":\"host\",\"criteria\":[{\"metric\":\"cpu\",\"comparator\":\">\",\"threshold\":[75],\"timeSize\":1,\"timeUnit\":\"m\",\"customMetric\":{\"type\":\"custom\",\"id\":\"alert-custom-metric\",\"field\":\"\",\"aggregation\":\"avg\"}}],\"sourceId\":\"default\"},\"consumer\":\"alerts\",\"schedule\":{\"interval\":\"1m\"},\"tags\":[],\"name\":\"UpgradeRule\",\"rule_type_id\":\"metrics.alert.inventory.threshold\",\"notify_when\":\"onActionGroupChange\",\"actions\":[]}";
+        // TODO: Remove when corresponding test update is merged
+        String payload2 = "{\"params\":{\"nodeType\":\"host\",\"criteria\":[{\"metric\":\"cpu\",\"comparator\":\">\",\"threshold\":[75],\"timeSize\":1,\"timeUnit\":\"m\",\"customMetric\":{\"type\":\"custom\",\"id\":\"alert-custom-metric\",\"field\":\"\",\"aggregation\":\"avg\"}}],\"sourceId\":\"default\"},\"consumer\":\"alerts\",\"schedule\":{\"interval\":\"1m\"},\"tags\":[],\"name\":\"Upgrade Rule\",\"rule_type_id\":\"metrics.alert.inventory.threshold\",\"notify_when\":\"onActionGroupChange\",\"actions\":[]}";
+        List<String> payloads = new ArrayList<>(2);
+        payloads.add(payload1);
+        payloads.add(payload2);
+
+        List<String> dataList = new ArrayList<>(2);
         dataList.add("api/alerting/rule");
         dataList.add("s/automation/api/alerting/rule");
         for (String s : dataList) {
-            for (int retries = 0;; retries++) {
-                HttpPost postRequest = new HttpPost(kbnBaseUrl + "/" + s);
-                postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
-                postRequest.setHeader("kbn-xsrf", "automation");
-                postRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-                StringEntity entity = new StringEntity(jsonStr);
-                entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-                postRequest.setEntity(entity);
-                HttpClient client = HttpClientBuilder.create().build();
-                HttpResponse response = client.execute(postRequest);
-                int statusCode = response.getStatusLine().getStatusCode();
-                if (statusCode == 200) {
-                    HttpEntity responseEntity = response.getEntity();
-                    String content = EntityUtils.toString(responseEntity);
-                    JSONObject json = new JSONObject(content);
-                    String id = json.getString("id");
-                    checkRuleStatus(id, s);
-                    break;
-                }
-                if (retries < MAX_RETRIES) {
-                    System.out.println("** Retrying create rule **");
-                    Thread.sleep(5000);
-                } else {
-                    throw new Error("Failed to create rule data: " + s);
+            for (String jsonStr : payloads) {
+                for (int retries = 0; ; retries++) {
+                    HttpPost postRequest = new HttpPost(kbnBaseUrl + "/" + s);
+                    postRequest.setHeader(HttpHeaders.AUTHORIZATION, basicAuthPayload);
+                    postRequest.setHeader("kbn-xsrf", "automation");
+                    postRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+                    StringEntity entity = new StringEntity(jsonStr);
+                    entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+                    postRequest.setEntity(entity);
+                    HttpClient client = HttpClientBuilder.create().build();
+                    HttpResponse response = client.execute(postRequest);
+                    int statusCode = response.getStatusLine().getStatusCode();
+                    if (statusCode == 200) {
+                        HttpEntity responseEntity = response.getEntity();
+                        String content = EntityUtils.toString(responseEntity);
+                        JSONObject json = new JSONObject(content);
+                        String id = json.getString("id");
+                        checkRuleStatus(id, s);
+                        break;
+                    }
+                    if (retries < MAX_RETRIES) {
+                        System.out.println("** Retrying create rule **");
+                        Thread.sleep(5000);
+                    } else {
+                        throw new Error("Failed to create rule data: " + s);
+                    }
                 }
             }
         }
