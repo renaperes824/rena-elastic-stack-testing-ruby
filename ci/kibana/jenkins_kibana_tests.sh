@@ -325,6 +325,15 @@ function get_os() {
     Glb_SkipTests="yes"
   fi
 
+  # workaround: install chrome on amazon linux 2022
+  if [[ "$Glb_Distr" == "Amazon" ]] && [[ "$Glb_Distr_Ver" == "2022" ]]; then
+    which google-chrome
+    if [[ $? -ne 0 ]]; then
+      curl https://intoli.com/install-google-chrome.sh | bash
+      sudo mv /usr/bin/google-chrome-stable /usr/bin/google-chrome
+    fi
+  fi
+
   if [[ "$Glb_Arch" == "aarch64" ]]; then
     install_pkg "jq"
     if [[ "$Glb_SkipTests" == "no" ]]; then
