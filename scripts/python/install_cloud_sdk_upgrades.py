@@ -11,7 +11,7 @@ import subprocess
 
 vault_addr = os.environ.get('VAULT_ADDR')
 vault_token = os.environ.get('VAULT_TOKEN')
-vault_path = os.environ.get("VAULT_PATH", 'secret/stack-testing/github')
+vault_path = 'secret/stack-testing/github'
 if not vault_addr and not vault_token:
     raise IOError('Need VAULT_ADDR and VAULT_TOKEN environment variables set')
 vault_client = hvac.Client(url=vault_addr, token=vault_token)
