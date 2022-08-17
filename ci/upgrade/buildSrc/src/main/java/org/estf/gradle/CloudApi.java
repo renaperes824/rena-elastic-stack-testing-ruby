@@ -47,6 +47,27 @@ public class CloudApi {
         apiClient.setApiKeyPrefix("ApiKey");
         apiClient.setBasePath(url);
         apiClient.setDebugging(cloudApiDebug);
+        apiClient.getHttpClient().setRetryOnConnectionFailure(true);
+
+        String getEnvCloudConnectTimeout = System.getenv("ESTF_CLOUD_API_CONNECT_TIMEOUT");
+        if (getEnvCloudConnectTimeout != null) {
+            apiClient.setConnectTimeout(Integer.parseInt(getEnvCloudConnectTimeout));
+        }
+
+        String getEnvCloudReadTimeout = System.getenv("ESTF_CLOUD_API_READ_TIMEOUT");
+        if (getEnvCloudReadTimeout != null) {
+            apiClient.setReadTimeout(Integer.parseInt(getEnvCloudReadTimeout));
+        }
+
+        String getEnvCloudWriteTimeout = System.getenv("ESTF_CLOUD_API_WRITE_TIMEOUT");
+        if (getEnvCloudWriteTimeout != null) {
+            apiClient.setWriteTimeout(Integer.parseInt(getEnvCloudWriteTimeout));
+        }
+
+        System.out.println("Connect Timeout: " + apiClient.getConnectTimeout());
+        System.out.println("Read Timeout: " + apiClient.getReadTimeout());
+        System.out.println("Write Timeout: " + apiClient.getWriteTimeout());
+
         System.out.println("Setup API client completed successfully");
     }
 
