@@ -1653,10 +1653,6 @@ function run_xpack_func_tests() {
   TEST_KIBANA_BUILD=default
   install_kibana
 
-  local _xpack_dir="$(cd x-pack; pwd)"
-  echo_info "-> XPACK_DIR ${_xpack_dir}"
-  cd "$_xpack_dir"
-
   export TEST_BROWSER_HEADLESS=1
   if [[ "$Glb_Arch" == "aarch64" ]]; then
     export TEST_BROWSER_BINARY_PATH=$Glb_Chromium
@@ -1666,6 +1662,7 @@ function run_xpack_func_tests() {
   failures=0
   for i in $(seq 1 1 $maxRuns); do
     for cfg in "${Glb_FtrConfigs[@]}"; do
+      cfg="x-pack/$cfg"
       export ESTF_RUN_NUMBER=$i
       update_report_name $cfg
       echo_info " -> Running xpack tests config: $cfg, run $i of $maxRuns"
