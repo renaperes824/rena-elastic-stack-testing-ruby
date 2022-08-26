@@ -3,6 +3,7 @@ savedObjects.maxImportPayloadBytes: 10485760
 security.showInsecureClusterWarning: false
 server.maxPayload: 1679958
 server.maxPayloadBytes: 1679958
+server.publicBaseUrl: "https://localhost:5601"
 status.allowAnonymous: true
 telemetry.banner: false
 telemetry.optIn: false
