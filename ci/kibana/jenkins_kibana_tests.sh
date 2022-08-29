@@ -1788,7 +1788,8 @@ function run_cloud_basic_tests() {
       fi
       eval node $nodeOpts scripts/functional_test_runner \
             --config "$cfg" \
-            --exclude-tag skipCloud " $includeTags"
+            --exclude-tag skipCloud \
+            --exclude-tag skipCloudFailedTest " $includeTags"
       if [ $? -ne 0 ]; then
         failures=1
       fi
@@ -1839,7 +1840,8 @@ function run_cloud_xpack_func_tests() {
       fi
       eval node $nodeOpts ../scripts/functional_test_runner \
             --config "$cfg" \
-            --exclude-tag skipCloud " $includeTags"
+            --exclude-tag skipCloud \
+            --exclude-tag skipCloudFailedTest " $includeTags"
       if [ $? -ne 0 ]; then
         failures=1
       fi
@@ -1954,7 +1956,10 @@ function run_cloud_xpack_ext_tests() {
         test_stats $cfg
         continue
       fi
-      node $nodeOpts ../scripts/functional_test_runner --config $cfg --exclude-tag skipCloud
+      node $nodeOpts ../scripts/functional_test_runner \
+        --config $cfg \
+        --exclude-tag skipCloud \
+        --exclude-tag skipCloudFailedTest
       if [ $? -ne 0 ]; then
         failures=1
       fi
@@ -2061,7 +2066,8 @@ function run_upgrade_tests() {
     fi
     eval xvfb-run node $nodeOpts ../scripts/functional_test_runner $esVersion \
           --config $cfg \
-          --exclude-tag skipCloud " $includeTags"
+          --exclude-tag skipCloud \
+          --exclude-tag skipCloudFailedTest " $includeTags"
     if [ $? -ne 0 ]; then
       failures=1
     fi
@@ -2113,7 +2119,8 @@ function run_ccs_tests() {
       fi
       eval node $nodeOpts scripts/functional_test_runner $esVersion \
             --config "$cfg" \
-            --exclude-tag skipCloud
+            --exclude-tag skipCloud \
+            --exclude-tag skipCloudFailedTest
       if [ $? -ne 0 ]; then
         failures=1
       fi
